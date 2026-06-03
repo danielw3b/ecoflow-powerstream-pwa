@@ -2,6 +2,8 @@
 
 A single-file Progressive Web App for monitoring EcoFlow PowerStream MicroInverter devices (STREAM series) in real time. No server required — runs entirely in your browser.
 
+https://danielw3b.github.io/ecoflow-powerstream-pwa/
+
 ![EcoFlow Monitor Screenshot](screenshot.png)
 
 ## Features
