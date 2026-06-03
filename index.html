@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a0f1e">
+<title>EcoFlow Monitor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230a0f1e'/><polygon points='55,8 18,52 46,52 45,92 82,48 54,48' fill='%23f5a623'/></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+:root {
+  --bg:#060c1a; --surface:#0d1526; --card:#0f1b2d; --border:#1e3a5f;
+  --text:#e2eef8; --muted:#6b8aaa; --solar:#ffb830; --grid:#1adeff;
+  --bat:#00f584; --bat-low:#ff3355; --offline:#ff3355; --offline-bg:rgba(255,51,85,.07);
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif; --radius:10px;
+  --hi-text:#f0f8ff; --card-border-live:rgba(0,245,132,.4); --card-border-off:rgba(255,51,85,.35);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;
+  background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);
+  background-size:40px 40px;}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+  border-bottom:1px solid var(--border);background:rgba(6,12,26,.97);
+  backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;
+  gap:8px;overflow:hidden;min-width:0;}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.logo svg{width:28px;height:28px;flex-shrink:0;}
+.logo-titles{display:flex;flex-direction:column;gap:1px;}
+.logo-main{font-family:var(--mono);font-weight:700;font-size:.95rem;letter-spacing:.08em;color:var(--solar);white-space:nowrap;text-transform:uppercase;}
+.logo-sub{font-family:var(--mono);font-weight:400;font-size:.58rem;letter-spacing:.06em;color:var(--muted);white-space:nowrap;text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+
+.status-badge{display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:rgba(15,23,42,.9);}
+.status-dot{width:12px;height:12px;border-radius:50%;background:var(--muted);transition:background .4s;}
+.status-badge.live .status-dot{background:var(--bat);box-shadow:0 0 6px var(--bat);animation:pulse 2s infinite;}
+.status-badge.conn .status-dot{background:var(--solar);}
+.status-badge.error .status-dot{background:var(--bat-low);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.btn{font-family:var(--mono);font-size:.7rem;padding:5px 12px;border-radius:6px;
+  border:1px solid var(--border);background:transparent;color:var(--grid);cursor:pointer;transition:all .2s;}
+.btn:hover{background:rgba(0,212,255,.1);border-color:var(--grid);}
+.btn.small{font-size:.65rem;padding:3px 8px;}
+
+/* Setup modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;
+  align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:28px;width:100%;max-width:440px;}
+.modal h2{font-family:var(--mono);font-size:.9rem;color:var(--solar);margin-bottom:20px;letter-spacing:.05em;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:6px;letter-spacing:.05em;}
+.field input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:.8rem;outline:none;}
+.field input:focus{border-color:var(--grid);}
+.modal-hint{font-size:.68rem;color:var(--muted);margin-top:4px;line-height:1.5;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-primary{background:rgba(245,166,35,.15);border-color:var(--solar);color:var(--solar);
+  flex:1;padding:10px;}
+.btn-primary:hover{background:rgba(245,166,35,.25);}
+
+main{padding:24px;max-width:1400px;margin:0 auto;}
+.section-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.devices-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:28px;}
+
+/* Device cards */
+.device-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;position:relative;overflow:hidden;transition:border-color .3s;}
+.device-card.live{border-color:var(--card-border-live);}
+.device-card.offline{border-color:var(--card-border-off);background:var(--offline-bg);}
+.device-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--solar),var(--grid));opacity:0;transition:opacity .4s;}
+.device-card.live::before{opacity:1;}
+.device-card.offline::before{background:var(--offline);opacity:.6;}
+.device-name{font-size:.88rem;font-weight:700;color:var(--hi-text);cursor:pointer;title:"Click to rename";}
+.device-sn{font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:2px;}
+.online-badge{font-family:var(--mono);font-size:.6rem;padding:2px 8px;border-radius:8px;border:1px solid;flex-shrink:0;font-weight:600;margin-left:auto;}
+.online-badge.yes{color:#00ff88;border-color:rgba(0,255,136,.5);background:rgba(0,255,136,.1);}
+.online-badge.no{color:#ff5577;border-color:rgba(255,85,119,.4);background:rgba(255,85,119,.08);}
+.online-badge.wait{color:var(--muted);border-color:var(--muted);}
+.offline-msg{display:flex;flex-direction:column;align-items:center;padding:28px 16px;gap:8px;}
+.offline-icon{font-size:2rem;opacity:.6;}
+.offline-text{font-family:var(--mono);font-size:.78rem;color:#8fb0cc;text-align:center;line-height:1.7;}
+.offline-since{font-size:.65rem;color:var(--muted);opacity:.8;}
+.power-flow{display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;margin-bottom:16px;align-items:center;}
+.flow-node{text-align:center;padding:10px 6px;}
+.flow-icon{font-size:1.4rem;margin-bottom:3px;}
+.flow-label{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.06em;}
+.flow-value{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin:3px 0;}
+.flow-value.solar{color:#ffcc44;text-shadow:0 0 14px rgba(255,200,50,.5);}
+.flow-value.inv{color:#22e8ff;text-shadow:0 0 14px rgba(0,230,255,.4);}
+.flow-value.bat{color:#00ff88;text-shadow:0 0 12px rgba(0,255,136,.35);}
+.flow-unit{font-family:var(--mono);font-size:.62rem;color:#8fb0cc;}
+.flow-divider{width:1px;height:44px;background:var(--border);margin:0 auto;}
+.bat-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.bat-label{font-family:var(--mono);font-size:.68rem;color:#8fb0cc;white-space:nowrap;}
+.bat-track{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;}
+.bat-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1),background .4s;}
+.bat-pct{font-family:var(--mono);font-size:.78rem;min-width:34px;text-align:right;font-weight:600;}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:12px;}
+.metric{background:var(--surface);padding:9px 12px;display:flex;justify-content:space-between;align-items:center;}
+.metric-label{font-size:.7rem;color:#8fb0cc;}
+.metric-value{font-family:var(--mono);font-size:.78rem;color:var(--hi-text);font-weight:600;}
+.metric-value.hi{color:#ffcc44;}
+.card-time{font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;}
+
+/* Charts */
+.chart-section{margin-bottom:24px;}
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.chart-legend{display:flex;gap:14px;font-family:var(--mono);font-size:.63rem;}
+.legend-item{display:flex;align-items:center;gap:5px;color:var(--muted);}
+.legend-dot{width:8px;height:8px;border-radius:50%;}
+canvas{width:100%;display:block;}
+
+/* Log */
+.log-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;max-height:200px;overflow-y:auto;}
+.log-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.67rem;}
+.log-table th{padding:7px 12px;text-align:left;color:var(--muted);font-weight:400;
+  border-bottom:1px solid var(--border);font-size:.63rem;letter-spacing:.07em;}
+.log-table td{padding:6px 12px;border-bottom:1px solid rgba(30,58,95,.35);}
+.log-table tr:last-child td{border-bottom:none;}
+.col-time{color:var(--muted);white-space:nowrap;}
+.col-offline{color:var(--offline);font-size:.68rem;}
+.log-table th{position:sticky;top:0;background:var(--surface);z-index:1;}
+.log-row-0 td{background:rgba(0,212,255,.04);}
+.log-row-1 td{background:rgba(255,184,48,.04);}
+
+@media(max-width:600px){
+  main{padding:12px;}
+  header{padding:12px 16px;}
+  .power-flow{grid-template-columns:1fr 1px 1fr;}
+  .power-flow .flow-node:nth-child(5),.power-flow .flow-divider:nth-child(4){display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Setup Modal ──────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="setupModal">
+  <div class="modal">
+    <h2>⚡ ECOFLOW MONITOR SETUP</h2>
+    <div class="field">
+      <label>ACCESS KEY</label>
+      <input type="text" id="cfgAccessKey" placeholder="Your EcoFlow API access key">
+    </div>
+    <div class="field">
+      <label>SECRET KEY</label>
+      <input type="password" id="cfgSecretKey" placeholder="Your EcoFlow API secret key">
+      <div class="modal-hint">Get keys at developer-eu.ecoflow.com → Access Management</div>
+    </div>
+    <div class="field">
+      <label>API REGION</label>
+      <select id="cfgRegion" style="width:100%;background:var(--surface);border:1px solid var(--border);
+        border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:.8rem;">
+        <option value="https://api-e.ecoflow.com">EU (api-e.ecoflow.com)</option>
+        <option value="https://api.ecoflow.com">Global (api.ecoflow.com)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveConfig()">Connect</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="55,8 18,52 46,52 45,92 82,48 54,48" fill="#ffb830"/>
+    </svg>
+    <div class="logo-titles">
+      <span class="logo-main">EcoFlow Monitor</span>
+      <span class="logo-sub">PowerStream MicroInverter</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-badge" id="statusBadge" title="Initialising…">
+      <div class="status-dot"></div>
+    </div>
+    <span id="wakeLockIcon" title="Screen lock inactive"
+      style="font-size:1rem;opacity:.3;cursor:default;user-select:none;line-height:1">🔆</span>
+    <button class="btn small" onclick="showSetup()" title="Settings">⚙</button>
+  </div>
+</header>
+
+<main>
+  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+    <span>DEVICES</span>
+    <div id="weatherInline" style="display:none;font-family:var(--mono);font-size:.75rem;color:#8fb0cc;white-space:nowrap;"></div>
+  </div>
+  <div class="devices-grid" id="devicesGrid" style="margin-bottom:28px;">
+    <div data-placeholder style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);
+      font-family:var(--mono);font-size:.8rem;">
+      <div style="font-size:2rem;margin-bottom:12px;opacity:.3">⚡</div>
+      Enter your API keys to start monitoring.
+    </div>
+  </div>
+
+  <div class="chart-section" id="powerSection" style="display:none">
+    <div class="section-title">SOLAR POWER — LAST 10 MIN</div>
+    <div id="chartsContainer" style="display:flex;flex-direction:column;gap:14px;"></div>
+  </div>
+
+  <div class="chart-section" id="whSection" style="display:none">
+    <div class="section-title">
+      <span>ENERGY HISTORY</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn small" id="periodHour"  onclick="setPeriod('hour')" >Hour</button>
+        <button class="btn small" id="periodDay"   onclick="setPeriod('day')"   style="color:#ffb830;border-color:#ffb830">Day</button>
+        <button class="btn small" id="periodMonth" onclick="setPeriod('month')">Month</button>
+        <button class="btn small" id="periodYear"  onclick="setPeriod('year')" >Year</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-legend" id="whLegend"></div>
+        <span id="whTotal" style="font-family:var(--mono);font-size:.72rem;color:#ffb830;font-weight:600"></span>
+      </div>
+      <canvas id="whChart" height="160"></canvas>
+    </div>
+  </div>
+
+  <!-- Export ABOVE Recent Updates -->
+  <div id="exportSection" style="margin-bottom:20px;">
+    <div class="section-title">EXPORT</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-bottom:12px;line-height:1.6;">
+        Energy history CSV — collected only when app is on.
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="exportBtns">
+        <button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-section" id="logSection" style="display:none">
+    <div class="section-title">RECENT UPDATES</div>
+    <div class="log-wrap">
+      <table class="log-table">
+        <thead><tr><th>Time</th><th>Device</th><th>PV</th><th>Grid</th><th>Bat</th><th>Hz</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  CONFIG — stored in localStorage, editable via setup modal
+// ════════════════════════════════════════════════════════════════
+const STORAGE_KEY   = "ecoflow_config";
+const NAMES_KEY     = "ecoflow_names";   // custom device names
+let   customNames   = {};                // sn → custom name
+
+function loadNames() {
+  try { customNames = JSON.parse(localStorage.getItem(NAMES_KEY) || "{}"); } catch {}
+}
+function saveName(sn, name) {
+  customNames[sn] = name;
+  localStorage.setItem(NAMES_KEY, JSON.stringify(customNames));
+}
+function deviceName(sn, fallback) {
+  return customNames[sn] || fallback;
+}
+let CFG = { accessKey:"", secretKey:"", region:"https://api-e.ecoflow.com" };
+
+function loadConfig() {
+  try { Object.assign(CFG, JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}")); } catch {}
+}
+function saveConfig() {
+  CFG.accessKey = document.getElementById("cfgAccessKey").value.trim();
+  CFG.secretKey = document.getElementById("cfgSecretKey").value.trim();
+  CFG.region    = document.getElementById("cfgRegion").value;
+  if (!CFG.accessKey || !CFG.secretKey) { alert("Both keys are required."); return; }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(CFG));
+  document.getElementById("setupModal").classList.remove("show");
+  init();
+}
+function showSetup() {
+  document.getElementById("cfgAccessKey").value = CFG.accessKey;
+  document.getElementById("cfgSecretKey").value = CFG.secretKey;
+  document.getElementById("cfgRegion").value    = CFG.region;
+  document.getElementById("setupModal").classList.add("show");
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SIGNATURE (EcoFlow open API — Java demo algorithm)
+// ════════════════════════════════════════════════════════════════
+async function hmacSha256(secret, message) {
+  const enc  = new TextEncoder();
+  const key  = await crypto.subtle.importKey("raw", enc.encode(secret),
+    { name:"HMAC", hash:"SHA-256" }, false, ["sign"]);
+  const sig  = await crypto.subtle.sign("HMAC", key, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+function makeNonce() { return String(Math.floor(10000 + Math.random() * 990000)); }
+
+function flattenObject(obj, prefix="") {
+  const out = {};
+  for (const [k,v] of Object.entries(obj)) {
+    const key = prefix ? `${prefix}.${k}` : k;
+    if (Array.isArray(v)) v.forEach((item,i) => {
+      const ak = `${key}[${i}]`;
+      if (item !== null && typeof item === "object") Object.assign(out, flattenObject(item, ak));
+      else out[ak] = item;
+    });
+    else if (v !== null && typeof v === "object") Object.assign(out, flattenObject(v, key));
+    else out[key] = v;
+  }
+  return out;
+}
+
+async function buildSign(params, nonce, ts) {
+  const flat   = params ? flattenObject(params) : {};
+  const kvStr  = Object.keys(flat).sort().map(k => `${k}=${flat[k]}`).join("&");
+  const payload = kvStr
+    ? `${kvStr}&accessKey=${CFG.accessKey}&nonce=${nonce}&timestamp=${ts}`
+    : `accessKey=${CFG.accessKey}&nonce=${nonce}&timestamp=${ts}`;
+  return hmacSha256(CFG.secretKey, payload);
+}
+
+async function apiGet(path, params=null) {
+  const ts = String(Date.now()), nonce = makeNonce();
+  const sign = await buildSign(params, nonce, ts);
+  const headers = { accessKey:CFG.accessKey, timestamp:ts, nonce, sign,
+    "Content-Type":"application/json;charset=UTF-8" };
+  let url = `${CFG.region}${path}`;
+  if (params) {
+    const flat = flattenObject(params);
+    const qs = Object.keys(flat).sort().map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(flat[k])}`).join("&");
+    if (qs) url += `?${qs}`;
+  }
+  const res = await fetch(url, { method:"GET", headers });
+  const json = await res.json();
+  if (json.code !== "0" && json.code !== 0) throw new Error(`[${json.code}] ${json.message}`);
+  return json.data;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MQTT over WebSocket (port 8084 — confirmed working)
+// ════════════════════════════════════════════════════════════════
+function encLen(n){const o=[];do{let b=n%128;n=Math.floor(n/128);if(n)b|=0x80;o.push(b);}while(n);return new Uint8Array(o);}
+function mStr(s){const b=new TextEncoder().encode(s),h=new Uint8Array(2);new DataView(h.buffer).setUint16(0,b.length);return concat(h,b);}
+function concat(...arrs){const t=arrs.reduce((s,a)=>s+a.length,0),r=new Uint8Array(t);let o=0;for(const a of arrs){r.set(a,o);o+=a.length;}return r;}
+
+function mqttConnect(id,u,p){
+  const vh=concat(mStr("MQTT"),new Uint8Array([4,0xC2,0,30]));
+  const pl=concat(mStr(id),mStr(u),mStr(p));
+  const body=concat(vh,pl);
+  return concat(new Uint8Array([0x10]),encLen(body.length),body);
+}
+function mqttSub(pid,t,q=1){
+  const p=new Uint8Array(2);new DataView(p.buffer).setUint16(0,pid);
+  const body=concat(p,mStr(t),new Uint8Array([q]));
+  return concat(new Uint8Array([0x82]),encLen(body.length),body);
+}
+function mqttPingReq(){return new Uint8Array([0xC0,0x00]);}
+function mqttPingResp(){return new Uint8Array([0xD0,0x00]);}
+
+let mqttWs = null, pingTimer = null, pongTimer = null;
+const RECONNECT_MS = 5000;
+
+// ── Each tab/device connects to MQTT independently ───────────────────────────
+// The broker handles multiple connections with the same clientId fine.
+// ecoflow-server.js also just reconnects directly — same approach here.
+
+function connectMqtt(creds, devices) {
+  const host     = creds.url.replace(/^mqtts?:\/\//, "");
+  const clientId = creds.certificateAccount;
+  const wsUrl    = `wss://${host}:8084/mqtt`;
+
+  setStatus("conn", "Connecting MQTT…");
+  if (mqttWs) { try { mqttWs.close(); } catch {} mqttWs = null; }
+  mqttWs = new WebSocket(wsUrl, ["mqtt"]);
+  mqttWs.binaryType = "arraybuffer";
+
+  let mqttBuf = new Uint8Array(0), pid = 1, subscribed = false;
+
+  mqttWs.onopen = () => {
+    mqttWs.send(mqttConnect(clientId, clientId, creds.certificatePassword));
+  };
+
+  mqttWs.onmessage = e => {
+    const chunk = new Uint8Array(e.data);
+    mqttBuf = concat(mqttBuf, chunk);
+
+    let off = 0;
+    while (off < mqttBuf.length) {
+      const fb   = mqttBuf[off], type = (fb >> 4) & 0xF;
+      let pos    = off + 1, mul = 1, rlen = 0;
+      for (let i=0;i<4;i++){if(pos>=mqttBuf.length)goto_end:{ off=mqttBuf.length; break goto_end;}
+        const b=mqttBuf[pos++];rlen+=(b&0x7F)*mul;mul*=128;if(!(b&0x80))break;}
+      if (pos + rlen > mqttBuf.length) break;
+      const body = mqttBuf.slice(pos, pos + rlen);
+      off = pos + rlen;
+
+      if (type === 2) { // CONNACK
+        if (body[1] !== 0) { setStatus("error", `MQTT rc=${body[1]}`); return; }
+        setStatus("live", "MQTT Live");
+        
+        mqttRetry = 2000; // unused but harmless
+        if (!subscribed) {
+          subscribed = true;
+          const now = Date.now();
+          for (const d of devices) {
+            mqttWs.send(mqttSub(pid++, `/open/${clientId}/${d.sn}/quota`, 1));
+            mqttWs.send(mqttSub(pid++, `/open/${clientId}/${d.sn}/status`, 1));
+          }
+          for (const d of devices) {
+            if (!state[d.sn]) {
+              // First time ever — start as waiting
+              state[d.sn] = { name:d.deviceName, status:"waiting", data:{}, lastSeen:null,
+                              firstSubscribedAt: Date.now() };
+            }
+            // DO NOT reset status on reconnect — keep live/offline/waiting as-is
+            // Only set firstSubscribedAt once
+            if (!state[d.sn].firstSubscribedAt) state[d.sn].firstSubscribedAt = Date.now();
+          }
+          renderDevices();
+        }
+        pingTimer = setInterval(() => {
+          if (mqttWs?.readyState === 1) {
+            mqttWs.send(mqttPingReq());
+            // If no pong within 15s, force reconnect
+            clearTimeout(pongTimer);
+            pongTimer = setTimeout(() => {
+              console.warn("No PINGRESP — forcing reconnect");
+              mqttWs?.close();
+            }, 15000);
+          }
+        }, 20000);
+      }
+      else if (type === 3) { // PUBLISH
+        const qos = (fb>>1)&3;
+        let p = 0;
+        const tl = (body[p]<<8)|body[p+1]; p+=2;
+        const topic = new TextDecoder().decode(body.slice(p, p+tl)); p+=tl;
+        if (qos > 0) p += 2;
+        const payload = new TextDecoder().decode(body.slice(p));
+        handleMqtt(topic, payload, devices, clientId);
+      }
+      else if (type === 9) {} // SUBACK
+      else if (type === 12) mqttWs.send(mqttPingResp()); // PINGREQ from broker
+      else if (type === 13) { clearTimeout(pongTimer); pongTimer = null; } // PINGRESP
+    }
+    mqttBuf = mqttBuf.slice(off);
+  };
+
+  mqttWs.onclose = () => {
+    clearInterval(pingTimer); pingTimer = null;
+    clearTimeout(pongTimer);  pongTimer = null;
+    setStatus("error", "Reconnecting…");
+    
+    setTimeout(() => connectMqtt(creds, devices), RECONNECT_MS);
+  };
+  mqttWs.onerror = () => mqttWs.close();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  STATE & MESSAGE HANDLING
+// ════════════════════════════════════════════════════════════════
+const state    = {};   // sn → {name, status, data, lastSeen}
+const hist     = {};   // sn → [{ts, watts}]
+const dailyWh  = {};   // sn → {"YYYY-MM-DD" → Wh}
+const hourlyWh = {};   // sn → {"YYYY-MM-DD HH" → Wh}
+const lastSnap = {};   // sn → {ts, watts}
+const logRows  = [];
+const snColorMap = {}; // sn → color — set once from API order, never changes
+const MAX_H    = 120, MAX_LOG = 50;
+const COLORS   = ["#00d4ff","#f5a623","#00e87a","#ff7f00"];
+const WH_KEY   = "ecoflow_wh";
+const WHH_KEY  = "ecoflow_wh_hourly";
+
+function colorFor(sn) {
+  if (!snColorMap[sn]) {
+    // Fallback: assign by insertion order if not yet set
+    const idx = Object.keys(snColorMap).length;
+    snColorMap[sn] = COLORS[idx % 4];
+  }
+  return snColorMap[sn];
+}
+
+// ── Persist Wh to localStorage ───────────────────────────────────────────────
+function saveWh() {
+  try {
+    // Daily — merge, never shrink
+    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    for (const [sn, days] of Object.entries(dailyWh)) {
+      if (!stored[sn]) stored[sn] = {};
+      for (const [day, wh] of Object.entries(days))
+        if (!(day in stored[sn]) || wh > stored[sn][day]) stored[sn][day] = wh;
+    }
+    for (const [sn, days] of Object.entries(stored)) {
+      if (!dailyWh[sn]) dailyWh[sn] = {};
+      for (const [day, wh] of Object.entries(days)) dailyWh[sn][day] = wh;
+    }
+    localStorage.setItem(WH_KEY, JSON.stringify(stored));
+
+    // Hourly — same merge strategy, keep last 7 days of hours
+    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      if (!storedH[sn]) storedH[sn] = {};
+      for (const [hr, wh] of Object.entries(hours))
+        if (!(hr in storedH[sn]) || wh > storedH[sn][hr]) storedH[sn][hr] = wh;
+    }
+    for (const [sn, hours] of Object.entries(storedH)) {
+      if (!hourlyWh[sn]) hourlyWh[sn] = {};
+      for (const [hr, wh] of Object.entries(hours)) hourlyWh[sn][hr] = wh;
+    }
+    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
+  } catch {}
+}
+
+function loadWh() {
+  try {
+    // Daily — last 30 days
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const pc     = n => String(n).padStart(2,"0");
+    const cutStr = `${cutoff.getFullYear()}-${pc(cutoff.getMonth()+1)}-${pc(cutoff.getDate())}`;
+    const saved = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    for (const [sn, days] of Object.entries(saved)) {
+      dailyWh[sn] = {};
+      for (const [day, wh] of Object.entries(days))
+        if (day >= cutStr) dailyWh[sn][day] = wh;
+    }
+    // Hourly — last 7 days
+    const cutH  = new Date(); cutH.setDate(cutH.getDate() - 7);
+    const ph    = n => String(n).padStart(2,"0");
+    const cutHStr = `${cutH.getFullYear()}-${ph(cutH.getMonth()+1)}-${ph(cutH.getDate())}`;
+    const savedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(savedH)) {
+      hourlyWh[sn] = {};
+      for (const [hr, wh] of Object.entries(hours))
+        if (hr.slice(0,10) >= cutHStr) hourlyWh[sn][hr] = wh;
+    }
+  } catch {}
+}
+
+// ── Offline watcher ───────────────────────────────────────────────────────────
+// PRIMARY: /status MQTT topic → instant online/offline
+// FALLBACK: only if no /status message AND no data for 5 min → offline
+// NO "waiting" loop — once subscribed, only data or /status changes state
+setInterval(() => {
+  let changed = false;
+  const now = Date.now();
+  for (const [sn, s] of Object.entries(state)) {
+    if (s.status === "live" && s.lastSeen && (now - s.lastSeen) > 300000) {
+      // 5 min no data and no status message → assume offline
+      s.status = "offline"; changed = true;
+    }
+    // "waiting" → only flip to offline after 5 min of silence too
+    // This prevents the waiting→offline→waiting loop on reconnects
+    if (s.status === "waiting" && s.firstSubscribedAt && (now - s.firstSubscribedAt) > 300000) {
+      s.status = "offline"; changed = true;
+    }
+  }
+  if (changed) { renderDevices(); renderLog(); }
+}, 60000); // check every 60s — very calm, /status topic handles the fast path
+
+function handleMqtt(topic, payload, devices, clientId) {
+  const parts = topic.split("/");
+  const sn    = parts[parts.length - 2];
+  const kind  = parts[parts.length - 1];
+  const dev   = devices.find(d => d.sn === sn);
+  const name  = dev?.deviceName ?? sn;
+
+  let msg;
+  try { msg = JSON.parse(payload); } catch { return; }
+
+  if (kind === "status") {
+    const online = msg?.params?.status === 1 || msg?.status === 1;
+    if (!state[sn]) state[sn] = { name, status:"waiting", data:{}, lastSeen:null };
+    if (online) {
+      state[sn].status  = "live";
+      state[sn].lastSeen = Date.now();
+    } else {
+      // offline message — covers both "waiting" and "live" states
+      state[sn].status = "offline";
+    }
+    renderDevices();
+    return;
+  }
+
+  // quota — merge partial update into accumulated state
+  const incoming = msg.param ?? msg.params ?? msg;
+  if (!incoming || typeof incoming !== "object") return;
+
+  if (!state[sn]) state[sn] = { name, status:"live", data:{}, lastSeen:null };
+  Object.assign(state[sn].data, incoming);
+  // Always flip to live when data arrives — fixes stuck-offline after reconnect
+  state[sn].status   = "live";
+  state[sn].lastSeen = Date.now();
+  // Show power section immediately on first data
+  document.getElementById("powerSection").style.display = "";
+
+  const data = state[sn].data;
+  const watts = (data.powGetPv ?? 0) + (data.powGetPv2 ?? 0);
+
+  // History ring buffer
+  if (!hist[sn]) hist[sn] = [];
+  hist[sn].push({ ts: Date.now(), watts });
+  if (hist[sn].length > MAX_H) hist[sn].shift();
+
+  // Wh accumulation
+  accumulateWh(sn, watts);
+
+  // Log
+  logRows.unshift({ ts: new Date(), sn, name, data: {...data} });
+  if (logRows.length > MAX_LOG) logRows.pop();
+
+  setStatus("live", "Live");
+  renderDevices();
+  renderPowerChart();
+  renderWhChart();
+  renderLog();
+}
+
+function accumulateWh(sn, watts) {
+  const now = Date.now();
+  const d   = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const day  = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const hour = `${day} ${pad(d.getHours())}`; // local time "YYYY-MM-DD HH"
+
+  if (!dailyWh[sn])        dailyWh[sn]        = {};
+  if (!dailyWh[sn][day])   dailyWh[sn][day]   = 0;
+  if (!hourlyWh[sn])       hourlyWh[sn]       = {};
+  if (!hourlyWh[sn][hour]) hourlyWh[sn][hour] = 0;
+
+  if (lastSnap[sn]) {
+    const dt  = (now - lastSnap[sn].ts) / 3600000;
+    const ld  = new Date(lastSnap[sn].ts);
+    const lp  = n => String(n).padStart(2,"0");
+    const lastDay  = `${ld.getFullYear()}-${lp(ld.getMonth()+1)}-${lp(ld.getDate())}`;
+    const lastHour = `${lastDay} ${lp(ld.getHours())}`;
+
+    if (dt > 0 && dt <= 0.05) {
+      const wh = ((watts + lastSnap[sn].watts) / 2) * dt;
+      dailyWh[sn][day] += wh;
+      if (lastHour !== hour) {
+        // Hour boundary crossed — split proportionally by local minutes
+        const minIntoHour = d.getMinutes() + d.getSeconds() / 60;
+        const fracNew = minIntoHour / 60;
+        if (!hourlyWh[sn][lastHour]) hourlyWh[sn][lastHour] = 0;
+        hourlyWh[sn][lastHour] += wh * (1 - fracNew);
+        hourlyWh[sn][hour]     += wh * fracNew;
+      } else {
+        hourlyWh[sn][hour] += wh;
+      }
+    }
+    // Gap > 3 min → stale, skip accumulation
+  }
+
+  lastSnap[sn] = { ts: now, watts };
+  saveWh();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RENDERING
+// ════════════════════════════════════════════════════════════════
+function setStatus(cls, text) {
+  const badge = document.getElementById("statusBadge");
+  badge.className = "status-badge " + cls;
+  badge.title = text; // tooltip on hover/long-press
+}
+
+function cardHtml(sn, s) {
+  const nameDisplay = `
+    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+      <div id="name-${sn}" class="device-name" onclick="editName('${sn}')" title="Click to rename" style="cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        ${esc(deviceName(sn, s.name))}
+      </div>
+      <span class="online-badge ${s.status==="live"?"yes":s.status==="offline"?"no":"wait"}" style="flex-shrink:0">
+        ${s.status==="live"?"LIVE":s.status==="offline"?"OFFLINE":"WAIT"}
+      </span>
+    </div>
+    <div class="device-sn">${sn}</div>`;
+
+  if (s.status === "offline") return [`device-card offline`, `
+    <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
+    <div class="offline-msg">
+      <div class="offline-icon">🌙</div>
+      <div class="offline-text">Device offline<br>No solar input</div>
+      <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "No data"}</div>
+    </div>`];
+
+  if (s.status === "waiting") return [`device-card`, `
+    <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
+    <div class="offline-msg"><div class="offline-icon">⏳</div><div class="offline-text">Waiting for data…</div></div>`];
+
+  const d = s.data;
+  const pv1 = d.powGetPv??0, pv2 = d.powGetPv2??0, invW = d.gridConnectionPower??0;
+  const pv1V = d.plugInInfoPvVol??null, pv2V = d.plugInInfoPv2Vol??null;
+  const pv1A = d.plugInInfoPvAmp??null, pv2A = d.plugInInfoPv2Amp??null;
+  const vol = d.gridConnectionVol??null, freq = d.gridConnectionFreq??null;
+  const batSoc = d.batSoc??null;
+  const batColor = batSoc===null?"var(--muted)":batSoc>20?"var(--bat)":"var(--bat-low)";
+  return [`device-card live`, `
+    <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
+    <div class="power-flow">
+      <div class="flow-node"><div class="flow-icon">☀️</div><div class="flow-label">SOLAR</div>
+        <div class="flow-value solar">${(pv1+pv2).toFixed(0)}</div><div class="flow-unit">W</div></div>
+      <div class="flow-divider"></div>
+      <div class="flow-node"><div class="flow-icon">⚡</div><div class="flow-label">GRID</div>
+        <div class="flow-value inv">${invW.toFixed(0)}</div><div class="flow-unit">W</div></div>
+      <div class="flow-divider"></div>
+      <div class="flow-node"><div class="flow-icon">🔋</div><div class="flow-label">BATTERY</div>
+        <div class="flow-value bat" style="color:${batColor}">${batSoc!==null?batSoc+"%":"—"}</div><div class="flow-unit"></div></div>
+    </div>
+    ${batSoc!==null?`<div class="bat-row">
+      <span class="bat-label">SOC</span>
+      <div class="bat-track"><div class="bat-fill" style="width:${Math.max(0,Math.min(100,batSoc))}%;background:${batColor}"></div></div>
+      <span class="bat-pct" style="color:${batColor}">${batSoc}%</span>
+    </div>`:""}
+    <div class="metrics">
+      <div class="metric"><span class="metric-label">PV1</span><span class="metric-value hi">${pv1.toFixed(1)} W</span></div>
+      <div class="metric"><span class="metric-label">PV2</span><span class="metric-value hi">${pv2.toFixed(1)} W</span></div>
+      <div class="metric"><span class="metric-label">PV1 V</span><span class="metric-value">${pv1V!==null?pv1V.toFixed(1)+" V":"—"}</span></div>
+      <div class="metric"><span class="metric-label">PV2 V</span><span class="metric-value">${pv2V!==null?pv2V.toFixed(1)+" V":"—"}</span></div>
+      <div class="metric"><span class="metric-label">PV1 A</span><span class="metric-value">${pv1A!==null?pv1A.toFixed(2)+" A":"—"}</span></div>
+      <div class="metric"><span class="metric-label">PV2 A</span><span class="metric-value">${pv2A!==null?pv2A.toFixed(2)+" A":"—"}</span></div>
+      <div class="metric"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
+      <div class="metric"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
+    </div>
+    <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>`];
+}
+
+function renderDevices() {
+  const grid = document.getElementById("devicesGrid");
+  const sns  = Object.keys(state);
+  if (!sns.length) return;
+
+  // Remove placeholder
+  const placeholder = grid.querySelector("[data-placeholder]");
+  if (placeholder) placeholder.remove();
+
+  sns.forEach(sn => {
+    const s = state[sn];
+    const id = `dc-${sn}`;
+    const [cls, inner] = cardHtml(sn, s);
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement("div");
+      el.id = id;
+      grid.appendChild(el);
+    }
+    // Key = status + lastSeen + key live values — only redraw when something changed
+    const key = s.status + (s.lastSeen||0) +
+      (s.data?.powGetPv??0).toFixed(0) + (s.data?.gridConnectionPower??0).toFixed(0);
+    if (el.dataset.key !== key) {
+      el.className = cls;
+      el.innerHTML = inner;
+      el.dataset.key = key;
+    }
+  });
+}
+
+function renderPowerChart() {
+  const container = document.getElementById("chartsContainer");
+  const sns = Object.keys(hist);
+  if (!sns.length) return;
+
+  // One shared chart wrap
+  let wrap = document.getElementById("cw-combined");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "cw-combined";
+    wrap.className = "chart-wrap";
+    wrap.innerHTML = `
+      <div class="chart-header">
+        <div class="chart-legend" id="power-legend"></div>
+        <span id="power-time" style="font-family:var(--mono);font-size:.65rem;color:var(--muted)"></span>
+      </div>
+      <canvas id="cc-combined" height="140"></canvas>`;
+    container.appendChild(wrap);
+  }
+
+  // Legend — sorted by API order for consistency
+  const sortedSns = sns.sort((a,b) => Object.keys(snColorMap).indexOf(a) - Object.keys(snColorMap).indexOf(b));
+  document.getElementById("power-legend").innerHTML = sortedSns.map(sn => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colorFor(sn)}"></div>
+      <span style="color:${colorFor(sn)}">${esc(deviceName(sn, state[sn]?.name ?? sn))}</span>
+    </div>`).join("");
+  const canvas = document.getElementById("cc-combined");
+  if (!canvas) return;
+  const dpr = devicePixelRatio || 1, W = canvas.offsetWidth || 600, H = 140;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr);
+
+  const PL = 42, PR = 10, PT = 10, PB = 8;
+  const cW = W - PL - PR, cH = H - PT - PB;
+
+  ctx.fillStyle = "#060c1a"; ctx.fillRect(0, 0, W, H);
+
+  const allWatts = sortedSns.flatMap(sn => (hist[sn]||[]).map(p => p.watts));
+  const maxW = Math.max(...allWatts, 50);
+
+  ctx.strokeStyle = "rgba(30,58,95,.55)"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = PT + cH * i / 4;
+    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
+  }
+
+  sortedSns.forEach(sn => {
+    const pts   = hist[sn];
+    if (!pts || pts.length < 2) return;
+    const color = colorFor(sn);
+
+    // Line
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = "round";
+    pts.forEach((p, i) => {
+      const x = PL + cW * i / (MAX_H - 1);
+      const y = PT + cH * (1 - p.watts / maxW);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill under
+    const grad = ctx.createLinearGradient(0, PT, 0, PT + cH);
+    grad.addColorStop(0, color + "40");
+    grad.addColorStop(1, "transparent");
+    ctx.beginPath(); ctx.fillStyle = grad;
+    pts.forEach((p, i) => {
+      const x = PL + cW * i / (MAX_H - 1);
+      const y = PT + cH * (1 - p.watts / maxW);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo(PL + cW * (pts.length - 1) / (MAX_H - 1), PT + cH);
+    ctx.lineTo(PL, PT + cH); ctx.closePath(); ctx.fill();
+
+    // Latest value dot
+    const lat = pts.at(-1);
+    if (lat) {
+      const x = PL + cW * (pts.length - 1) / (MAX_H - 1);
+      const y = PT + cH * (1 - lat.watts / maxW);
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = color; ctx.fill();
+    }
+  });
+
+  // Y axis labels
+  ctx.fillStyle = "rgba(107,138,170,.9)"; ctx.font = "9px monospace"; ctx.textAlign = "right";
+  for (let i = 0; i <= 4; i++)
+    ctx.fillText(Math.round(maxW * (1 - i / 4)) + "W", PL - 4, PT + cH * i / 4 + 3);
+
+  // Latest time + values
+  const latestTs = Math.max(...sns.map(sn => hist[sn].at(-1)?.ts ?? 0));
+  const vals = sns.map((sn, i) => {
+    const w = hist[sn].at(-1)?.watts ?? 0;
+    return `<span style="color:${COLORS[i%4]}">${w.toFixed(0)}W</span>`;
+  }).join(" · ");
+  document.getElementById("power-time").innerHTML =
+    latestTs ? `${vals} &nbsp;${fmtTime(new Date(latestTs))}` : "";
+}
+
+function renderWhChart() {
+  const buckets  = aggregateWh(currentPeriod);
+  const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
+  if (!sns.length) return;
+  const allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn])))].sort();
+  if (!allLabels.length) return;
+  document.getElementById("whSection").style.display = "";
+
+  // Use LOCAL time throughout — fixes 2h timezone offset
+  const now      = new Date();
+  const pad      = n => String(n).padStart(2,"0");
+  const today    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const nowHour  = `${today} ${pad(now.getHours())}`;
+
+  const thisKey  = currentPeriod==="hour"  ? nowHour
+                 : currentPeriod==="month" ? today.slice(0,7)
+                 : currentPeriod==="year"  ? today.slice(0,4)
+                 : today;
+
+  const periodWh = sns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
+  const periodLabel = currentPeriod==="hour"  ? "This hour"
+                    : currentPeriod==="day"   ? "Today"
+                    : currentPeriod==="month" ? "This month"
+                    : "This year";
+  document.getElementById("whTotal").textContent =
+    `${periodLabel}: ${periodWh>=1000?(periodWh/1000).toFixed(2)+" kWh":periodWh.toFixed(0)+" Wh"}`;
+
+  // Legend — use same order for all tabs so colors are consistent
+  const allSns = Object.keys(state); // stable order from API
+  const orderedSns = sns.sort((a,b) => allSns.indexOf(a) - allSns.indexOf(b));
+
+  document.getElementById("whLegend").innerHTML = orderedSns.map((sn,i)=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i%4]}"></div>
+     <span style="color:${COLORS[i%4]}">${esc(deviceName(sn, state[sn]?.name??sn))}</span></div>`
+  ).join("");
+  const exportBtns = document.getElementById("exportBtns");
+  if (exportBtns) exportBtns.innerHTML =
+    `<button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>` +
+    orderedSns.map((sn,i)=>`<button class="btn" style="color:${COLORS[i%4]};border-color:${COLORS[i%4]}40"
+      onclick="downloadHistory('${sn}')">↓ ${esc(deviceName(sn, state[sn]?.name??sn))}</button>`).join("");
+
+  const canvas=document.getElementById("whChart");
+  const dpr=devicePixelRatio||1, W=canvas.offsetWidth||600, H=160;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
+  const PL=56,PR=10,PT=14,PB=28, cW=W-PL-PR, cH=H-PT-PB;
+  ctx.fillStyle="#060c1a"; ctx.fillRect(0,0,W,H);
+  const maxWh=Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn][l]??0)),100);
+  ctx.strokeStyle="rgba(30,58,95,.6)"; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=PT+cH*i/4;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(W-PR,y);ctx.stroke();}
+  const gW=cW/allLabels.length, bW=Math.max(3,Math.min(28,gW/(orderedSns.length+1))), gP=(gW-bW*orderedSns.length)/2;
+
+  allLabels.forEach((label,di)=>{
+    const gx=PL+di*gW, isCurrent=label===thisKey;
+    orderedSns.forEach((sn,si)=>{
+      const wh=buckets[sn][label]??0, bH=wh>0?Math.max(2,cH*wh/maxWh):0;
+      const x=gx+gP+si*bW, y=PT+cH-bH, c=COLORS[si%4];
+      const g=ctx.createLinearGradient(0,y,0,y+bH);
+      g.addColorStop(0,isCurrent?c:c+"bb"); g.addColorStop(1,isCurrent?c+"88":c+"33");
+      ctx.fillStyle=g; ctx.beginPath();
+      if(ctx.roundRect)ctx.roundRect(x,y,bW-1,bH,[2,2,0,0]); else ctx.rect(x,y,bW-1,bH);
+      ctx.fill();
+      if(bH>16&&bW>10){
+        ctx.fillStyle=isCurrent?"#fff":"rgba(200,220,240,.8)";
+        ctx.font=`${isCurrent?"bold ":""}8px monospace`; ctx.textAlign="center";
+        ctx.fillText(wh>=1000?(wh/1000).toFixed(1)+"k":wh.toFixed(0), x+bW/2-.5, y-3);
+      }
+    });
+
+    // X-axis label — short, readable, local time
+    ctx.fillStyle=isCurrent?"#e0f0ff":"rgba(107,138,170,.85)";
+    ctx.font=`${isCurrent?"bold ":""}9px monospace`; ctx.textAlign="center";
+    let disp;
+    if (currentPeriod==="hour") {
+      // label = "YYYY-MM-DD HH" — show "14h" / "15h" in 24h format
+      const h = parseInt(label.slice(11), 10);
+      disp = label===nowHour ? "Now" : `${h}h`;
+    } else if (currentPeriod==="day") {
+      disp = label===today ? "Today" : label.slice(8); // DD only
+    } else if (currentPeriod==="month") {
+      // Show short month name e.g. "Jan", "Feb"
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      disp = months[parseInt(label.slice(5),10)-1] ?? label.slice(5);
+    } else {
+      disp = label; // YYYY
+    }
+    ctx.fillText(disp, gx+gW/2, H-PB+14);
+  });
+
+  ctx.fillStyle="rgba(107,138,170,.9)"; ctx.font="9px monospace"; ctx.textAlign="right";
+  for(let i=0;i<=4;i++){const v=maxWh*(1-i/4);
+    ctx.fillText(v>=1000?(v/1000).toFixed(1)+"kWh":v.toFixed(0)+"Wh", PL-4, PT+cH*i/4+3);}
+}
+
+function editName(sn) {
+  const current = customNames[sn] || state[sn]?.originalName || state[sn]?.name || sn;
+  const newName = prompt(`Rename device:\n${sn}`, current);
+  if (newName === null) return; // cancelled
+  const trimmed = newName.trim();
+  if (trimmed) {
+    saveName(sn, trimmed);
+    if (state[sn]) state[sn].name = trimmed;
+  } else {
+    // Empty → restore original
+    delete customNames[sn];
+    localStorage.setItem(NAMES_KEY, JSON.stringify(customNames));
+    if (state[sn]) state[sn].name = state[sn].originalName || sn;
+  }
+  const card = document.getElementById(`dc-${sn}`);
+  if (card) card.dataset.key = "";
+  renderDevices();
+  renderWhChart(); // update legend/export with new name
+}
+
+function renderLog() {
+  const anyLive = Object.values(state).some(s => s.status === "live");
+  document.getElementById("logSection").style.display   = anyLive ? "" : "none";
+  document.getElementById("powerSection").style.display = anyLive ? "" : "none";
+  const body = document.getElementById("logBody");
+  // Build device→index map for row coloring
+  const snList = Object.keys(state);
+  body.innerHTML = logRows.slice(0,30).map(r => {
+    const snIdx = snList.indexOf(r.sn) % 2;
+    const d = r.data;
+    const pv1=d.powGetPv??0, pv2=d.powGetPv2??0, inv=d.gridConnectionPower??0;
+    const freq=d.gridConnectionFreq??null;
+    const name = deviceName(r.sn, r.name);
+    return `<tr class="log-row-${snIdx}">
+      <td class="col-time">${fmtTime(r.ts)}</td>
+      <td style="color:${snIdx===0?"#22e8ff":"#ffb830"};max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</td>
+      <td style="color:#ffcc44">${(pv1+pv2).toFixed(0)}W</td>
+      <td style="color:#22e8ff">${inv.toFixed(0)}W</td>
+      <td style="color:${(d.batSoc??100)>20?"var(--bat)":"var(--bat-low)"}">${d.batSoc!=null?d.batSoc+"%":"—"}</td>
+      <td style="color:var(--muted)">${freq!=null?freq.toFixed(1):"—"}</td>
+    </tr>`;
+  }).join("");
+}
+
+// ════════════════════════════════════════════════════════════════
+//  WEATHER (open-meteo, no API key needed)
+// ════════════════════════════════════════════════════════════════
+const WMO = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",
+  61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",
+  95:"⛈️",96:"⛈️",99:"⛈️"};
+
+async function fetchWeather() {
+  try {
+    const pos = await new Promise((res) =>
+      navigator.geolocation
+        ? navigator.geolocation.getCurrentPosition(res, ()=>res(null), {timeout:4000})
+        : res(null)
+    );
+    const lat = pos?.coords?.latitude  ?? 50.93;
+    const lon = pos?.coords?.longitude ?? 6.96;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover&wind_speed_unit=ms&timezone=auto`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const c = d.current;
+    const icon  = WMO[c.weathercode] ?? "🌡️";
+    const temp  = Math.round(c.temperature_2m);
+    const speed = c.windspeed_10m;
+    const dir   = c.winddirection_10m;
+    const cloud = c.cloudcover;
+    const windArrow = `<span style="display:inline-block;transform:rotate(${dir}deg);line-height:1">↑</span>`;
+    const inlineEl = document.getElementById("weatherInline");
+    if (inlineEl) {
+      inlineEl.style.display = "";
+      inlineEl.innerHTML = `${icon} <b style="color:#ffcc44">${temp}°C</b> &nbsp;${windArrow}${speed}m/s &nbsp;☁️${cloud}%`;
+    }
+  } catch {}
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PERIOD TOGGLE (Day / Month / Year)
+// ════════════════════════════════════════════════════════════════
+let currentPeriod = "day";
+
+function setPeriod(p) {
+  currentPeriod = p;
+  ["hour","day","month","year"].forEach(x => {
+    const btn = document.getElementById("period"+x[0].toUpperCase()+x.slice(1));
+    if (btn) { btn.style.color = x===p?"#ffb830":""; btn.style.borderColor = x===p?"#ffb830":""; }
+  });
+  renderWhChart();
+}
+
+function aggregateWh(period) {
+  if (period === "hour") {
+    // Show last 24 hours rolling — works across midnight too
+    const result = {};
+    const now    = new Date();
+    const pad    = n => String(n).padStart(2,"0");
+    // Build set of last 24 hour keys (local time)
+    const validHours = new Set();
+    for (let i = 0; i < 24; i++) {
+      const d2  = new Date(now.getTime() - i * 3600000);
+      const key = `${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())} ${pad(d2.getHours())}`;
+      validHours.add(key);
+    }
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      result[sn] = {};
+      for (const [hr, wh] of Object.entries(hours))
+        if (validHours.has(hr)) result[sn][hr] = wh;
+    }
+    return result;
+  }
+  const result = {};
+  for (const [sn, days] of Object.entries(dailyWh)) {
+    result[sn] = {};
+    for (const [day, wh] of Object.entries(days)) {
+      const label = period==="month" ? day.slice(0,7)
+                  : period==="year"  ? day.slice(0,4)
+                  : day;
+      result[sn][label] = (result[sn][label] ?? 0) + wh;
+    }
+  }
+  return result;
+}
+function downloadHistory(snFilter) {
+  const buckets   = aggregateWh(currentPeriod);
+  const sns       = snFilter === "all" ? Object.keys(buckets) : [snFilter];
+  const allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn] ?? {})))].sort();
+
+  // Column names and units by period
+  const labelCol = currentPeriod==="hour" ? "hour" : currentPeriod==="month" ? "month"
+                 : currentPeriod==="year" ? "year" : "date";
+  const useKwh   = currentPeriod==="month" || currentPeriod==="year";
+  const unit     = useKwh ? "kWh" : "Wh";
+  const div      = useKwh ? 1000 : 1;
+  const dec      = useKwh ? 3 : 1;
+
+  const fmtLabel = l => currentPeriod==="hour"
+    ? `${l.slice(0,10)} ${String(parseInt(l.slice(11),10)).padStart(2,"0")}:00` : l;
+
+  const rows = [`${labelCol},device,${unit}`];
+  for (const sn of sns) {
+    const name = deviceName(sn, state[sn]?.name ?? sn);
+    for (const label of allLabels) {
+      const wh = buckets[sn]?.[label] ?? 0;
+      rows.push(`${fmtLabel(label)},"${name}",${(wh/div).toFixed(dec)}`);
+    }
+  }
+
+  const blob = new Blob([rows.join("\n")], { type:"text/csv" });
+  const d = new Date(), pad = n => String(n).padStart(2,"0");
+  const ts = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+  const a  = Object.assign(document.createElement("a"), {
+    href: URL.createObjectURL(blob),
+    download: `ecoflow-${currentPeriod}-${snFilter}-${ts}.csv`
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ── Time formatting — follows browser/OS locale (12h or 24h automatically) ───
+const USE_24H = (() => {
+  // Detect if browser prefers 24h by checking what it formats 13:00 as
+  const test = new Intl.DateTimeFormat(navigator.language, { hour: "numeric" })
+    .format(new Date(2000, 0, 1, 13, 0, 0));
+  return !test.includes("1") || test.includes("13"); // "13" = 24h, "1 PM" = 12h
+})();
+
+function fmtTime(date) {
+  return date.toLocaleTimeString(navigator.language, {
+    hour:   "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: !USE_24H ? false : undefined
+  });
+}
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
+async function init() {
+  if (!CFG.accessKey || !CFG.secretKey) { showSetup(); return; }
+  setStatus("conn", "Fetching devices…");
+  try {
+    const devices = await apiGet("/iot-open/sign/device/list");
+    const creds   = await apiGet("/iot-open/sign/certification");
+    // Seed state from API — use online field for immediate correct status
+    devices.forEach((d, i) => {
+      snColorMap[d.sn] = COLORS[i % 4];
+      const isOnline = d.online === 1;
+      if (!state[d.sn]) {
+        state[d.sn] = {
+          name: d.deviceName, originalName: d.deviceName,
+          // Set correct status immediately from API — no "waiting" limbo
+          status: isOnline ? "waiting" : "offline",
+          data: {}, lastSeen: null, firstSubscribedAt: Date.now()
+        };
+      } else {
+        state[d.sn].originalName = d.deviceName;
+        // Only update to offline from API if not currently live
+        if (!isOnline && state[d.sn].status !== "live") state[d.sn].status = "offline";
+      }
+      if (customNames[d.sn]) state[d.sn].name = customNames[d.sn];
+    });
+    window._initCreds   = creds;
+    window._initDevices = devices;
+    renderDevices();
+    renderWhChart();
+    connectMqtt(creds, devices);
+  } catch(e) {
+    setStatus("error", "API error");
+    console.error(e);
+    showSetup();
+  }
+}
+
+window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); });
+
+// ── Wake Lock ─────────────────────────────────────────────────────────────────
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+      document.getElementById("wakeLockIcon").style.opacity = ".3";
+      document.getElementById("wakeLockIcon").title = "Screen lock inactive";
+    });
+    document.getElementById("wakeLockIcon").style.opacity = "1";
+    document.getElementById("wakeLockIcon").title = "Screen stays on";
+  } catch {}
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") requestWakeLock();
+});
+
+requestWakeLock();
+loadConfig();
+loadNames();
+loadWh();
+renderWhChart();
+fetchWeather();
+setInterval(fetchWeather, 600000); // refresh weather every 10 min
+init();
+</script>
+</body>
+</html>
