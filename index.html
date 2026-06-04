@@ -1193,22 +1193,62 @@ window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); }
       sizes:"any", type:"image/svg+xml", purpose:"any maskable"
     }]
   });
+  // Manifest href set by SW registration below — fallback for file://
   document.getElementById("manifestLink").href = "data:application/manifest+json," + encodeURIComponent(m);
 
-  // Service worker via blob URL — Chrome allows this on https:// origins
+  // Icon SVG — embedded as base64 for SW to serve as a real URL
+  const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="112" fill="#060c1a"/>
+    <polygon points="282,40 92,272 236,272 230,472 420,240 276,240" fill="#ffb830"/>
+  </svg>`;
+
+  // Service worker intercepts /ecoflow-icon.svg and /ecoflow-manifest.json
+  // so Chrome can fetch real URLs for the PWA icon and manifest
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    const sw = [
-      'const C="ecoflow-v2";',
-      'self.addEventListener("install",()=>self.skipWaiting());',
-      'self.addEventListener("activate",()=>clients.claim());',
-      'self.addEventListener("fetch",e=>{',
-      '  if(e.request.mode==="navigate")',
-      '    e.respondWith(fetch(e.request).catch(()=>caches.match("/")||fetch(e.request)));',
-      '});'
-    ].join("\n");
-    const url = URL.createObjectURL(new Blob([sw], {type:"text/javascript"}));
-    navigator.serviceWorker.register(url, {scope:"./"})
-      .then(()=>URL.revokeObjectURL(url)).catch(()=>{});
+    const iconB64 = btoa(ICON_SVG);
+    const manifestJson = JSON.stringify({
+      name:"EcoFlow Monitor", short_name:"EcoFlow",
+      description:"EcoFlow PowerStream MicroInverter real-time monitor",
+      start_url:"./", display:"standalone",
+      background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
+      icons:[
+        { src:"./ecoflow-icon.svg", sizes:"any", type:"image/svg+xml", purpose:"any maskable" },
+        { src:"./ecoflow-icon.svg", sizes:"512x512", type:"image/svg+xml" }
+      ]
+    });
+    const sw = `
+const ICON = atob("${iconB64}");
+const MANIFEST = ${JSON.stringify(JSON.stringify({
+      name:"EcoFlow Monitor", short_name:"EcoFlow",
+      description:"EcoFlow PowerStream MicroInverter real-time monitor",
+      start_url:"./", display:"standalone",
+      background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
+      icons:[
+        { src:"./ecoflow-icon.svg", sizes:"any", type:"image/svg+xml", purpose:"any maskable" },
+        { src:"./ecoflow-icon.svg", sizes:"512x512", type:"image/svg+xml" }
+      ]
+    }))};
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", () => clients.claim());
+self.addEventListener("fetch", e => {
+  const url = new URL(e.request.url);
+  if (url.pathname.endsWith("ecoflow-icon.svg")) {
+    e.respondWith(new Response(ICON, {headers:{"Content-Type":"image/svg+xml","Cache-Control":"max-age=86400"}}));
+    return;
+  }
+  if (url.pathname.endsWith("ecoflow-manifest.json")) {
+    e.respondWith(new Response(MANIFEST, {headers:{"Content-Type":"application/manifest+json"}}));
+    return;
+  }
+  if (e.request.mode === "navigate")
+    e.respondWith(fetch(e.request).catch(() => fetch(e.request)));
+});`;
+    const swUrl = URL.createObjectURL(new Blob([sw], {type:"text/javascript"}));
+    navigator.serviceWorker.register(swUrl, {scope:"./"}).then(reg => {
+      URL.revokeObjectURL(swUrl);
+      // Point manifest link to SW-served URL
+      document.getElementById("manifestLink").href = "./ecoflow-manifest.json";
+    }).catch(() => {});
   }
 })();
 
