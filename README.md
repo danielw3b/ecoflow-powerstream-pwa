@@ -6,7 +6,8 @@ https://danielw3b.github.io/ecoflow-powerstream-pwa/
 
 ![EcoFlow Monitor Screenshot](screenshot-mobile.png)
 
-![EcoFlow Monitor Screenshot](screenshot.png){:height="50%" width="50%"}
+
+![EcoFlow Monitor Screenshot](screenshot.png)
 
 ## Features
 
