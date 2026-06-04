@@ -4,7 +4,9 @@ A single-file Progressive Web App for monitoring EcoFlow PowerStream MicroInvert
 
 https://danielw3b.github.io/ecoflow-powerstream-pwa/
 
-![EcoFlow Monitor Screenshot](screenshot.png)
+![EcoFlow Monitor Screenshot](screenshot-mobile.png|width=200)
+
+![EcoFlow Monitor Screenshot](screenshot.png|width=400)
 
 ## Features
 
