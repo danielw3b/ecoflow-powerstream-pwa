@@ -3,9 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0a0f1e">
+<meta name="theme-color" content="#060c1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EcoFlow">
 <title>EcoFlow Monitor</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230a0f1e'/><polygon points='55,8 18,52 46,52 45,92 82,48 54,48' fill='%23f5a623'/></svg>">
+<link rel="manifest" href="#" id="manifestLink">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23060c1a'/><polygon points='55,8 18,52 46,52 45,92 82,48 54,48' fill='%23ffb830'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23060c1a'/><polygon points='55,8 18,52 46,52 45,92 82,48 54,48' fill='%23ffb830'/></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
 :root {
@@ -182,6 +188,8 @@ canvas{width:100%;display:block;}
     </div>
     <span id="wakeLockIcon" title="Screen lock inactive"
       style="font-size:1rem;opacity:.3;cursor:default;user-select:none;line-height:1">🔆</span>
+    <button id="installBtn" class="btn small" onclick="installPwa()" title="Install as PWA"
+      style="display:none">⬇ Install</button>
     <button class="btn small" onclick="showSetup()" title="Settings">⚙</button>
   </div>
 </header>
@@ -1171,6 +1179,47 @@ async function init() {
 }
 
 window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); });
+
+// ── PWA — inline manifest + service worker + install prompt ──────────────────
+(function() {
+  const manifest = {
+    name:"EcoFlow Monitor", short_name:"EcoFlow",
+    description:"EcoFlow PowerStream MicroInverter real-time monitor",
+    start_url:"./", display:"standalone",
+    background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
+    icons:[{ src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23060c1a'/><polygon points='55,8 18,52 46,52 45,92 82,48 54,48' fill='%23ffb830'/></svg>",
+      sizes:"any", type:"image/svg+xml", purpose:"any maskable" }]
+  };
+  const mblob = new Blob([JSON.stringify(manifest)], {type:"application/manifest+json"});
+  document.getElementById("manifestLink").href = URL.createObjectURL(mblob);
+
+  // Service worker — enables install prompt + offline shell (not on file://)
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    const sw = `const C="ecoflow-v1";
+self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.add("/")));self.skipWaiting();});
+self.addEventListener("activate",()=>clients.claim());
+self.addEventListener("fetch",e=>e.respondWith(fetch(e.request).catch(()=>caches.match(e.request))));`;
+    const swBlob = new Blob([sw], {type:"application/javascript"});
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+  }
+})();
+
+let _installPrompt = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); _installPrompt = e;
+  const btn = document.getElementById("installBtn");
+  if (btn) btn.style.display = "";
+});
+window.addEventListener("appinstalled", () => {
+  _installPrompt = null;
+  const btn = document.getElementById("installBtn");
+  if (btn) btn.style.display = "none";
+});
+function installPwa() {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(() => { _installPrompt = null; });
+}
 
 // ── Wake Lock ─────────────────────────────────────────────────────────────────
 let wakeLock = null;
