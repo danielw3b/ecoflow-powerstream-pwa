@@ -1187,88 +1187,55 @@ window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); }
 // ── PWA — ZERO-DEPENDENCY INLINE DATA MANIFEST ───────────────────────────────
 // ── PWA — PORTABLE UNIFIED INTERCEPTION INSTALLER ────────────────────────────
 // ── PWA — data: manifest + blob SW + install prompt ──────────────────────────
+// ── PWA — SINGLE-FILE DYNAMIC ICON & MANIFEST ENGINE ─────────────────────
 (function() {
-  // 1. FIXED: Corrected space-separated purpose tags & XML quotes in data fallback
-  // data: URI manifest works on GitHub Pages, file://, and localhost
-  const m = JSON.stringify({
-    name:"EcoFlow Monitor", short_name:"EcoFlow",
-    description:"EcoFlow PowerStream MicroInverter real-time monitor",
-    start_url:"./", display:"standalone",
-    background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
-    icons:[
+  // 1. Clean, high-resolution SVG string template
+  const ICON_SVG = `<svg xmlns="http://w3.org" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/><polygon points="282,40 92,272 236,272 230,472 420,240 276,240" fill="#ffb830"/></svg>`;
+
+  // 2. DYNAMIC ICON INTERCEPTION LOOP
+  // If Chrome requests the file path to download the icon, serve the raw vector data instantly
+  if (window.location.search.includes("icon=true")) {
+    document.open();
+    document.write(ICON_SVG); // Overwrite the page frame with pure image parameters
+    document.close();
+    return; // Hard stop: Completely halts loading the standard dashboard layout
+  }
+
+  // 3. COMPILE THE MANIFEST OBJECT
+  // We explicitly target this file with the query parameter as our secure icon address link
+  const manifestData = {
+    name: "EcoFlow Monitor",
+    short_name: "EcoFlow",
+    description: "EcoFlow PowerStream MicroInverter real-time monitor",
+    start_url: "./",
+    display: "standalone",
+    background_color: "#060c1a",
+    theme_color: "#060c1a",
+    orientation: "any",
+    icons: [
       {
-        src:"data:image/svg+xml,%3Csvg xmlns=\"http://w3.org\" viewBox=\"0 0 100 100\"%3E%3Crect width=\"100\" height=\"100\" rx=\"22\" fill=\"%23060c1a\"%2F%3E%3Cpolygon points=\"55,8 18,52 46,52 45,92 82,48 54,48\" fill=\"%23ffb830\"%2F%3E%3C/svg%3E",
-        sizes:"any", type:"image/svg+xml", purpose:"any"
+        src: "./index.html?icon=true",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any"
       },
       {
-        src:"data:image/svg+xml,%3Csvg xmlns=\"http://w3.org\" viewBox=\"0 0 100 100\"%3E%3Crect width=\"100\" height=\"100\" rx=\"22\" fill=\"%23060c1a\"%2F%3E%3Cpolygon points=\"55,8 18,52 46,52 45,92 82,48 54,48\" fill=\"%23ffb830\"%2F%3E%3C/svg%3E",
-        sizes:"any", type:"image/svg+xml", purpose:"maskable"
+        src: "./index.html?icon=true",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "maskable"
       }
     ]
-  });
+  };
 
-  // Manifest href set by SW registration below — fallback for file://
-  document.getElementById("manifestLink").href = "data:application/manifest+json," + encodeURIComponent(m);
- 
-  // Icon SVG — embedded as base64 for SW to serve as a real URL
-  const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/><polygon points="282,40 92,272 236,272 230,472 420,240 276,240" fill="#ffb830"/></svg>`;
- 
-  // Service worker intercepts /ecoflow-icon.svg and /ecoflow-manifest.json
-  // so Chrome can fetch real URLs for the PWA icon and manifest
-  if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    const iconB64 = btoa(unescape(encodeURIComponent(ICON_SVG))); // Safe multibyte btoa encoding
-
-    // 2. FIXED: Split purpose fields into separate objects within the SW manifest model
-    const manifestJsonObj = {
-      name:"EcoFlow Monitor", short_name:"EcoFlow",
-      description:"EcoFlow PowerStream MicroInverter real-time monitor",
-      start_url:"./", display:"standalone",
-      background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
-      icons:[
-        { src:"./ecoflow-icon.svg", sizes:"any", type:"image/svg+xml", purpose:"any" },
-        { src:"./ecoflow-icon.svg", sizes:"any", type:"image/svg+xml", purpose: "maskable" },
-        { src: "./ecoflow-icon.svg", sizes:"512x512", type:"image/svg+xml" }
-      ]
-    };
-
-    const sw = `
-const ICON = atob("${iconB64}");
-const MANIFEST = ${JSON.stringify(JSON.stringify(manifestJsonObj))};
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", () => clients.claim());
-self.addEventListener("fetch", e => {
-  const url = new URL(e.request.url);
-  // 3. FIXED: Using .includes() to protect against subfolder path variations on GitHub Pages
-  if (url.pathname.includes("ecoflow-icon.svg")) {
-    e.respondWith(new Response(ICON, {headers:{"Content-Type":"image/svg+xml","Cache-Control":"max-age=86400"}}));
-    return;
-  }
-  if (url.pathname.includes("ecoflow-manifest.json")) {
-    e.respondWith(new Response(MANIFEST, {headers:{"Content-Type":"application/manifest+json"}}));
-    return;
-  }
-  if (e.request.mode === "navigate")
-    e.respondWith(fetch(e.request).catch(() => fetch(e.request)));
-});`;
-    const swUrl = URL.createObjectURL(new Blob([sw], {type:"text/javascript"}));
-    // Change this block:
-    //navigator.serviceWorker.register(swUrl, {scope:"./"}).then(reg => { ... })
-
-    // To this instead (w/out scope mapping locks):
-    navigator.serviceWorker.register(swUrl).then(reg => {
-      URL.revokeObjectURL(swUrl);
-      // 4. FIXED: Wait for the controller to take control before overriding the href link to avoid 404 race drops
-      if (navigator.serviceWorker.controller) {
-        document.getElementById("manifestLink").href = "./ecoflow-manifest.json";
-      } else {
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          document.getElementById("manifestLink").href = "./ecoflow-manifest.json";
-          location.reload();
-        });
-      }
-    }).catch(() => {});
+  // 4. MOUNT COMPACT DATA MANIFEST VIA LINK HEADER
+  const manifestEl = document.getElementById("manifestLink");
+  if (manifestEl) {
+    const base64Manifest = btoa(unescape(encodeURIComponent(JSON.stringify(manifestData))));
+    manifestEl.href = "data:application/manifest+json;base64," + base64Manifest;
   }
 })();
+
 
 
 let _installPrompt = null;
