@@ -12,7 +12,7 @@ https://danielw3b.github.io/ecoflow-powerstream-pwa/
 ## Features
 
 - **Real-time monitoring** — live solar power, grid feed-in, battery state via MQTT over WebSocket
-- **Two inverter support** — side-by-side device cards with individual charts
+- **More than Two inverter support** — side-by-side device cards with individual charts
 - **Energy History** — Hour / Day / Month / Year bar charts with kWh accumulation
 - **Weather widget** — current conditions via Open-Meteo (no API key needed)
 - **CSV export** — per-device or combined, unit auto-scales by period
@@ -72,6 +72,8 @@ index.html (browser)
     └── localStorage (Wh history, device names, config)
 ```
 
+![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture.svg)
+
 ### API Used
 - `GET /iot-open/sign/device/list` — fetch devices + online status
 - `GET /iot-open/sign/certification` — get MQTT broker credentials
@@ -120,6 +122,9 @@ This project was built collaboratively with **Claude** (Anthropic) over an exten
 - Iterative UI development based on real-world mobile testing
 
 Claude's assistance was instrumental in navigating undocumented API behaviour and building a production-quality app from scratch. Model used: Claude Sonnet (claude.ai).
+
+At the end also Gemini, Google’s primary conversational and agentic AI assistant was involved 
+to recover the strange disappearance of code fragments in the last build. :)
 
 ## License
 
