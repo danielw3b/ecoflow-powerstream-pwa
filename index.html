@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="EcoFlow">
+<meta name="apple-mobile-web-app-title" content="EcoFlow Monitor">
 <title>EcoFlow Monitor</title>
 <link rel="manifest" href="#" id="manifestLink">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%23060c1a%22/%3E%3Cpolygon%20points%3D%2255%2C8%2018%2C52%2046%2C52%2045%2C92%2082%2C48%2054%2C48%22%20fill%3D%22%23ffb830%22/%3E%3C/svg%3E
@@ -1190,8 +1190,16 @@ window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); }
     start_url:"./", display:"standalone",
     background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
     icons:[{
-      src:"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%23060c1a%22/%3E%3Cpolygon%20points%3D%2255%2C8%2018%2C52%2046%2C52%2045%2C92%2082%2C48%2054%2C48%22%20fill%3D%22%23ffb830%22/%3E%3C/svg%3E",
-      sizes:"any", type:"image/svg+xml", purpose:"any maskable"
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%23060c1a%22/%3E%3Cpolygon%20points%3D%2255%2C8%2018%2C52%2046%2C52%2045%2C92%2082%2C48%2054%2C48%22%20fill%3D%22%23ffb830%22/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%23060c1a%22/%3E%3Cpolygon%20points%3D%2255%2C8%2018%2C52%2046%2C52%2045%2C92%2082%2C48%2054%2C48%22%20fill%3D%22%23ffb830%22/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }]
   });
   
@@ -1210,10 +1218,12 @@ window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); }
       start_url: location.pathname, // Keeps the manifest context tied to current routing location
       display:"standalone",
       background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
-      icons:[
-        { src:"./ecoflow-icon.svg", sizes:"any", type:"image/svg+xml", purpose:"any maskable" },
-        { src:"./ecoflow-icon.svg", sizes:"512x512", type:"image/svg+xml" }
+      "icons": [
+        { "src": "./ecoflow-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+        { "src": "./ecoflow-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" },
+        { "src": "./ecoflow-icon.svg", "sizes": "512x512", "type": "image/svg+xml" }
       ]
+
     };
 
     const swCode = `
