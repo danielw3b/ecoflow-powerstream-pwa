@@ -1182,82 +1182,73 @@ async function init() {
 window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); });
 
 // ── PWA — data: manifest + blob SW + install prompt ──────────────────────────
+// ── PORTABLE SINGLE-FILE PWA ARCHITECTURE ────────────────────────────────────
 (function() {
-  // data: URI manifest works as a zero-dependency fallback for file://
+  // 1. DETECT THE SANDBOX ENVIRONMENT
+  // If 'self.window' is undefined, this file is executing inside the Service Worker thread!
+  if (typeof window === 'undefined') {
+    
+    // High-resolution icon string embedded directly inside the worker scope
+    const ICON_SVG = `<svg xmlns="http://w3.org" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/><polygon points="282,40 92,272 236,272 230,472 420,240 276,240" fill="#ffb830"/></svg>`;
+    
+    const MANIFEST_OBJ = {
+      name: "EcoFlow Monitor", short_name: "EcoFlow",
+      description: "EcoFlow PowerStream MicroInverter real-time monitor",
+      start_url: "./", display: "standalone",
+      background_color: "#060c1a", theme_color: "#060c1a", orientation: "any",
+      icons: [
+        { src: "./ecoflow-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+        { src: "./ecoflow-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
+        { src: "./ecoflow-icon.svg", sizes: "512x512", type: "image/svg+xml" }
+      ]
+    };
+
+    self.addEventListener("install", () => self.skipWaiting());
+    self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
+    
+    self.addEventListener("fetch", e => {
+      const url = e.request.url;
+      // Handle the virtual network asset requests seamlessly
+      if (url.includes("ecoflow-icon.svg")) {
+        e.respondWith(new Response(ICON_SVG, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-cache" } }));
+        return;
+      }
+      if (url.includes("ecoflow-manifest.json")) {
+        e.respondWith(new Response(JSON.stringify(MANIFEST_OBJ), { headers: { "Content-Type": "application/manifest+json", "Access-Control-Allow-Origin": "*" } }));
+        return;
+      }
+    });
+    
+    return; // Completely halts the background thread here so it doesn't read DOM tasks
+  }
+
+  // 2. RUN STANDARD FRONTEND PAGE LOGIC (If window object exists)
+  // Build safe inline data URI fallback string for immediate system discovery
   const fallbackManifest = JSON.stringify({
-    name:"EcoFlow Monitor", short_name:"EcoFlow",
-    description:"EcoFlow PowerStream MicroInverter real-time monitor",
-    start_url:"./", display:"standalone",
-    background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
-    icons:[{
-      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%23060c1a%22/%3E%3Cpolygon%20points%3D%2255%2C8%2018%2C52%2046%2C52%2045%2C92%2082%2C48%2054%2C48%22%20fill%3D%22%23ffb830%22/%3E%3C/svg%3E",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%23060c1a%22/%3E%3Cpolygon%20points%3D%2255%2C8%2018%2C52%2046%2C52%2045%2C92%2082%2C48%2054%2C48%22%20fill%3D%22%23ffb830%22/%3E%3C/svg%3E",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }]
+    name: "EcoFlow Monitor", short_name: "EcoFlow",
+    start_url: "./", display: "standalone",
+    background_color: "#060c1a", theme_color: "#060c1a",
+    icons: [
+      { src: "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%23060c1a%22/%3E%3Cpolygon%20points%3D%2255%2C8%2018%2C52%2046%2C52%2045%2C92%2082%2C48%2054%2C48%22%20fill%3D%22%23ffb830%22/%3E%3C/svg%3E", sizes: "any", type: "image/svg+xml", purpose: "any" },
+      { src: "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2222%22%20fill%3D%22%23060c1a%22/%3E%3Cpolygon%20points%3D%2255%2C8%2018%2C52%2046%2C52%2045%2C92%2082%2C48%2054%2C48%22%20fill%3D%22%23ffb830%22/%3E%3C/svg%3E", sizes: "any", type: "image/svg+xml", purpose: "maskable" }
+    ]
   });
-  
+
   const manifestEl = document.getElementById("manifestLink");
   manifestEl.href = "data:application/manifest+json," + encodeURIComponent(fallbackManifest);
 
-  // High-res SVG for PWA installation
-  const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/><polygon points="282,40 92,272 236,272 230,472 420,240 276,240" fill="#ffb830"/></svg>`;
-
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    const iconB64 = btoa(unescape(encodeURIComponent(ICON_SVG))); // Safe multi-byte string encoding
-    
-    const rawManifestObj = {
-      name:"EcoFlow Monitor", short_name:"EcoFlow",
-      description:"EcoFlow PowerStream MicroInverter real-time monitor",
-      start_url: location.pathname, // Keeps the manifest context tied to current routing location
-      display:"standalone",
-      background_color:"#060c1a", theme_color:"#060c1a", orientation:"any",
-      "icons": [
-        { "src": "./ecoflow-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-        { "src": "./ecoflow-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" },
-        { "src": "./ecoflow-icon.svg", "sizes": "512x512", "type": "image/svg+xml" }
-      ]
-
-    };
-
-    const swCode = `
-const ICON = atob("${iconB64}");
-const MANIFEST = ${JSON.stringify(rawManifestObj)};
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
-self.addEventListener("fetch", e => {
-  const url = e.request.url;
-  if (url.includes("ecoflow-icon.svg")) {
-    e.respondWith(new Response(ICON, {headers:{"Content-Type":"image/svg+xml","Cache-Control":"no-cache"}}));
-    return;
-  }
-  if (url.includes("ecoflow-manifest.json")) {
-    e.respondWith(new Response(JSON.stringify(MANIFEST), {headers:{"Content-Type":"application/manifest+json","Access-Control-Allow-Origin":"*"}}));
-    return;
-  }
-});`;
-
-    const swBlob = new Blob([swCode], {type:"text/javascript"});
-    const swUrl = URL.createObjectURL(swBlob);
-
-    navigator.serviceWorker.register(swUrl, {scope:"./"}).then(reg => {
-      // Bypasses the race condition: Only switch the manifest HREF if the SW is actively controlling fetches
+    // Register the CURRENT HTML file path as the secure HTTPS script executor!
+    navigator.serviceWorker.register(location.href, { scope: "./" }).then(reg => {
       if (navigator.serviceWorker.controller) {
         manifestEl.href = "./ecoflow-manifest.json";
       } else {
-        // If it's the very first visit, wait until the worker activates, then refresh to attach control safely
         navigator.serviceWorker.addEventListener("controllerchange", () => {
           manifestEl.href = "./ecoflow-manifest.json";
-          location.reload(); 
+          location.reload();
         });
       }
-    }).catch(err => console.error("SW Registration Failed:", err));
+    }).catch(err => console.error("Self-Registration Failed:", err));
   }
 })();
 
