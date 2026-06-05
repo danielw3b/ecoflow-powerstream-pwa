@@ -1,0 +1,18 @@
+{
+  "name": "EcoFlow Monitor",
+  "short_name": "EcoFlow",
+  "description": "Real-time monitoring for EcoFlow PowerStream MicroInverter devices",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#060c1a",
+  "theme_color": "#060c1a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
