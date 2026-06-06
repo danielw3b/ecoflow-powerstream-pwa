@@ -3,6 +3,7 @@
   "short_name": "EcoFlow",
   "description": "Real-time monitoring for EcoFlow PowerStream MicroInverter devices",
   "start_url": "./",
+  "id": "/ecoflow-powerstream-pwa/",
   "display": "standalone",
   "background_color": "#060c1a",
   "theme_color": "#060c1a",

@@ -10,17 +10,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EcoFlow">
 <title>EcoFlow Monitor</title>
-<link rel="manifest" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/manifest.json">
+<link rel="manifest" href="https://danielw3b.github.io/ecoflow-powerstream-pwa//manifest.json">
 <link rel="apple-touch-icon" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg">
 <link rel="icon" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;600;700&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
 :root {
   --bg:#060c1a; --surface:#0d1526; --card:#0f1b2d; --border:#1e3a5f;
   --text:#e2eef8; --muted:#6b8aaa; --solar:#ffb830; --grid:#1adeff;
   --bat:#00f584; --bat-low:#ff3355; --offline:#ff3355; --offline-bg:rgba(255,51,85,.07);
-  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif; --radius:10px;
+  --mono:'Azeret Mono',monospace; --sans:'IBM Plex Sans',sans-serif; --radius:10px;
   --hi-text:#f0f8ff; --card-border-live:rgba(0,245,132,.4); --card-border-off:rgba(255,51,85,.35);
+  /* light-dark() — adapts if user switches OS to light mode */
+  color-scheme: dark light;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;
@@ -1229,7 +1231,43 @@ async function requestWakeLock() {
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") requestWakeLock();
+  if (document.visibilityState === "visible") {
+    requestWakeLock();
+    // Tab became visible again — check if MQTT is still alive
+    // If WS is closed or closing, reconnect immediately
+    if (mqttWs && (mqttWs.readyState === WebSocket.CLOSED || mqttWs.readyState === WebSocket.CLOSING)) {
+      console.log("[Network] Tab visible, MQTT dead — reconnecting");
+      if (window._initCreds) connectMqtt(window._initCreds, window._initDevices);
+    }
+    // Refresh device online status from API when tab comes back
+    if (window._initCreds) {
+      apiGet("/iot-open/sign/device/list").then(fresh => {
+        fresh.forEach(d => {
+          if (!state[d.sn]) return;
+          if (d.online !== 1 && state[d.sn].status !== "live") {
+            state[d.sn].status = "offline";
+          }
+        });
+        renderDevices(); renderLog();
+      }).catch(() => {});
+    }
+  }
+});
+
+// Network online event — device switched WiFi, came back from airplane mode etc.
+window.addEventListener("online", () => {
+  console.log("[Network] online — reconnecting MQTT");
+  setStatus("conn", "Reconnecting…");
+  if (mqttWs) { try { mqttWs.close(); } catch {} }
+  setTimeout(() => {
+    if (window._initCreds) connectMqtt(window._initCreds, window._initDevices);
+  }, 1000);
+});
+
+// Network offline event — show warning
+window.addEventListener("offline", () => {
+  console.log("[Network] offline");
+  setStatus("error", "No network");
 });
 
 requestWakeLock();
