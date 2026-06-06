@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EcoFlow">
 <title>EcoFlow Monitor</title>
-<link rel="manifest" href="https://danielw3b.github.io/ecoflow-powerstream-pwa//manifest.json">
+<link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg">
 <link rel="icon" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg">
 <style>
@@ -83,7 +83,7 @@ main{padding:24px;max-width:1400px;margin:0 auto;}
   background:linear-gradient(90deg,var(--solar),var(--grid));opacity:0;transition:opacity .4s;}
 .device-card.live::before{opacity:1;}
 .device-card.offline::before{background:var(--offline);opacity:.6;}
-.device-name{font-size:.88rem;font-weight:700;color:var(--hi-text);cursor:pointer;}
+.device-name{font-size:.88rem;font-weight:700;color:var(--hi-text);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .device-sn{font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:2px;}
 .online-badge{font-family:var(--mono);font-size:.6rem;padding:2px 8px;border-radius:8px;border:1px solid;flex-shrink:0;font-weight:600;margin-left:auto;}
 .online-badge.yes{color:#00ff88;border-color:rgba(0,255,136,.5);background:rgba(0,255,136,.1);}
@@ -1024,20 +1024,29 @@ async function fetchWeather() {
     const lat = pos?.coords?.latitude  ?? 50.93;
     const lon = pos?.coords?.longitude ?? 6.96;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover&wind_speed_unit=ms&timezone=auto`;
+      `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover` +
+      `&daily=sunshine_duration&wind_speed_unit=ms&timezone=auto`;
     const r = await fetch(url);
     const d = await r.json();
-    const c = d.current;
-    const icon  = WMO[c.weathercode] ?? "🌡️";
+    const c    = d.current;
+    const icon = WMO[c.weathercode] ?? "🌡️";
     const temp  = Math.round(c.temperature_2m);
     const speed = c.windspeed_10m;
     const dir   = c.winddirection_10m;
     const cloud = c.cloudcover;
+    // sunshine_duration is daily in seconds → convert to hours
+    const sunHours = d.daily?.sunshine_duration?.[0]
+      ? (d.daily.sunshine_duration[0] / 3600).toFixed(1)
+      : null;
     const windArrow = `<span style="display:inline-block;transform:rotate(${dir}deg);line-height:1">↑</span>`;
-    const inlineEl = document.getElementById("weatherInline");
+    const inlineEl  = document.getElementById("weatherInline");
     if (inlineEl) {
       inlineEl.style.display = "";
-      inlineEl.innerHTML = `${icon} <b style="color:#ffcc44">${temp}°C</b> &nbsp;${windArrow}${speed}m/s &nbsp;☁️${cloud}%`;
+      inlineEl.innerHTML =
+        `${icon} <b style="color:#ffcc44">${temp}°C</b>` +
+        ` &nbsp;${windArrow}${speed}m/s` +
+        ` &nbsp;☁️${cloud}%` +
+        (sunHours !== null ? ` &nbsp;☀️${sunHours}h` : "");
     }
   } catch {}
 }
@@ -1230,23 +1239,25 @@ async function requestWakeLock() {
   } catch {}
 }
 
+let _lastReconnect = 0;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     requestWakeLock();
-    // Tab became visible again — check if MQTT is still alive
-    // If WS is closed or closing, reconnect immediately
-    if (mqttWs && (mqttWs.readyState === WebSocket.CLOSED || mqttWs.readyState === WebSocket.CLOSING)) {
-      console.log("[Network] Tab visible, MQTT dead — reconnecting");
-      if (window._initCreds) connectMqtt(window._initCreds, window._initDevices);
+    // Only reconnect if MQTT is truly dead AND we haven't tried in last 10s
+    const now = Date.now();
+    if (window._initCreds && mqttWs &&
+        (mqttWs.readyState === WebSocket.CLOSED || mqttWs.readyState === WebSocket.CLOSING) &&
+        (now - _lastReconnect > 10000)) {
+      _lastReconnect = now;
+      connectMqtt(window._initCreds, window._initDevices);
     }
-    // Refresh device online status from API when tab comes back
+    // Refresh device status from API
     if (window._initCreds) {
       apiGet("/iot-open/sign/device/list").then(fresh => {
         fresh.forEach(d => {
           if (!state[d.sn]) return;
-          if (d.online !== 1 && state[d.sn].status !== "live") {
+          if (d.online !== 1 && state[d.sn].status !== "live")
             state[d.sn].status = "offline";
-          }
         });
         renderDevices(); renderLog();
       }).catch(() => {});
@@ -1254,21 +1265,16 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// Network online event — device switched WiFi, came back from airplane mode etc.
+// Network online — reconnect MQTT after network comes back
 window.addEventListener("online", () => {
-  console.log("[Network] online — reconnecting MQTT");
   setStatus("conn", "Reconnecting…");
   if (mqttWs) { try { mqttWs.close(); } catch {} }
   setTimeout(() => {
     if (window._initCreds) connectMqtt(window._initCreds, window._initDevices);
-  }, 1000);
+  }, 2000); // wait 2s for network to stabilise
 });
 
-// Network offline event — show warning
-window.addEventListener("offline", () => {
-  console.log("[Network] offline");
-  setStatus("error", "No network");
-});
+window.addEventListener("offline", () => { setStatus("error", "No network"); });
 
 requestWakeLock();
 loadConfig();
