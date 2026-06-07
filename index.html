@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EcoFlow">
 <title>EcoFlow Monitor</title>
-<link rel="manifest" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/manifest.json">
+<link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg">
 <link rel="icon" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg">
 <style>
@@ -153,11 +153,11 @@ canvas{width:100%;display:block;}
   <div class="modal">
     <h2>⚡ ECOFLOW MONITOR SETUP</h2>
     <div class="field">
-      <label>ACCESS KEY</label>
+      <label for="cfgAccessKey">ACCESS KEY</label>
       <input type="text" id="cfgAccessKey" placeholder="Your EcoFlow API access key">
     </div>
     <div class="field">
-      <label>SECRET KEY</label>
+      <label for="cfgSecretKey">SECRET KEY</label>
       <input type="password" id="cfgSecretKey" placeholder="Your EcoFlow API secret key">
       <div class="modal-hint">Get keys at developer-eu.ecoflow.com → Access Management</div>
     </div>
