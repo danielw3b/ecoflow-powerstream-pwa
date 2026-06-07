@@ -70,6 +70,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .btn-primary:hover{background:rgba(245,166,35,.25);}
 
 main{padding:24px;max-width:1400px;margin:0 auto;}
+#weatherInline{display:none;font-family:var(--sans);font-size:.75rem;color:#8fb0cc;
+  justify-content:flex-end;position:sticky;top:50px;z-index:100;gap:4px;overflow:hidden;padding: 0 12px;}
+           
 .section-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--muted);
   text-transform:uppercase;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
 .devices-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:28px;}
@@ -162,7 +165,7 @@ canvas{width:100%;display:block;}
       <div class="modal-hint">Get keys at developer-eu.ecoflow.com → Access Management</div>
     </div>
     <div class="field">
-      <label>API REGION</label>
+      <label for="cfgRegion">API REGION</label>
       <select id="cfgRegion" style="width:100%;background:var(--surface);border:1px solid var(--border);
         border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:.8rem;">
         <option value="https://api-e.ecoflow.com">EU (api-e.ecoflow.com)</option>
@@ -198,9 +201,9 @@ canvas{width:100%;display:block;}
 </header>
 
 <main>
+  <div id="weatherInline"></div>
   <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
     <span>DEVICES</span>
-    <div id="weatherInline" style="display:none;font-family:var(--sans);font-size:.75rem;color:#8fb0cc;white-space:nowrap;"></div>
   </div>
   <div class="devices-grid" id="devicesGrid" style="margin-bottom:28px;">
     <div data-placeholder style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);
@@ -239,7 +242,7 @@ canvas{width:100%;display:block;}
     <div class="section-title">EXPORT</div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
       <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-bottom:12px;line-height:1.6;">
-        Energy history CSV — collected only when app is on.
+        Energy history CSV — collected locally.
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;" id="exportBtns">
         <button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>
@@ -1022,9 +1025,9 @@ async function fetchWeather() {
         : res(null)
     );
     const lat = pos?.coords?.latitude  ?? 50.93;
-    const lon = pos?.coords?.longitude ?? 6.96;
+    const lon = pos?.coords?.longitude ?? 7.05;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover` +
+      `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
       `&daily=sunshine_duration&wind_speed_unit=ms&timezone=auto`;
     const r = await fetch(url);
     const d = await r.json();
@@ -1034,6 +1037,7 @@ async function fetchWeather() {
     const speed = c.windspeed_10m;
     const dir   = c.winddirection_10m;
     const cloud = c.cloudcover;
+    const rad   = c.direct_radiation;
     // sunshine_duration is daily in seconds → convert to hours
     const sunHours = d.daily?.sunshine_duration?.[0]
       ? (d.daily.sunshine_duration[0] / 3600).toFixed(1)
@@ -1041,12 +1045,13 @@ async function fetchWeather() {
     const windArrow = `<span style="display:inline-block;transform:rotate(${dir}deg);line-height:1">↑</span>`;
     const inlineEl  = document.getElementById("weatherInline");
     if (inlineEl) {
-      inlineEl.style.display = "";
+      inlineEl.style.display = "flex";
       inlineEl.innerHTML =
         `${icon} <b style="color:#ffcc44">${temp}°C</b>` +
         ` &nbsp;${windArrow}${speed}m/s` +
         ` &nbsp;☁️${cloud}%` +
-        (sunHours !== null ? ` &nbsp;☀️${sunHours}h` : "");
+        (sunHours !== null ? `&nbsp;☀️${sunHours}h` : "") +
+        ` &nbsp;⚡${rad}W/m²`;
     }
   } catch {}
 }
@@ -1239,42 +1244,11 @@ async function requestWakeLock() {
   } catch {}
 }
 
-let _lastReconnect = 0;
+// Simple visibility handler — only re-acquire wake lock, nothing else
+// MQTT reconnects itself via onclose → setTimeout → connectMqtt
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    requestWakeLock();
-    // Only reconnect if MQTT is truly dead AND we haven't tried in last 10s
-    const now = Date.now();
-    if (window._initCreds && mqttWs &&
-        (mqttWs.readyState === WebSocket.CLOSED || mqttWs.readyState === WebSocket.CLOSING) &&
-        (now - _lastReconnect > 10000)) {
-      _lastReconnect = now;
-      connectMqtt(window._initCreds, window._initDevices);
-    }
-    // Refresh device status from API
-    if (window._initCreds) {
-      apiGet("/iot-open/sign/device/list").then(fresh => {
-        fresh.forEach(d => {
-          if (!state[d.sn]) return;
-          if (d.online !== 1 && state[d.sn].status !== "live")
-            state[d.sn].status = "offline";
-        });
-        renderDevices(); renderLog();
-      }).catch(() => {});
-    }
-  }
+  if (document.visibilityState === "visible") requestWakeLock();
 });
-
-// Network online — reconnect MQTT after network comes back
-window.addEventListener("online", () => {
-  setStatus("conn", "Reconnecting…");
-  if (mqttWs) { try { mqttWs.close(); } catch {} }
-  setTimeout(() => {
-    if (window._initCreds) connectMqtt(window._initCreds, window._initDevices);
-  }, 2000); // wait 2s for network to stabilise
-});
-
-window.addEventListener("offline", () => { setStatus("error", "No network"); });
 
 requestWakeLock();
 loadConfig();
