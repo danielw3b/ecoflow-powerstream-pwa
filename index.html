@@ -69,7 +69,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
   flex:1;padding:10px;}
 .btn-primary:hover{background:rgba(245,166,35,.25);}
 
-main{padding:24px;max-width:1400px;margin:0 auto;}
+main{padding:12px;max-width:1400px;margin:0 auto;}
 #weatherInline{display:none;font-family:var(--sans);font-size:.75rem;color:#8fb0cc;
   justify-content:flex-end;position:sticky;top:60px;gap:4px;overflow:hidden;}
            
@@ -120,7 +120,7 @@ main{padding:24px;max-width:1400px;margin:0 auto;}
 .card-time{font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;}
 
 /* Charts */
-.chart-section{margin-bottom:24px;}
+.chart-section{margin-bottom:24px;position:relative;}
 .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
 .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .chart-legend{display:flex;gap:14px;font-family:var(--mono);font-size:.63rem;}
@@ -238,7 +238,7 @@ canvas{width:100%;display:block;}
   </div>
 
   <!-- Export ABOVE Recent Updates -->
-  <div id="exportSection" style="margin-bottom:20px;">
+  <div id="exportSection" style="margin-bottom:20px;position:relative;">
     <div class="section-title">EXPORT</div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
       <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-bottom:12px;line-height:1.6;">
@@ -250,7 +250,7 @@ canvas{width:100%;display:block;}
     </div>
   </div>
 
-  <div class="log-section" id="logSection" style="display:none">
+  <div class="log-section" id="logSection" style="display:none;position:relative;">
     <div class="section-title">RECENT UPDATES</div>
     <div class="log-wrap">
       <table class="log-table">
