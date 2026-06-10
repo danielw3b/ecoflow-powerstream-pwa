@@ -1032,7 +1032,9 @@ async function fetchWeather() {
     const c    = d.current;
     const icon = WMO[c.weathercode] ?? "🌡️";
     const temp  = Math.round(c.temperature_2m);
+    const tempf = Math.round((temp*1.8)+32);
     const speed = c.windspeed_10m;
+    const speedmph = Math.round(speed*2.23694);
     const dir   = c.winddirection_10m;
     const cloud = c.cloudcover;
     const rad   = c.direct_radiation;
@@ -1045,10 +1047,10 @@ async function fetchWeather() {
     if (inlineEl) {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
-        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°</b></span>` +
-        ` &nbsp;<span title="Winddirection,-speed">${windArrow}${speed}m/s</span>` +
+        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°/$(tempf)F</b></span>` +
+        ` &nbsp;<span title="Winddirection,-speed">${windArrow}${speed}m/s[$(speedmph)mph]</span>` +
         ` &nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
-        (sunHours !== null ? `&nbsp;<span title="Sun duration">☀️${sunHours}h</span>` : "") +
+        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
         ` &nbsp;<span title="Solar radiation">💡${rad}W/m²</span>`;
     }
   } catch {}
