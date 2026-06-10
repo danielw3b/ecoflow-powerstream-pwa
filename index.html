@@ -180,7 +180,7 @@ canvas{width:100%;display:block;}
 
 <header>
   <div class="logo">
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <svg id="wakeLockIcon" title="Screen lock inactive" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <polygon points="55,8 18,52 46,52 45,92 82,48 54,48" fill="#ffb830"/>
     </svg>
     <div class="logo-titles">
@@ -192,8 +192,8 @@ canvas{width:100%;display:block;}
     <div class="status-badge" id="statusBadge" title="Initialising…">
       <div class="status-dot"></div>
     </div>
-    <span id="wakeLockIcon" title="Screen lock inactive"
-      style="font-size:1rem;opacity:.3;cursor:default;user-select:none;line-height:1">🔆</span>
+    <!--<span id="wakeLockIcon" title="Screen lock inactive"
+      style="font-size:1rem;opacity:.3;cursor:default;user-select:none;line-height:1">🔆</span>-->
     <button id="installBtn" class="btn small" onclick="installPwa()" title="Install as PWA"
       style="display:none">⬇ Install</button>
     <button class="btn small" onclick="showSetup()" title="Settings">⚙</button>
