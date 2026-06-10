@@ -1047,11 +1047,11 @@ async function fetchWeather() {
     if (inlineEl) {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
-        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°/$(tempf)F</b></span>` +
-        ` &nbsp;<span title="Winddirection,-speed">${windArrow}${speed}m/s[$(speedmph)mph]</span>` +
+        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°/${tempf}F</b></span>` +
+        ` &nbsp;<span title="Winddirection,-speed">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
         ` &nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
         (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
-        ` &nbsp;<span title="Solar radiation">💡${rad}W/m²</span>`;
+        ` &nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>`;
     }
   } catch {}
 }
