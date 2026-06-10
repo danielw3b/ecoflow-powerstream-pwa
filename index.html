@@ -1024,8 +1024,8 @@ async function fetchWeather() {
         ? navigator.geolocation.getCurrentPosition(res, ()=>res(null), {timeout:4000})
         : res(null)
     );
-    const lat = pos?.coords?.latitude  ?? 50.93;
-    const lon = pos?.coords?.longitude ?? 7.05;
+    const lat = pos?.coords?.latitude;  //?? 50.93;
+    const lon = pos?.coords?.longitude; //?? 7.05;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
       `&daily=sunshine_duration&wind_speed_unit=ms&timezone=auto`;
