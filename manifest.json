@@ -12,7 +12,7 @@
     {
       "src": "https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]
