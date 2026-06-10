@@ -192,8 +192,6 @@ canvas{width:100%;display:block;}
     <div class="status-badge" id="statusBadge" title="Initialising…">
       <div class="status-dot"></div>
     </div>
-    <!--<span id="wakeLockIcon" title="Screen lock inactive"
-      style="font-size:1rem;opacity:.3;cursor:default;user-select:none;line-height:1">🔆</span>-->
     <button id="installBtn" class="btn small" onclick="installPwa()" title="Install as PWA"
       style="display:none">⬇ Install</button>
     <button class="btn small" onclick="showSetup()" title="Settings">⚙</button>
@@ -1024,8 +1022,8 @@ async function fetchWeather() {
         ? navigator.geolocation.getCurrentPosition(res, ()=>res(null), {timeout:4000})
         : res(null)
     );
-    const lat = pos?.coords?.latitude;  //?? 50.93;
-    const lon = pos?.coords?.longitude; //?? 7.05;
+    const lat = pos?.coords?.latitude;
+    const lon = pos?.coords?.longitude;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
       `&daily=sunshine_duration&wind_speed_unit=ms&timezone=auto`;
