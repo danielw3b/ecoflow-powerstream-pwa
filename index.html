@@ -46,7 +46,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .status-badge.conn .status-dot{background:var(--solar);}
 .status-badge.error .status-dot{background:var(--bat-low);}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.btn{font-family:var(--mono);font-size:.7rem;padding:5px 12px;border-radius:6px;
+.btn{font-family:var(--mono);font-size:.7rem;padding:5px 12px;border-radius:50%;height:28px;
   border:1px solid var(--border);background:transparent;color:var(--grid);cursor:pointer;transition:all .2s;}
 .btn:hover{background:rgba(0,212,255,.1);border-color:var(--grid);}
 .btn.small{font-size:.65rem;padding:3px 8px;}
@@ -1048,7 +1048,7 @@ async function fetchWeather() {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
         `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°/${tempf}F</b></span>` +
-        ` &nbsp;<span title="Winddirection,-speed">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
+        ` &nbsp;<span title="Wind">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
         ` &nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
         (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
         ` &nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>`;
