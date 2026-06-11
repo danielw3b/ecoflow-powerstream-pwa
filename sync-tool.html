@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Data Exporter</title>
+    <style>
+        body { font-family: sans-serif; padding: 30px; text-align: center; background: #f3f4f6; color: #333; }
+        .card { max-width: 400px; margin: 40px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        button { padding: 15px 30px; font-size: 16px; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        button:hover { background: #047857; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>📤 Export Solar Data</h2>
+        <p>Download a compressed snapshot of your current live solar history to share with others.</p>
+        <br>
+        <button id="exportBtn">🗜️ Download ecoflow-config.gz.json</button>
+    </div>
+
+    <script>
+        function bufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+            return window.btoa(binary);
+        }
+
+        document.getElementById('exportBtn').addEventListener('click', async () => {
+            const rawText = JSON.stringify(localStorage);
+            const textEncoder = new TextEncoder();
+            const byteStream = textEncoder.encode(rawText);
+
+            const compressionStream = new CompressionStream('gzip');
+            const writer = compressionStream.writable.getWriter();
+            writer.write(byteStream);
+            writer.close();
+
+            const response = new Response(compressionStream.readable);
+            const compressedBuffer = await response.arrayBuffer();
+            const compressedBase64 = bufferToBase64(compressedBuffer);
+            const finalPayload = JSON.stringify({ compressedData: compressedBase64 });
+
+            const blob = new Blob([finalPayload], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ecoflow-config.gz.json';
+            document.body.appendChild(a);
+            a.click();
+            
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>

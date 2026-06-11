@@ -3,71 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compressed PWA Receiver</title>
+    <title>PWA Smart-Merge Receiver</title>
     <style>
-        body { font-family: sans-serif; padding: 30px; text-align: center; background: #fafafa; }
+        body { font-family: sans-serif; padding: 30px; text-align: center; background: #fafafa; color: #333; }
         .card { max-width: 400px; margin: 40px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        input[type="file"] { margin: 20px 0; padding: 10px; border: 1px dashed #cbd5e1; width: 80%; border-radius: 6px; }
+        input[type="file"] { margin: 20px 0; padding: 10px; border: 1px dashed #cbd5e1; width: 85%; border-radius: 6px; background: #f8fafc; }
         .success { color: #059669; font-weight: bold; font-size: 18px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>Phone B: Decompress & Upload</h2>
-        <p>Select your <code>ecoflow-config.gz.json</code> file:</p>
+        <h2>🔄 Merge Shared Solar Data</h2>
+        <p>Select a shared <code>ecoflow-config.gz.json</code> file to combine datasets seamlessly:</p>
         
         <input type="file" id="fileInput" accept=".json">
-        <div id="status">⏳ Awaiting compressed file...</div>
+        <div id="status">⏳ Awaiting compressed sync file...</div>
     </div>
 
     <script>
-        // Helper to turn text-safe Base64 strings back into raw binary bytes
         function base64ToBuffer(base64) {
             const binaryString = window.atob(base64);
             const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
+            for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
             return bytes.buffer;
         }
 
         document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
+            const file = event.target.files;
             const statusDiv = document.getElementById('status');
             if (!file) return;
+
+            statusDiv.innerText = "⏳ Reading and decompressing history timelines...";
 
             const reader = new FileReader();
             reader.onload = async function(e) {
                 try {
                     const fileJson = JSON.parse(e.target.result);
-                    
-                    // 1. Reconstruct binary buffer from the Base64 data wrapper
                     const compressedBuffer = base64ToBuffer(fileJson.compressedData);
 
-                    // 2. Pipe binary back through Chrome's native Decompression engine
+                    // Decompress incoming files
                     const decompressionStream = new DecompressionStream('gzip');
                     const writer = decompressionStream.writable.getWriter();
                     writer.write(new Uint8Array(compressedBuffer));
                     writer.close();
 
-                    // 3. Decode the raw bytes back into readable plaintext
                     const response = new Response(decompressionStream.readable);
                     const decompressedBuffer = await response.arrayBuffer();
                     const textDecoder = new TextDecoder();
                     const rawJsonText = textDecoder.decode(decompressedBuffer);
+                    const incomingData = JSON.parse(rawJsonText);
 
-                    // 4. Wipe and populate localStorage
-                    const finalData = JSON.parse(rawJsonText);
-                    localStorage.clear();
-                    Object.keys(finalData).forEach(key => {
-                        localStorage.setItem(key, finalData[key]);
+                    // --- SMART MERGE LOGIC ---
+                    Object.keys(incomingData).forEach(key => {
+                        const existingValue = localStorage.getItem(key);
+
+                        // If this phone doesn't have this key yet, add it
+                        if (!existingValue) {
+                            localStorage.setItem(key, incomingData[key]);
+                            return;
+                        }
+
+                        // Combine data objects or arrays
+                        try {
+                            const existingObj = JSON.parse(existingValue);
+                            const incomingObj = JSON.parse(incomingData[key]);
+
+                            if (Array.isArray(existingObj) && Array.isArray(incomingObj)) {
+                                // Combine lists and clear identical row matches
+                                const mergedArray = [...existingObj, ...incomingObj];
+                                const uniqueArray = Array.from(new Set(mergedArray.map(item => JSON.stringify(item)))).map(string => JSON.parse(string));
+                                localStorage.setItem(key, JSON.stringify(uniqueArray));
+                            } else if (typeof existingObj === 'object' && typeof incomingObj === 'object') {
+                                // Merge properties side by side
+                                const mergedObj = { ...existingObj, ...incomingObj };
+                                localStorage.setItem(key, JSON.stringify(mergedObj));
+                            }
+                        } catch (parseError) {
+                            // Flat configuration text strings/tokens are left alone to preserve local device parameters
+                        }
                     });
 
                     statusDiv.className = "success";
-                    statusDiv.innerHTML = "🗜️ Decoded & Synced Successfully!";
+                    statusDiv.innerHTML = "✅ Solar Datasets Merged Cleanly!<br><br>You can now safely return to the main PWA app.";
+
                 } catch (error) {
-                    statusDiv.innerHTML = "<span style='color:red;'>❌ Decompression failed. Broken file format.</span>";
+                    statusDiv.innerHTML = "<span style='color:red;'>❌ Merge failed. Corrupted file wrapper.</span>";
                     console.error(error);
                 }
             };
