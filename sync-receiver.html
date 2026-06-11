@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Sync Receiver (Phone B)</title>
+    <title>Compressed PWA Receiver</title>
     <style>
         body { font-family: sans-serif; padding: 30px; text-align: center; background: #fafafa; }
         .card { max-width: 400px; margin: 40px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -14,37 +14,60 @@
 <body>
 
     <div class="card">
-        <h2>Phone B: Upload Config File</h2>
-        <p>Select the <code>ecoflow-config.json</code> file to copy data keys to this device:</p>
+        <h2>Phone B: Decompress & Upload</h2>
+        <p>Select your <code>ecoflow-config.gz.json</code> file:</p>
         
         <input type="file" id="fileInput" accept=".json">
-        <div id="status">⏳ Awaiting file selection...</div>
+        <div id="status">⏳ Awaiting compressed file...</div>
     </div>
 
     <script>
+        // Helper to turn text-safe Base64 strings back into raw binary bytes
+        function base64ToBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
         document.getElementById('fileInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
             const statusDiv = document.getElementById('status');
-            
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
-                    const incomingData = JSON.parse(e.target.result);
+                    const fileJson = JSON.parse(e.target.result);
                     
-                    // Wipe clean the live phone storage to match localhost exactly
+                    // 1. Reconstruct binary buffer from the Base64 data wrapper
+                    const compressedBuffer = base64ToBuffer(fileJson.compressedData);
+
+                    // 2. Pipe binary back through Chrome's native Decompression engine
+                    const decompressionStream = new DecompressionStream('gzip');
+                    const writer = decompressionStream.writable.getWriter();
+                    writer.write(new Uint8Array(compressedBuffer));
+                    writer.close();
+
+                    // 3. Decode the raw bytes back into readable plaintext
+                    const response = new Response(decompressionStream.readable);
+                    const decompressedBuffer = await response.arrayBuffer();
+                    const textDecoder = new TextDecoder();
+                    const rawJsonText = textDecoder.decode(decompressedBuffer);
+
+                    // 4. Wipe and populate localStorage
+                    const finalData = JSON.parse(rawJsonText);
                     localStorage.clear();
-                    
-                    // Inject the imported file data natively
-                    Object.keys(incomingData).forEach(key => {
-                        localStorage.setItem(key, incomingData[key]);
+                    Object.keys(finalData).forEach(key => {
+                        localStorage.setItem(key, finalData[key]);
                     });
 
                     statusDiv.className = "success";
-                    statusDiv.innerHTML = "✅ LocalStorage Synced Natively!<br><br>You can now navigate back to your main EcoFlow application.";
+                    statusDiv.innerHTML = "🗜️ Decoded & Synced Successfully!";
                 } catch (error) {
-                    statusDiv.innerHTML = "<span style='color:red;'>❌ Failed to read file. Ensure it is a valid json config.</span>";
+                    statusDiv.innerHTML = "<span style='color:red;'>❌ Decompression failed. Broken file format.</span>";
                     console.error(error);
                 }
             };
