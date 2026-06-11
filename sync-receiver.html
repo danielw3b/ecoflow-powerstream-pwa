@@ -3,63 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Sync Receiver</title>
+    <title>PWA Sync Receiver (Phone B)</title>
     <style>
         body { font-family: sans-serif; padding: 30px; text-align: center; background: #fafafa; }
-        input { padding: 12px; font-size: 18px; width: 120px; text-align: center; border: 2px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; }
-        button { padding: 12px 24px; font-size: 16px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .card { max-width: 400px; margin: 40px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        input[type="file"] { margin: 20px 0; padding: 10px; border: 1px dashed #cbd5e1; width: 80%; border-radius: 6px; }
+        .success { color: #059669; font-weight: bold; font-size: 18px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <h2>Phone B: Receive Config</h2>
-    <p>Enter the 4-digit PIN showing on Phone A's screen:</p>
-    
-    <input type="number" id="pinInput" placeholder="0000" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);">
-    <br>
-    <button id="connectBtn">📡 Connect & Sync</button>
-    
-    <h3 id="status" style="margin-top:20px; color:#4b5563;">Awaiting input...</h3>
+    <div class="card">
+        <h2>Phone B: Upload Config File</h2>
+        <p>Select the <code>ecoflow-config.json</code> file to copy data keys to this device:</p>
+        
+        <input type="file" id="fileInput" accept=".json">
+        <div id="status">⏳ Awaiting file selection...</div>
+    </div>
 
     <script>
-        document.getElementById('connectBtn').addEventListener('click', () => {
-            const pin = document.getElementById('pinInput').value;
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
             const statusDiv = document.getElementById('status');
+            
+            if (!file) return;
 
-            if (pin.length !== 4) {
-                statusDiv.innerText = "❌ Please enter a valid 4-digit PIN.";
-                return;
-            }
-
-            statusDiv.innerText = "Connecting to Phone A...";
-            const ws = new WebSocket(`wss://free.websocket.me/v1/pwa-sync-${pin}`);
-
-            ws.onopen = () => {
-                // Signal Phone A that we are connected and listening
-                ws.send("REQUEST_DATA");
-            };
-
-            ws.onmessage = (event) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
                 try {
-                    const incomingData = JSON.parse(event.data);
+                    const incomingData = JSON.parse(e.target.result);
                     
-                    // Clear out target phone storage and copy local keys over natively
+                    // Wipe clean the live phone storage to match localhost exactly
                     localStorage.clear();
+                    
+                    // Inject the imported file data natively
                     Object.keys(incomingData).forEach(key => {
                         localStorage.setItem(key, incomingData[key]);
                     });
 
-                    statusDiv.style.color = "#059669";
-                    statusDiv.innerHTML = "✅ LocalStorage Synced Successfully!<br><br>You can now open your main EcoFlow application.";
-                    ws.close();
-                } catch (e) {
-                    statusDiv.innerText = "❌ Sync payload processing failed.";
+                    statusDiv.className = "success";
+                    statusDiv.innerHTML = "✅ LocalStorage Synced Natively!<br><br>You can now navigate back to your main EcoFlow application.";
+                } catch (error) {
+                    statusDiv.innerHTML = "<span style='color:red;'>❌ Failed to read file. Ensure it is a valid json config.</span>";
+                    console.error(error);
                 }
             };
-
-            ws.onerror = () => {
-                statusDiv.innerText = "❌ Connection failed. Check the PIN or internet access.";
-            };
+            
+            reader.readAsText(file);
         });
     </script>
 </body>
