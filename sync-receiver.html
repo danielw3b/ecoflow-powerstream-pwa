@@ -6,50 +6,60 @@
     <title>PWA Sync Receiver</title>
     <style>
         body { font-family: sans-serif; padding: 30px; text-align: center; background: #fafafa; }
-        .card { max-width: 400px; margin: 40px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .success { color: #059669; font-weight: bold; font-size: 18px; }
+        input { padding: 12px; font-size: 18px; width: 120px; text-align: center; border: 2px solid #cbd5e1; border-radius: 6px; margin-bottom: 15px; }
+        button { padding: 12px 24px; font-size: 16px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>📡 Receiving EcoFlow Config</h2>
-        <div id="status">⏳ Awaiting secure data stream from localhost...</div>
-    </div>
+    <h2>Phone B: Receive Config</h2>
+    <p>Enter the 4-digit PIN showing on Phone A's screen:</p>
+    
+    <input type="number" id="pinInput" placeholder="0000" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);">
+    <br>
+    <button id="connectBtn">📡 Connect & Sync</button>
+    
+    <h3 id="status" style="margin-top:20px; color:#4b5563;">Awaiting input...</h3>
 
     <script>
-        window.addEventListener('message', (event) => {
-            // Security whitelist for your local development ports
-            const allowedOrigins = ['http://127.0.0.1:18097', 'http://localhost:5173', 'http://127.0.0.1:5173'];
-            if (!allowedOrigins.includes(event.origin)) return;
-
+        document.getElementById('connectBtn').addEventListener('click', () => {
+            const pin = document.getElementById('pinInput').value;
             const statusDiv = document.getElementById('status');
 
-            if (event.data && event.data.type === 'LOCAL_STORAGE_SYNC') {
+            if (pin.length !== 4) {
+                statusDiv.innerText = "❌ Please enter a valid 4-digit PIN.";
+                return;
+            }
+
+            statusDiv.innerText = "Connecting to Phone A...";
+            const ws = new WebSocket(`wss://free.websocket.me/v1/pwa-sync-${pin}`);
+
+            ws.onopen = () => {
+                // Signal Phone A that we are connected and listening
+                ws.send("REQUEST_DATA");
+            };
+
+            ws.onmessage = (event) => {
                 try {
-                    const incomingData = JSON.parse(event.data.data);
+                    const incomingData = JSON.parse(event.data);
                     
-                    // Clear the live site's actual un-partitioned storage
-                    localStorage.clear(); 
-                    
-                    // Apply your data keys
+                    // Clear out target phone storage and copy local keys over natively
+                    localStorage.clear();
                     Object.keys(incomingData).forEach(key => {
                         localStorage.setItem(key, incomingData[key]);
                     });
 
-                    statusDiv.className = "success";
-                    statusDiv.innerHTML = "✅ LocalStorage Synced Successfully!<br><br>Redirecting to app...";
-                    
-                    // Instantly forward them into your fully logged-in PWA dashboard
-                    setTimeout(() => {
-                        window.location.href = 'https://danielw3b.github.io';
-                    }, 1200);
-
-                } catch (error) {
-                    statusDiv.innerHTML = "❌ Sync failed parsing payload data.";
-                    console.error(error);
+                    statusDiv.style.color = "#059669";
+                    statusDiv.innerHTML = "✅ LocalStorage Synced Successfully!<br><br>You can now open your main EcoFlow application.";
+                    ws.close();
+                } catch (e) {
+                    statusDiv.innerText = "❌ Sync payload processing failed.";
                 }
-            }
+            };
+
+            ws.onerror = () => {
+                statusDiv.innerText = "❌ Connection failed. Check the PIN or internet access.";
+            };
         });
     </script>
 </body>
