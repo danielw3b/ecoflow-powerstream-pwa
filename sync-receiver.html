@@ -30,10 +30,11 @@
         }
 
         document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files;
+            const file = event.target.files[0]; // Ensure we target the single file object directly
             const statusDiv = document.getElementById('status');
             if (!file) return;
 
+            statusDiv.style.color = "#333";
             statusDiv.innerText = "⏳ Reading and decompressing history timelines...";
 
             const reader = new FileReader();
@@ -42,45 +43,41 @@
                     const fileJson = JSON.parse(e.target.result);
                     const compressedBuffer = base64ToBuffer(fileJson.compressedData);
 
-                    // Decompress incoming files
-                    const decompressionStream = new DecompressionStream('gzip');
-                    const writer = decompressionStream.writable.getWriter();
-                    writer.write(new Uint8Array(compressedBuffer));
-                    writer.close();
-
-                    const response = new Response(decompressionStream.readable);
+                    // --- FIX: Safer, native Decompression stream execution without writer lockouts ---
+                    const compressedBlob = new Blob([compressedBuffer]);
+                    const decompressedStream = compressedBlob.stream().pipeThrough(new DecompressionStream('gzip'));
+                    
+                    const response = new Response(decompressedStream);
                     const decompressedBuffer = await response.arrayBuffer();
+                    
                     const textDecoder = new TextDecoder();
                     const rawJsonText = textDecoder.decode(decompressedBuffer);
                     const incomingData = JSON.parse(rawJsonText);
+                    // --- END FIX ---
 
                     // --- SMART MERGE LOGIC ---
                     Object.keys(incomingData).forEach(key => {
                         const existingValue = localStorage.getItem(key);
 
-                        // If this phone doesn't have this key yet, add it
                         if (!existingValue) {
                             localStorage.setItem(key, incomingData[key]);
                             return;
                         }
 
-                        // Combine data objects or arrays
                         try {
                             const existingObj = JSON.parse(existingValue);
                             const incomingObj = JSON.parse(incomingData[key]);
 
                             if (Array.isArray(existingObj) && Array.isArray(incomingObj)) {
-                                // Combine lists and clear identical row matches
                                 const mergedArray = [...existingObj, ...incomingObj];
                                 const uniqueArray = Array.from(new Set(mergedArray.map(item => JSON.stringify(item)))).map(string => JSON.parse(string));
                                 localStorage.setItem(key, JSON.stringify(uniqueArray));
                             } else if (typeof existingObj === 'object' && typeof incomingObj === 'object') {
-                                // Merge properties side by side
                                 const mergedObj = { ...existingObj, ...incomingObj };
                                 localStorage.setItem(key, JSON.stringify(mergedObj));
                             }
                         } catch (parseError) {
-                            // Flat configuration text strings/tokens are left alone to preserve local device parameters
+                            // Leave plain text setup strings alone
                         }
                     });
 
@@ -88,8 +85,9 @@
                     statusDiv.innerHTML = "✅ Solar Datasets Merged Cleanly!<br><br>You can now safely return to the main PWA app.";
 
                 } catch (error) {
-                    statusDiv.innerHTML = "<span style='color:red;'>❌ Merge failed. Corrupted file wrapper.</span>";
-                    console.error(error);
+                    statusDiv.style.color = "#dc2626";
+                    statusDiv.innerHTML = "❌ Merge failed. Corrupted file or invalid compression layout.";
+                    console.error("Decompression Error Details:", error);
                 }
             };
             
