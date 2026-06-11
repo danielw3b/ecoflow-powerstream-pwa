@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Sync Receiver Bridge</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 30px; text-align: center; background: #fafafa; color: #333; }
+        .card { max-width: 400px; margin: 50px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .status-idle { color: #6b7280; font-weight: 500; }
+        .status-success { color: #059669; font-weight: bold; }
+        .status-error { color: #dc2626; font-weight: bold; }
+        .pulse { display: inline-block; width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; margin-right: 8px; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>📡 Live PWA Sync Target</h2>
+        <p>Keep this tab open on your phone while you press the sync button on localhost.</p>
+        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+        <div id="status" class="status-idle">
+            <span class="pulse"></span>Waiting for connection from localhost...
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('message', (event) => {
+            // SECURITY: Explicitly lock down accepted incoming traffic origins
+            const allowedOrigins = [
+                'http://localhost:3000', 
+                'http://127.0.0.1:3000',
+                'http://localhost:5173', // Included for Vite users
+                'http://127.0.0.1:5173'
+            ];
+            
+            if (!allowedOrigins.includes(event.origin)) {
+                console.warn('Ignored unauthorized data attempt from origin:', event.origin);
+                return;
+            }
+
+            const statusDiv = document.getElementById('status');
+
+            if (event.data && event.data.type === 'LOCAL_STORAGE_SYNC') {
+                try {
+                    const incomingData = JSON.parse(event.data.data);
+                    
+                    // Clear out old data to ensure exact mirror matching
+                    localStorage.clear(); 
+                    
+                    // Re-populate with the fresh data from localhost
+                    Object.keys(incomingData).forEach(key => {
+                        localStorage.setItem(key, incomingData[key]);
+                    });
+
+                    // Visual success feedback on your mobile screen
+                    statusDiv.className = "status-success";
+                    statusDiv.innerHTML = "✅ LocalStorage Synced Successfully!";
+                    console.log('🚀 Live storage synced from ' + event.origin);
+
+                } catch (error) {
+                    statusDiv.className = "status-error";
+                    statusDiv.innerHTML = "❌ Sync failed. Invalid payload structure.";
+                    console.error('PWA Sync failed parsing data:', error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
