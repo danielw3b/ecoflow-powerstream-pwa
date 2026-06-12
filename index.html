@@ -1051,7 +1051,7 @@ async function fetchWeather() {
         ` &nbsp;<span title="Wind">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
         ` &nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
         (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
-        ` &nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>`;
+        (rad !== null ? ` &nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
     }
   } catch {}
 }
