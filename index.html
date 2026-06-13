@@ -1019,7 +1019,7 @@ async function fetchWeather() {
   try {
     const pos = await new Promise((res) =>
       navigator.geolocation
-        ? navigator.geolocation.getCurrentPosition(res, ()=>res(null), {timeout:6000})
+        ? navigator.geolocation.getCurrentPosition(res, ()=>res(null), {timeout:10000})
         : res(null)
     );
     const lat = pos?.coords?.latitude;
@@ -1048,10 +1048,10 @@ async function fetchWeather() {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
         `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°/${tempf}F</b></span>` +
-        ` &nbsp;<span title="Wind">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
-        ` &nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
+        `&nbsp;<span title="Wind">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
+        `&nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
         (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
-        (rad !== null ? ` &nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
+        (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
     }
   } catch {}
 }
