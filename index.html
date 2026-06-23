@@ -497,7 +497,7 @@ function colorFor(sn) {
 }
 
 // ── Persist Wh to localStorage ───────────────────────────────────────────────
-function saveWh() {
+/*function saveWh() {
   try {
     // Daily — merge, never shrink
     const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
@@ -526,7 +526,42 @@ function saveWh() {
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
   } catch {}
 }
+*/
+function saveWh() {
+  try {
+    // 1. Load what is currently in localStorage
+    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+  
+    // 2. Add any new accumulation values from dailyWh into storage
+    for (const [sn, days] of Object.entries(dailyWh)) {
+      if (!stored[sn]) stored[sn] = {};
+      for (const [day, wh] of Object.entries(days)) {
+        if (!(day in stored[sn]) || wh > stored[sn][day]) {
+          stored[sn][day] = wh;
+        }
+      }
+    }
+    
+    // 3. Save it back to localStorage
+    localStorage.setItem(WH_KEY, JSON.stringify(stored));
 
+    // 4. Do the exact same thing for Hourly data
+    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      if (!storedH[sn]) storedH[sn] = {};
+      for (const [hr, wh] of Object.entries(hours)) {
+        if (!(hr in storedH[sn]) || wh > storedH[sn][hr]) {
+          storedH[sn][hr] = wh;
+        }
+      }
+    }
+    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
+    
+  } catch (e) {
+    console.error("Error saving energy history:", e);
+  }
+}
+  
 function loadWh() {
   try {
     // Daily — last 30 days
@@ -1102,6 +1137,7 @@ function aggregateWh(period) {
   }
   return result;
 }
+  
 function downloadHistory(snFilter) {
   const buckets   = aggregateWh(currentPeriod);
   const sns       = snFilter === "all" ? Object.keys(buckets) : [snFilter];
