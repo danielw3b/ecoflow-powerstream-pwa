@@ -497,6 +497,7 @@ function colorFor(sn) {
 }
 
 // ── Persist Wh to localStorage ───────────────────────────────────────────────
+/*
 function saveWh() {
   try {
     // Daily — merge, never shrink
@@ -526,7 +527,7 @@ function saveWh() {
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
   } catch {}
 }
-/*
+*/
 function saveWh() {
   try {
     // 1. Load what is currently in localStorage
@@ -561,7 +562,7 @@ function saveWh() {
     console.error("Error saving energy history:", e);
   }
 }
-*/  
+  
 function loadWh() {
   try {
     // Daily — last 30 days
