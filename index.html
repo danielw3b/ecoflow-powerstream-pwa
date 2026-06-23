@@ -527,7 +527,7 @@ function saveWh() {
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
   } catch {}
 }
-*/
+
 function saveWh() {
   try {
     // 1. Load what is currently in localStorage
@@ -558,6 +558,46 @@ function saveWh() {
     }
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
     
+  } catch (e) {
+    console.error("Error saving energy history:", e);
+  }
+}*/
+function saveWh() {
+  try {
+    // 1. Daily Metrics — Keep ALL history for Month & Year views
+    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    for (const [sn, days] of Object.entries(dailyWh)) {
+      if (!stored[sn]) stored[sn] = {};
+      for (const [day, wh] of Object.entries(days)) {
+        if (!(day in stored[sn]) || wh > stored[sn][day]) {
+          stored[sn][day] = wh;
+        }
+      }
+    }
+    localStorage.setItem(WH_KEY, JSON.stringify(stored));
+
+    // 2. Hourly Metrics — Prune to a rolling 7 days to prevent localStorage bloat
+    const pc = n => String(n).padStart(2, "0");
+    const cutH = new Date(); cutH.setDate(cutH.getDate() - 7);
+    const cutHStr = `${cutH.getFullYear()}-${pc(cutH.getMonth()+1)}-${pc(cutH.getDate())}`;
+
+    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      if (!storedH[sn]) storedH[sn] = {};
+      for (const [hr, wh] of Object.entries(hours)) {
+        // Only save to storage if it's within the 7-day window
+        if (hr.slice(0, 10) >= cutHStr && (!(hr in storedH[sn]) || wh > storedH[sn][hr])) {
+          storedH[sn][hr] = wh;
+        }
+      }
+    }
+    // Delete hourly records older than 7 days from storage
+    for (const sn in storedH) {
+      for (const hr in storedH[sn]) {
+        if (hr.slice(0, 10) < cutHStr) delete storedH[sn][hr];
+      }
+    }
+    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
   } catch (e) {
     console.error("Error saving energy history:", e);
   }
@@ -767,7 +807,7 @@ function cardHtml(sn, s) {
         ${s.status==="live"?"LIVE":s.status==="offline"?"OFFLINE":"WAIT"}
       </span>
     </div>
-    <div class="device-sn">${sn}</div>`;
+    <div class="device-sn">${esc(sn)}</div>`;
 
   if (s.status === "offline") return [`device-card offline`, `
     <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
@@ -847,7 +887,7 @@ function renderDevices() {
     }
   });
 }
-
+/*
 function renderPowerChart() {
   const container = document.getElementById("chartsContainer");
   const sns = Object.keys(hist);
@@ -914,6 +954,114 @@ function renderPowerChart() {
     grad.addColorStop(0, color + "40");
     grad.addColorStop(1, "transparent");
     ctx.beginPath(); ctx.fillStyle = grad;
+    pts.forEach((p, i) => {
+      const x = PL + cW * i / (MAX_H - 1);
+      const y = PT + cH * (1 - p.watts / maxW);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo(PL + cW * (pts.length - 1) / (MAX_H - 1), PT + cH);
+    ctx.lineTo(PL, PT + cH); ctx.closePath(); ctx.fill();
+
+    // Latest value dot
+    const lat = pts.at(-1);
+    if (lat) {
+      const x = PL + cW * (pts.length - 1) / (MAX_H - 1);
+      const y = PT + cH * (1 - lat.watts / maxW);
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = color; ctx.fill();
+    }
+  });
+
+  // Y axis labels
+  ctx.fillStyle = "rgba(107,138,170,.9)"; ctx.font = "9px monospace"; ctx.textAlign = "right";
+  for (let i = 0; i <= 4; i++)
+    ctx.fillText(Math.round(maxW * (1 - i / 4)) + "W", PL - 4, PT + cH * i / 4 + 3);
+
+  // Latest time + values
+  const latestTs = Math.max(...sns.map(sn => hist[sn].at(-1)?.ts ?? 0));
+  const vals = sns.map((sn, i) => {
+    const w = hist[sn].at(-1)?.watts ?? 0;
+    return `<span style="color:${COLORS[i%4]}">${w.toFixed(0)}W</span>`;
+  }).join(" · ");
+  document.getElementById("power-time").innerHTML =
+    latestTs ? `${vals} &nbsp;${fmtTime(new Date(latestTs))}` : "";
+}*/
+
+function renderPowerChart() {
+  const container = document.getElementById("chartsContainer");
+  const sns = Object.keys(hist);
+  if (!sns.length) return;
+
+  // One shared chart wrap
+  let wrap = document.getElementById("cw-combined");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "cw-combined";
+    wrap.className = "chart-wrap";
+    wrap.innerHTML = `
+      <div class="chart-header">
+        <div class="chart-legend" id="power-legend"></div>
+        <span id="power-time" style="font-family:var(--mono);font-size:.65rem;color:var(--muted)"></span>
+      </div>
+      <canvas id="cc-combined" height="140"></canvas>`;
+    container.appendChild(wrap);
+  }
+
+  // Legend — sorted by API order for consistency
+  const sortedSns = sns.sort((a,b) => Object.keys(snColorMap).indexOf(a) - Object.keys(snColorMap).indexOf(b));
+  document.getElementById("power-legend").innerHTML = sortedSns.map(sn => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colorFor(sn)}"></div>
+      <span style="color:${colorFor(sn)}">${esc(deviceName(sn, state[sn]?.name ?? sn))}</span>
+    </div>`).join("");
+    
+  const canvas = document.getElementById("cc-combined");
+  if (!canvas) return;
+  const dpr = devicePixelRatio || 1, W = canvas.offsetWidth || 600, H = 140;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr);
+
+  const PL = 42, PR = 10, PT = 10, PB = 8;
+  const cW = W - PL - PR, cH = H - PT - PB;
+
+  ctx.fillStyle = "#060c1a"; ctx.fillRect(0, 0, W, H);
+
+  const allWatts = sortedSns.flatMap(sn => (hist[sn]||[]).map(p => p.watts));
+  const maxW = Math.max(...allWatts, 50);
+
+  ctx.strokeStyle = "rgba(30,58,95,.55)"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = PT + cH * i / 4;
+    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
+  }
+
+  // ── OPTIMIZATION: Compile gradients ONCE right before drawing lines
+  const gradientCache = {};
+  sortedSns.forEach(sn => {
+    const color = colorFor(sn);
+    const grad = ctx.createLinearGradient(0, PT, 0, PT + cH);
+    grad.addColorStop(0, color + "40");
+    grad.addColorStop(1, "transparent");
+    gradientCache[sn] = grad;
+  });
+
+  sortedSns.forEach(sn => {
+    const pts   = hist[sn];
+    if (!pts || pts.length < 2) return;
+    const color = colorFor(sn);
+
+    // Line
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = "round";
+    pts.forEach((p, i) => {
+      const x = PL + cW * i / (MAX_H - 1);
+      const y = PT + cH * (1 - p.watts / maxW);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill under (Now using the pre-compiled layout cache lookup)
+    ctx.beginPath(); 
+    ctx.fillStyle = gradientCache[sn];
     pts.forEach((p, i) => {
       const x = PL + cW * i / (MAX_H - 1);
       const y = PT + cH * (1 - p.watts / maxW);
