@@ -1104,7 +1104,7 @@ function setPeriod(p) {
   });
   renderWhChart();
 }
-
+/*
 function aggregateWh(period) {
   if (period === "hour") {
     // Show last 24 hours rolling — works across midnight too
@@ -1137,7 +1137,51 @@ function aggregateWh(period) {
   }
   return result;
 }
-  
+*/ 
+function aggregateWh(period) {
+  if (period === "hour") {
+    // Show last 24 hours rolling — works across midnight too
+    const result = {};
+    const now    = new Date();
+    const pad    = n => String(n).padStart(2,"0");
+    // Build set of last 24 hour keys (local time)
+    const validHours = new Set();
+    for (let i = 0; i < 24; i++) {
+      const d2  = new Date(now.getTime() - i * 3600000);
+      const key = `${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())} ${pad(d2.getHours())}`;
+      validHours.add(key);
+    }
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      result[sn] = {};
+      for (const [hr, wh] of Object.entries(hours))
+        if (validHours.has(hr)) result[sn][hr] = wh;
+    }
+    return result;
+  }
+
+  // ── FIX: Determine a strict 30-day visual rolling window for the Day tab
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const pad    = n => String(n).padStart(2,"0");
+  const cutStr = `${cutoff.getFullYear()}-${pad(cutoff.getMonth()+1)}-${pad(cutoff.getDate())}`;
+
+  const result = {};
+  for (const [sn, days] of Object.entries(dailyWh)) {
+    result[sn] = {};
+    for (const [day, wh] of Object.entries(days)) {
+      
+      // If looking at Days and the entry is older than 30 days, skip rendering it
+      if (period === "day" && day < cutStr) continue;
+
+      const label = period==="month" ? day.slice(0,7)
+                  : period==="year"  ? day.slice(0,4)
+                  : day;
+      result[sn][label] = (result[sn][label] ?? 0) + wh;
+    }
+  }
+  return result;
+}
+
 function downloadHistory(snFilter) {
   const buckets   = aggregateWh(currentPeriod);
   const sns       = snFilter === "all" ? Object.keys(buckets) : [snFilter];
