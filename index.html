@@ -561,7 +561,7 @@ function saveWh() {
   } catch (e) {
     console.error("Error saving energy history:", e);
   }
-}*/
+}
 function saveWh() {
   try {
     // 1. Daily Metrics — Keep ALL history for Month & Year views
@@ -586,6 +586,57 @@ function saveWh() {
       if (!storedH[sn]) storedH[sn] = {};
       for (const [hr, wh] of Object.entries(hours)) {
         // Only save to storage if it's within the 7-day window
+        if (hr.slice(0, 10) >= cutHStr && (!(hr in storedH[sn]) || wh > storedH[sn][hr])) {
+          storedH[sn][hr] = wh;
+        }
+      }
+    }
+    // Delete hourly records older than 7 days from storage
+    for (const sn in storedH) {
+      for (const hr in storedH[sn]) {
+        if (hr.slice(0, 10) < cutHStr) delete storedH[sn][hr];
+      }
+    }
+    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
+  } catch (e) {
+    console.error("Error saving energy history:", e);
+  }
+}*/
+function saveWh() {
+  try {
+    const pc = n => String(n).padStart(2, "0");
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${pc(now.getMonth()+1)}-${pc(now.getDate())}`;
+
+    // 1. Daily Metrics — Keep ALL history for Month & Year views safely
+    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    for (const [sn, days] of Object.entries(dailyWh)) {
+      if (!stored[sn]) stored[sn] = {};
+      for (const [day, wh] of Object.entries(days)) {
+        // Only update historical days if they don't exist yet.
+        // For TODAY, let the value grow dynamically.
+        if (day === todayStr) {
+          if (!(day in stored[sn]) || wh > stored[sn][day]) {
+            stored[sn][day] = wh;
+          }
+        } else {
+          // It's a past day (like May)! Only write it if storage is completely missing it
+          if (!(day in stored[sn])) {
+            stored[sn][day] = wh;
+          }
+        }
+      }
+    }
+    localStorage.setItem(WH_KEY, JSON.stringify(stored));
+
+    // 2. Hourly Metrics — Keep a clean rolling 7 days to prevent bloat
+    const cutH = new Date(); cutH.setDate(cutH.getDate() - 7);
+    const cutHStr = `${cutH.getFullYear()}-${pc(cutH.getMonth()+1)}-${pc(cutH.getDate())}`;
+
+    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      if (!storedH[sn]) storedH[sn] = {};
+      for (const [hr, wh] of Object.entries(hours)) {
         if (hr.slice(0, 10) >= cutHStr && (!(hr in storedH[sn]) || wh > storedH[sn][hr])) {
           storedH[sn][hr] = wh;
         }
