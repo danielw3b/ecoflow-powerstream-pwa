@@ -497,7 +497,7 @@ function colorFor(sn) {
 }
 
 // ── Persist Wh to localStorage ───────────────────────────────────────────────
-/*function saveWh() {
+function saveWh() {
   try {
     // Daily — merge, never shrink
     const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
@@ -526,7 +526,7 @@ function colorFor(sn) {
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
   } catch {}
 }
-*/
+/*
 function saveWh() {
   try {
     // 1. Load what is currently in localStorage
@@ -561,7 +561,7 @@ function saveWh() {
     console.error("Error saving energy history:", e);
   }
 }
-  
+*/  
 function loadWh() {
   try {
     // Daily — last 30 days
@@ -1104,7 +1104,7 @@ function setPeriod(p) {
   });
   renderWhChart();
 }
-/*
+
 function aggregateWh(period) {
   if (period === "hour") {
     // Show last 24 hours rolling — works across midnight too
@@ -1137,7 +1137,7 @@ function aggregateWh(period) {
   }
   return result;
 }
-*/ 
+/*
 function aggregateWh(period) {
   if (period === "hour") {
     // Show last 24 hours rolling — works across midnight too
@@ -1181,7 +1181,7 @@ function aggregateWh(period) {
   }
   return result;
 }
-
+*/
 function downloadHistory(snFilter) {
   const buckets   = aggregateWh(currentPeriod);
   const sns       = snFilter === "all" ? Object.keys(buckets) : [snFilter];
