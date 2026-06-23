@@ -1094,7 +1094,7 @@ function renderPowerChart() {
   document.getElementById("power-time").innerHTML =
     latestTs ? `${vals} &nbsp;${fmtTime(new Date(latestTs))}` : "";
 }
-
+/*
 function renderWhChart() {
   const buckets  = aggregateWh(currentPeriod);
   const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
@@ -1176,6 +1176,122 @@ function renderWhChart() {
       disp = label===today ? "Today" : label.slice(8); // DD only
     } else if (currentPeriod==="month") {
       // Show short month name e.g. "Jan", "Feb"
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      disp = months[parseInt(label.slice(5),10)-1] ?? label.slice(5);
+    } else {
+      disp = label; // YYYY
+    }
+    ctx.fillText(disp, gx+gW/2, H-PB+14);
+  });
+
+  ctx.fillStyle="rgba(107,138,170,.9)"; ctx.font="9px monospace"; ctx.textAlign="right";
+  for(let i=0;i<=4;i++){const v=maxWh*(1-i/4);
+    ctx.fillText(v>=1000?(v/1000).toFixed(1)+"kWh":v.toFixed(0)+"Wh", PL-4, PT+cH*i/4+3);}
+}*/
+function renderWhChart() {
+  const buckets  = aggregateWh(currentPeriod);
+  const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
+  if (!sns.length) return;
+  const allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn])))].sort();
+  if (!allLabels.length) return;
+  document.getElementById("whSection").style.display = "";
+
+  // Use LOCAL time throughout — fixes 2h timezone offset
+  const now      = new Date();
+  const pad      = n => String(n).padStart(2,"0");
+  const today    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const nowHour  = `${today} ${pad(now.getHours())}`;
+
+  const thisKey  = currentPeriod==="hour"   ? nowHour
+                 : currentPeriod==="month" ? today.slice(0,7)
+                 : currentPeriod==="year"  ? today.slice(0,4)
+                 : today;
+
+  const periodWh = sns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
+  const periodLabel = currentPeriod==="hour"  ? "This hour"
+                    : currentPeriod==="day"   ? "Today"
+                    : currentPeriod==="month" ? "This month"
+                    : "This year";
+  document.getElementById("whTotal").textContent =
+    `${periodLabel}: ${periodWh>=1000?(periodWh/1000).toFixed(2)+" kWh":periodWh.toFixed(0)+" Wh"}`;
+
+  // Legend — use same order for all tabs so colors are consistent
+  const allSns = Object.keys(state); // stable order from API
+  const orderedSns = sns.sort((a,b) => allSns.indexOf(a) - allSns.indexOf(b));
+
+  document.getElementById("whLegend").innerHTML = orderedSns.map((sn,i)=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i%4]}"></div>
+     <span style="color:${COLORS[i%4]}">${esc(deviceName(sn, state[sn]?.name??sn))}</span></div>`
+  ).join("");
+  const exportBtns = document.getElementById("exportBtns");
+  if (exportBtns) exportBtns.innerHTML =
+    `<button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>` +
+    orderedSns.map((sn,i)=>`<button class="btn" style="color:${COLORS[i%4]};border-color:${COLORS[i%4]}40"
+      onclick="downloadHistory('${sn}')">↓ ${esc(deviceName(sn, state[sn]?.name??sn))}</button>`).join("");
+
+  const canvas=document.getElementById("whChart");
+  const dpr=devicePixelRatio||1, W=canvas.offsetWidth||600, H=160;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
+  const PL=56,PR=10,PT=14,PB=28, cW=W-PL-PR, cH=H-PT-PB;
+  ctx.fillStyle="#060c1a"; ctx.fillRect(0,0,W,H);
+  
+  const maxWh=Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn][l]??0)),100);
+  ctx.strokeStyle="rgba(30,58,95,.6)"; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=PT+cH*i/4;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(W-PR,y);ctx.stroke();}
+  const gW=cW/allLabels.length, bW=Math.max(3,Math.min(28,gW/(orderedSns.length+1))), gP=(gW-bW*orderedSns.length)/2;
+
+  // ── OPTIMIZATION: Compile standard and fallback gradients once per frame
+  // Since bar gradients are vertical, we can create a structural full-height gradient reference map
+  const standardGradients = [];
+  const historicGradients = [];
+  orderedSns.forEach((sn, si) => {
+    const c = COLORS[si%4];
+    
+    // Gradient style for current active tracking unit bar
+    const gStd = ctx.createLinearGradient(0, PT, 0, PT + cH);
+    gStd.addColorStop(0, c);
+    gStd.addColorStop(1, c + "88");
+    standardGradients[si] = gStd;
+
+    // Gradient style for older historical unit data bars
+    const gHist = ctx.createLinearGradient(0, PT, 0, PT + cH);
+    gHist.addColorStop(0, c + "bb");
+    gHist.addColorStop(1, c + "33");
+    historicGradients[si] = gHist;
+  });
+
+  allLabels.forEach((label,di)=>{
+    const gx=PL+di*gW, isCurrent=label===thisKey;
+    orderedSns.forEach((sn,si)=>{
+      const wh=buckets[sn][label]??0, bH=wh>0?Math.max(2,cH*wh/maxWh):0;
+      const x=gx+gP+si*bW, y=PT+cH-bH;
+      
+      if (bH > 0) {
+        // Direct pointer selection out of pre-calculated styling array caches
+        ctx.fillStyle = isCurrent ? standardGradients[si] : historicGradients[si];
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(x,y,bW-1,bH,[2,2,0,0]); else ctx.rect(x,y,bW-1,bH);
+        ctx.fill();
+        
+        if(bH>16&&bW>10){
+          ctx.fillStyle=isCurrent?"#fff":"rgba(200,220,240,.8)";
+          ctx.font=`${isCurrent?"bold ":""}8px monospace`; ctx.textAlign="center";
+          ctx.fillText(wh>=1000?(wh/1000).toFixed(1)+"k":wh.toFixed(0), x+bW/2-.5, y-3);
+        }
+      }
+    });
+
+    // X-axis label — short, readable, local time
+    ctx.fillStyle=isCurrent?"#e0f0ff":"rgba(107,138,170,.85)";
+    ctx.font=`${isCurrent?"bold ":""}9px monospace`; ctx.textAlign="center";
+    let disp;
+    if (currentPeriod==="hour") {
+      const h = parseInt(label.slice(11), 10);
+      disp = label===nowHour ? "Now" : `${h}h`;
+    } else if (currentPeriod==="day") {
+      disp = label===today ? "Today" : label.slice(8); // DD only
+    } else if (currentPeriod==="month") {
       const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       disp = months[parseInt(label.slice(5),10)-1] ?? label.slice(5);
     } else {
@@ -1478,7 +1594,6 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register(swUrl, {scope:"./"})
     .then(()=>URL.revokeObjectURL(swUrl)).catch(()=>{});
 }
-
 
 let _installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => {
