@@ -653,7 +653,7 @@ function saveWh() {
     console.error("Error saving energy history:", e);
   }
 }
-*/ 
+  
 function loadWh() {
   try {
     // Daily — last 30 days
@@ -678,6 +678,31 @@ function loadWh() {
     }
   } catch {}
 }
+*/
+function loadWh() {
+  try {
+    // 1. Daily data — Load full history without any visual 30-day cutoff
+    const saved = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    for (const [sn, days] of Object.entries(saved)) {
+      dailyWh[sn] = {};
+      for (const [day, wh] of Object.entries(days)) {
+        dailyWh[sn][day] = wh; // Keeps every historical day intact (including May 2026!)
+      }
+    }
+
+    // 2. Hourly data — Load full history without any 7-day pruning logic
+    const savedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(savedH)) {
+      hourlyWh[sn] = {};
+      for (const [hr, wh] of Object.entries(hours)) {
+        hourlyWh[sn][hr] = wh; // Keeps all hours intact for smooth processing
+      }
+    }
+  } catch (e) {
+    console.error("Error loading Wh data from localStorage:", e);
+  }
+}
+  
 /*
 // ── Offline watcher ───────────────────────────────────────────────────────────
 // PRIMARY: /status MQTT topic → instant online/offline
