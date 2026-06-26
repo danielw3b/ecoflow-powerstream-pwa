@@ -379,7 +379,6 @@ const RECONNECT_MS = 5000;
 // ── Each tab/device connects to MQTT independently ───────────────────────────
 // The broker handles multiple connections with the same clientId fine.
 // ecoflow-server.js also just reconnects directly — same approach here.
-
 function connectMqtt(creds, devices) {
   const host     = creds.url.replace(/^mqtts?:\/\//, "");
   const clientId = creds.certificateAccount;
@@ -497,7 +496,6 @@ function colorFor(sn) {
 }
 
 // ── Persist Wh to localStorage ───────────────────────────────────────────────
-
 function saveWh() {
   try {
     // Daily — merge, never shrink
@@ -527,158 +525,7 @@ function saveWh() {
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
   } catch {}
 }
-/*
-function saveWh() {
-  try {
-    // 1. Load what is currently in localStorage
-    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
-  
-    // 2. Add any new accumulation values from dailyWh into storage
-    for (const [sn, days] of Object.entries(dailyWh)) {
-      if (!stored[sn]) stored[sn] = {};
-      for (const [day, wh] of Object.entries(days)) {
-        if (!(day in stored[sn]) || wh > stored[sn][day]) {
-          stored[sn][day] = wh;
-        }
-      }
-    }
-    
-    // 3. Save it back to localStorage
-    localStorage.setItem(WH_KEY, JSON.stringify(stored));
 
-    // 4. Do the exact same thing for Hourly data
-    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
-    for (const [sn, hours] of Object.entries(hourlyWh)) {
-      if (!storedH[sn]) storedH[sn] = {};
-      for (const [hr, wh] of Object.entries(hours)) {
-        if (!(hr in storedH[sn]) || wh > storedH[sn][hr]) {
-          storedH[sn][hr] = wh;
-        }
-      }
-    }
-    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
-    
-  } catch (e) {
-    console.error("Error saving energy history:", e);
-  }
-}
-function saveWh() {
-  try {
-    // 1. Daily Metrics — Keep ALL history for Month & Year views
-    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
-    for (const [sn, days] of Object.entries(dailyWh)) {
-      if (!stored[sn]) stored[sn] = {};
-      for (const [day, wh] of Object.entries(days)) {
-        if (!(day in stored[sn]) || wh > stored[sn][day]) {
-          stored[sn][day] = wh;
-        }
-      }
-    }
-    localStorage.setItem(WH_KEY, JSON.stringify(stored));
-
-    // 2. Hourly Metrics — Prune to a rolling 7 days to prevent localStorage bloat
-    const pc = n => String(n).padStart(2, "0");
-    const cutH = new Date(); cutH.setDate(cutH.getDate() - 7);
-    const cutHStr = `${cutH.getFullYear()}-${pc(cutH.getMonth()+1)}-${pc(cutH.getDate())}`;
-
-    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
-    for (const [sn, hours] of Object.entries(hourlyWh)) {
-      if (!storedH[sn]) storedH[sn] = {};
-      for (const [hr, wh] of Object.entries(hours)) {
-        // Only save to storage if it's within the 7-day window
-        if (hr.slice(0, 10) >= cutHStr && (!(hr in storedH[sn]) || wh > storedH[sn][hr])) {
-          storedH[sn][hr] = wh;
-        }
-      }
-    }
-    // Delete hourly records older than 7 days from storage
-    for (const sn in storedH) {
-      for (const hr in storedH[sn]) {
-        if (hr.slice(0, 10) < cutHStr) delete storedH[sn][hr];
-      }
-    }
-    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
-  } catch (e) {
-    console.error("Error saving energy history:", e);
-  }
-}
-function saveWh() {
-  try {
-    const pc = n => String(n).padStart(2, "0");
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${pc(now.getMonth()+1)}-${pc(now.getDate())}`;
-
-    // 1. Daily Metrics — Keep ALL history for Month & Year views safely
-    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
-    for (const [sn, days] of Object.entries(dailyWh)) {
-      if (!stored[sn]) stored[sn] = {};
-      for (const [day, wh] of Object.entries(days)) {
-        // Only update historical days if they don't exist yet.
-        // For TODAY, let the value grow dynamically.
-        if (day === todayStr) {
-          if (!(day in stored[sn]) || wh > stored[sn][day]) {
-            stored[sn][day] = wh;
-          }
-        } else {
-          // It's a past day (like May)! Only write it if storage is completely missing it
-          if (!(day in stored[sn])) {
-            stored[sn][day] = wh;
-          }
-        }
-      }
-    }
-    localStorage.setItem(WH_KEY, JSON.stringify(stored));
-
-    // 2. Hourly Metrics — Keep a clean rolling 7 days to prevent bloat
-    const cutH = new Date(); cutH.setDate(cutH.getDate() - 7);
-    const cutHStr = `${cutH.getFullYear()}-${pc(cutH.getMonth()+1)}-${pc(cutH.getDate())}`;
-
-    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
-    for (const [sn, hours] of Object.entries(hourlyWh)) {
-      if (!storedH[sn]) storedH[sn] = {};
-      for (const [hr, wh] of Object.entries(hours)) {
-        if (hr.slice(0, 10) >= cutHStr && (!(hr in storedH[sn]) || wh > storedH[sn][hr])) {
-          storedH[sn][hr] = wh;
-        }
-      }
-    }
-    // Delete hourly records older than 7 days from storage
-    for (const sn in storedH) {
-      for (const hr in storedH[sn]) {
-        if (hr.slice(0, 10) < cutHStr) delete storedH[sn][hr];
-      }
-    }
-    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
-  } catch (e) {
-    console.error("Error saving energy history:", e);
-  }
-}
-  
-function loadWh() {
-  try {
-    // Daily — last 30 days
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    const pc     = n => String(n).padStart(2,"0");
-    const cutStr = `${cutoff.getFullYear()}-${pc(cutoff.getMonth()+1)}-${pc(cutoff.getDate())}`;
-    const saved = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
-    for (const [sn, days] of Object.entries(saved)) {
-      dailyWh[sn] = {};
-      for (const [day, wh] of Object.entries(days))
-        if (day >= cutStr) dailyWh[sn][day] = wh;
-    }
-    // Hourly — last 7 days
-    const cutH  = new Date(); cutH.setDate(cutH.getDate() - 7);
-    const ph    = n => String(n).padStart(2,"0");
-    const cutHStr = `${cutH.getFullYear()}-${ph(cutH.getMonth()+1)}-${ph(cutH.getDate())}`;
-    const savedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
-    for (const [sn, hours] of Object.entries(savedH)) {
-      hourlyWh[sn] = {};
-      for (const [hr, wh] of Object.entries(hours))
-        if (hr.slice(0,10) >= cutHStr) hourlyWh[sn][hr] = wh;
-    }
-  } catch {}
-}
-*/
 function loadWh() {
   try {
     // 1. Daily data — Load full history without any visual 30-day cutoff
@@ -963,105 +810,6 @@ function renderDevices() {
     }
   });
 }
-/*
-function renderPowerChart() {
-  const container = document.getElementById("chartsContainer");
-  const sns = Object.keys(hist);
-  if (!sns.length) return;
-
-  // One shared chart wrap
-  let wrap = document.getElementById("cw-combined");
-  if (!wrap) {
-    wrap = document.createElement("div");
-    wrap.id = "cw-combined";
-    wrap.className = "chart-wrap";
-    wrap.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-legend" id="power-legend"></div>
-        <span id="power-time" style="font-family:var(--mono);font-size:.65rem;color:var(--muted)"></span>
-      </div>
-      <canvas id="cc-combined" height="140"></canvas>`;
-    container.appendChild(wrap);
-  }
-
-  // Legend — sorted by API order for consistency
-  const sortedSns = sns.sort((a,b) => Object.keys(snColorMap).indexOf(a) - Object.keys(snColorMap).indexOf(b));
-  document.getElementById("power-legend").innerHTML = sortedSns.map(sn => `
-    <div class="legend-item">
-      <div class="legend-dot" style="background:${colorFor(sn)}"></div>
-      <span style="color:${colorFor(sn)}">${esc(deviceName(sn, state[sn]?.name ?? sn))}</span>
-    </div>`).join("");
-  const canvas = document.getElementById("cc-combined");
-  if (!canvas) return;
-  const dpr = devicePixelRatio || 1, W = canvas.offsetWidth || 600, H = 140;
-  canvas.width = W*dpr; canvas.height = H*dpr;
-  const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr);
-
-  const PL = 42, PR = 10, PT = 10, PB = 8;
-  const cW = W - PL - PR, cH = H - PT - PB;
-
-  ctx.fillStyle = "#060c1a"; ctx.fillRect(0, 0, W, H);
-
-  const allWatts = sortedSns.flatMap(sn => (hist[sn]||[]).map(p => p.watts));
-  const maxW = Math.max(...allWatts, 50);
-
-  ctx.strokeStyle = "rgba(30,58,95,.55)"; ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = PT + cH * i / 4;
-    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
-  }
-
-  sortedSns.forEach(sn => {
-    const pts   = hist[sn];
-    if (!pts || pts.length < 2) return;
-    const color = colorFor(sn);
-
-    // Line
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = "round";
-    pts.forEach((p, i) => {
-      const x = PL + cW * i / (MAX_H - 1);
-      const y = PT + cH * (1 - p.watts / maxW);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    // Fill under
-    const grad = ctx.createLinearGradient(0, PT, 0, PT + cH);
-    grad.addColorStop(0, color + "40");
-    grad.addColorStop(1, "transparent");
-    ctx.beginPath(); ctx.fillStyle = grad;
-    pts.forEach((p, i) => {
-      const x = PL + cW * i / (MAX_H - 1);
-      const y = PT + cH * (1 - p.watts / maxW);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.lineTo(PL + cW * (pts.length - 1) / (MAX_H - 1), PT + cH);
-    ctx.lineTo(PL, PT + cH); ctx.closePath(); ctx.fill();
-
-    // Latest value dot
-    const lat = pts.at(-1);
-    if (lat) {
-      const x = PL + cW * (pts.length - 1) / (MAX_H - 1);
-      const y = PT + cH * (1 - lat.watts / maxW);
-      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = color; ctx.fill();
-    }
-  });
-
-  // Y axis labels
-  ctx.fillStyle = "rgba(107,138,170,.9)"; ctx.font = "9px monospace"; ctx.textAlign = "right";
-  for (let i = 0; i <= 4; i++)
-    ctx.fillText(Math.round(maxW * (1 - i / 4)) + "W", PL - 4, PT + cH * i / 4 + 3);
-
-  // Latest time + values
-  const latestTs = Math.max(...sns.map(sn => hist[sn].at(-1)?.ts ?? 0));
-  const vals = sns.map((sn, i) => {
-    const w = hist[sn].at(-1)?.watts ?? 0;
-    return `<span style="color:${COLORS[i%4]}">${w.toFixed(0)}W</span>`;
-  }).join(" · ");
-  document.getElementById("power-time").innerHTML =
-    latestTs ? `${vals} &nbsp;${fmtTime(new Date(latestTs))}` : "";
-}*/
 
 function renderPowerChart() {
   const container = document.getElementById("chartsContainer");
@@ -1170,216 +918,7 @@ function renderPowerChart() {
   document.getElementById("power-time").innerHTML =
     latestTs ? `${vals} &nbsp;${fmtTime(new Date(latestTs))}` : "";
 }
-/*
-function renderWhChart() {
-  const buckets  = aggregateWh(currentPeriod);
-  const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
-  if (!sns.length) return;
-  const allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn])))].sort();
-  if (!allLabels.length) return;
-  document.getElementById("whSection").style.display = "";
 
-  // Use LOCAL time throughout — fixes 2h timezone offset
-  const now      = new Date();
-  const pad      = n => String(n).padStart(2,"0");
-  const today    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  const nowHour  = `${today} ${pad(now.getHours())}`;
-
-  const thisKey  = currentPeriod==="hour"  ? nowHour
-                 : currentPeriod==="month" ? today.slice(0,7)
-                 : currentPeriod==="year"  ? today.slice(0,4)
-                 : today;
-
-  const periodWh = sns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
-  const periodLabel = currentPeriod==="hour"  ? "This hour"
-                    : currentPeriod==="day"   ? "Today"
-                    : currentPeriod==="month" ? "This month"
-                    : "This year";
-  document.getElementById("whTotal").textContent =
-    `${periodLabel}: ${periodWh>=1000?(periodWh/1000).toFixed(2)+" kWh":periodWh.toFixed(0)+" Wh"}`;
-
-  // Legend — use same order for all tabs so colors are consistent
-  const allSns = Object.keys(state); // stable order from API
-  const orderedSns = sns.sort((a,b) => allSns.indexOf(a) - allSns.indexOf(b));
-
-  document.getElementById("whLegend").innerHTML = orderedSns.map((sn,i)=>
-    `<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i%4]}"></div>
-     <span style="color:${COLORS[i%4]}">${esc(deviceName(sn, state[sn]?.name??sn))}</span></div>`
-  ).join("");
-  const exportBtns = document.getElementById("exportBtns");
-  if (exportBtns) exportBtns.innerHTML =
-    `<button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>` +
-    orderedSns.map((sn,i)=>`<button class="btn" style="color:${COLORS[i%4]};border-color:${COLORS[i%4]}40"
-      onclick="downloadHistory('${sn}')">↓ ${esc(deviceName(sn, state[sn]?.name??sn))}</button>`).join("");
-
-  const canvas=document.getElementById("whChart");
-  const dpr=devicePixelRatio||1, W=canvas.offsetWidth||600, H=160;
-  canvas.width=W*dpr; canvas.height=H*dpr;
-  const ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
-  const PL=56,PR=10,PT=14,PB=28, cW=W-PL-PR, cH=H-PT-PB;
-  ctx.fillStyle="#060c1a"; ctx.fillRect(0,0,W,H);
-  const maxWh=Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn][l]??0)),100);
-  ctx.strokeStyle="rgba(30,58,95,.6)"; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){const y=PT+cH*i/4;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(W-PR,y);ctx.stroke();}
-  const gW=cW/allLabels.length, bW=Math.max(3,Math.min(28,gW/(orderedSns.length+1))), gP=(gW-bW*orderedSns.length)/2;
-
-  allLabels.forEach((label,di)=>{
-    const gx=PL+di*gW, isCurrent=label===thisKey;
-    orderedSns.forEach((sn,si)=>{
-      const wh=buckets[sn][label]??0, bH=wh>0?Math.max(2,cH*wh/maxWh):0;
-      const x=gx+gP+si*bW, y=PT+cH-bH, c=COLORS[si%4];
-      const g=ctx.createLinearGradient(0,y,0,y+bH);
-      g.addColorStop(0,isCurrent?c:c+"bb"); g.addColorStop(1,isCurrent?c+"88":c+"33");
-      ctx.fillStyle=g; ctx.beginPath();
-      if(ctx.roundRect)ctx.roundRect(x,y,bW-1,bH,[2,2,0,0]); else ctx.rect(x,y,bW-1,bH);
-      ctx.fill();
-      if(bH>16&&bW>10){
-        ctx.fillStyle=isCurrent?"#fff":"rgba(200,220,240,.8)";
-        ctx.font=`${isCurrent?"bold ":""}8px monospace`; ctx.textAlign="center";
-        ctx.fillText(wh>=1000?(wh/1000).toFixed(1)+"k":wh.toFixed(0), x+bW/2-.5, y-3);
-      }
-    });
-
-    // X-axis label — short, readable, local time
-    ctx.fillStyle=isCurrent?"#e0f0ff":"rgba(107,138,170,.85)";
-    ctx.font=`${isCurrent?"bold ":""}9px monospace`; ctx.textAlign="center";
-    let disp;
-    if (currentPeriod==="hour") {
-      // label = "YYYY-MM-DD HH" — show "14h" / "15h" in 24h format
-      const h = parseInt(label.slice(11), 10);
-      disp = label===nowHour ? "Now" : `${h}h`;
-    } else if (currentPeriod==="day") {
-      disp = label===today ? "Today" : label.slice(8); // DD only
-    } else if (currentPeriod==="month") {
-      // Show short month name e.g. "Jan", "Feb"
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      disp = months[parseInt(label.slice(5),10)-1] ?? label.slice(5);
-    } else {
-      disp = label; // YYYY
-    }
-    ctx.fillText(disp, gx+gW/2, H-PB+14);
-  });
-
-  ctx.fillStyle="rgba(107,138,170,.9)"; ctx.font="9px monospace"; ctx.textAlign="right";
-  for(let i=0;i<=4;i++){const v=maxWh*(1-i/4);
-    ctx.fillText(v>=1000?(v/1000).toFixed(1)+"kWh":v.toFixed(0)+"Wh", PL-4, PT+cH*i/4+3);}
-}
-function renderWhChart() {
-  const buckets  = aggregateWh(currentPeriod);
-  const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
-  if (!sns.length) return;
-  const allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn])))].sort();
-  if (!allLabels.length) return;
-  document.getElementById("whSection").style.display = "";
-
-  // Use LOCAL time throughout — fixes 2h timezone offset
-  const now      = new Date();
-  const pad      = n => String(n).padStart(2,"0");
-  const today    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  const nowHour  = `${today} ${pad(now.getHours())}`;
-
-  const thisKey  = currentPeriod==="hour"   ? nowHour
-                 : currentPeriod==="month" ? today.slice(0,7)
-                 : currentPeriod==="year"  ? today.slice(0,4)
-                 : today;
-
-  const periodWh = sns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
-  const periodLabel = currentPeriod==="hour"  ? "This hour"
-                    : currentPeriod==="day"   ? "Today"
-                    : currentPeriod==="month" ? "This month"
-                    : "This year";
-  document.getElementById("whTotal").textContent =
-    `${periodLabel}: ${periodWh>=1000?(periodWh/1000).toFixed(2)+" kWh":periodWh.toFixed(0)+" Wh"}`;
-
-  // Legend — use same order for all tabs so colors are consistent
-  const allSns = Object.keys(state); // stable order from API
-  const orderedSns = sns.sort((a,b) => allSns.indexOf(a) - allSns.indexOf(b));
-
-  document.getElementById("whLegend").innerHTML = orderedSns.map((sn,i)=>
-    `<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i%4]}"></div>
-     <span style="color:${COLORS[i%4]}">${esc(deviceName(sn, state[sn]?.name??sn))}</span></div>`
-  ).join("");
-  const exportBtns = document.getElementById("exportBtns");
-  if (exportBtns) exportBtns.innerHTML =
-    `<button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>` +
-    orderedSns.map((sn,i)=>`<button class="btn" style="color:${COLORS[i%4]};border-color:${COLORS[i%4]}40"
-      onclick="downloadHistory('${sn}')">↓ ${esc(deviceName(sn, state[sn]?.name??sn))}</button>`).join("");
-
-  const canvas=document.getElementById("whChart");
-  const dpr=devicePixelRatio||1, W=canvas.offsetWidth||600, H=160;
-  canvas.width=W*dpr; canvas.height=H*dpr;
-  const ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
-  const PL=56,PR=10,PT=14,PB=28, cW=W-PL-PR, cH=H-PT-PB;
-  ctx.fillStyle="#060c1a"; ctx.fillRect(0,0,W,H);
-  
-  const maxWh=Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn][l]??0)),100);
-  ctx.strokeStyle="rgba(30,58,95,.6)"; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){const y=PT+cH*i/4;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(W-PR,y);ctx.stroke();}
-  const gW=cW/allLabels.length, bW=Math.max(3,Math.min(28,gW/(orderedSns.length+1))), gP=(gW-bW*orderedSns.length)/2;
-
-  // ── OPTIMIZATION: Compile standard and fallback gradients once per frame
-  // Since bar gradients are vertical, we can create a structural full-height gradient reference map
-  const standardGradients = [];
-  const historicGradients = [];
-  orderedSns.forEach((sn, si) => {
-    const c = COLORS[si%4];
-    
-    // Gradient style for current active tracking unit bar
-    const gStd = ctx.createLinearGradient(0, PT, 0, PT + cH);
-    gStd.addColorStop(0, c);
-    gStd.addColorStop(1, c + "88");
-    standardGradients[si] = gStd;
-
-    // Gradient style for older historical unit data bars
-    const gHist = ctx.createLinearGradient(0, PT, 0, PT + cH);
-    gHist.addColorStop(0, c + "bb");
-    gHist.addColorStop(1, c + "33");
-    historicGradients[si] = gHist;
-  });
-
-  allLabels.forEach((label,di)=>{
-    const gx=PL+di*gW, isCurrent=label===thisKey;
-    orderedSns.forEach((sn,si)=>{
-      const wh=buckets[sn][label]??0, bH=wh>0?Math.max(2,cH*wh/maxWh):0;
-      const x=gx+gP+si*bW, y=PT+cH-bH;
-      
-      if (bH > 0) {
-        // Direct pointer selection out of pre-calculated styling array caches
-        ctx.fillStyle = isCurrent ? standardGradients[si] : historicGradients[si];
-        ctx.beginPath();
-        if(ctx.roundRect) ctx.roundRect(x,y,bW-1,bH,[2,2,0,0]); else ctx.rect(x,y,bW-1,bH);
-        ctx.fill();
-        
-        if(bH>16&&bW>10){
-          ctx.fillStyle=isCurrent?"#fff":"rgba(200,220,240,.8)";
-          ctx.font=`${isCurrent?"bold ":""}8px monospace`; ctx.textAlign="center";
-          ctx.fillText(wh>=1000?(wh/1000).toFixed(1)+"k":wh.toFixed(0), x+bW/2-.5, y-3);
-        }
-      }
-    });
-
-    // X-axis label — short, readable, local time
-    ctx.fillStyle=isCurrent?"#e0f0ff":"rgba(107,138,170,.85)";
-    ctx.font=`${isCurrent?"bold ":""}9px monospace`; ctx.textAlign="center";
-    let disp;
-    if (currentPeriod==="hour") {
-      const h = parseInt(label.slice(11), 10);
-      disp = label===nowHour ? "Now" : `${h}h`;
-    } else if (currentPeriod==="day") {
-      disp = label===today ? "Today" : label.slice(8); // DD only
-    } else if (currentPeriod==="month") {
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      disp = months[parseInt(label.slice(5),10)-1] ?? label.slice(5);
-    } else {
-      disp = label; // YYYY
-    }
-    ctx.fillText(disp, gx+gW/2, H-PB+14);
-  });
-
-  ctx.fillStyle="rgba(107,138,170,.9)"; ctx.font="9px monospace"; ctx.textAlign="right";
-  for(let i=0;i<=4;i++){const v=maxWh*(1-i/4);
-    ctx.fillText(v>=1000?(v/1000).toFixed(1)+"kWh":v.toFixed(0)+"Wh", PL-4, PT+cH*i/4+3);}
-}*/
 function renderWhChart() {
   const buckets  = aggregateWh(currentPeriod);
   const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
@@ -1647,51 +1186,7 @@ function aggregateWh(period) {
   }
   return result;
 }
-/*
-function aggregateWh(period) {
-  if (period === "hour") {
-    // Show last 24 hours rolling — works across midnight too
-    const result = {};
-    const now    = new Date();
-    const pad    = n => String(n).padStart(2,"0");
-    // Build set of last 24 hour keys (local time)
-    const validHours = new Set();
-    for (let i = 0; i < 24; i++) {
-      const d2  = new Date(now.getTime() - i * 3600000);
-      const key = `${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())} ${pad(d2.getHours())}`;
-      validHours.add(key);
-    }
-    for (const [sn, hours] of Object.entries(hourlyWh)) {
-      result[sn] = {};
-      for (const [hr, wh] of Object.entries(hours))
-        if (validHours.has(hr)) result[sn][hr] = wh;
-    }
-    return result;
-  }
 
-  // ── FIX: Determine a strict 30-day visual rolling window for the Day tab
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 30);
-  const pad    = n => String(n).padStart(2,"0");
-  const cutStr = `${cutoff.getFullYear()}-${pad(cutoff.getMonth()+1)}-${pad(cutoff.getDate())}`;
-
-  const result = {};
-  for (const [sn, days] of Object.entries(dailyWh)) {
-    result[sn] = {};
-    for (const [day, wh] of Object.entries(days)) {
-      
-      // If looking at Days and the entry is older than 30 days, skip rendering it
-      if (period === "day" && day < cutStr) continue;
-
-      const label = period==="month" ? day.slice(0,7)
-                  : period==="year"  ? day.slice(0,4)
-                  : day;
-      result[sn][label] = (result[sn][label] ?? 0) + wh;
-    }
-  }
-  return result;
-}
-*/
 function downloadHistory(snFilter) {
   const buckets   = aggregateWh(currentPeriod);
   const sns       = snFilter === "all" ? Object.keys(buckets) : [snFilter];
@@ -1787,7 +1282,6 @@ async function init() {
 
 window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); });
 
-
 // ── PWA — service worker for installability ─────────────────────────────────
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const sw = 'self.addEventListener("install",()=>self.skipWaiting());' +
@@ -1818,7 +1312,6 @@ function installPwa() {
 
 // ── Wake Lock ─────────────────────────────────────────────────────────────────
 let wakeLock = null;
-
 async function requestWakeLock() {
   if (!("wakeLock" in navigator)) return;
   try {
@@ -1833,10 +1326,27 @@ async function requestWakeLock() {
   } catch {}
 }
 
+/*
 // Simple visibility handler — only re-acquire wake lock, nothing else
 // MQTT reconnects itself via onclose → setTimeout → connectMqtt
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") requestWakeLock();
+});
+*/
+// ════════════════════════════════════════════════════════════════
+// Improved Visibility Watcher — Handles Wake Lock & Frozen MQTT Sockets
+// ════════════════════════════════════════════════════════════════
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    // 1. Re-acquire wake lock instantly
+    requestWakeLock();
+    
+    // 2. Kick frozen MQTT socket back to life if it got stuck in the background
+    if (mqttWs && mqttWs.readyState !== 1) { 
+      console.warn("MQTT connection state unhealthy on wakeup, forcing reconnect chain...");
+      try { mqttWs.close(); } catch {} // Fires native onclose -> triggers your automatic timeout reconnect
+    }
+  }
 });
 
 requestWakeLock();
