@@ -1103,7 +1103,7 @@ async function fetchWeather() {
   try {
     const pos = await new Promise((res) =>
       navigator.geolocation
-        ? navigator.geolocation.getCurrentPosition(res, ()=>res(null), {timeout:10000})
+        ? navigator.geolocation.getCurrentPosition(res, ()=>res(null), {timeout:30000})
         : res(null)
     );
     const lat = pos?.coords?.latitude;
