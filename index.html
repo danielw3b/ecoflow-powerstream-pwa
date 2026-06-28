@@ -71,7 +71,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 
 main{padding:12px;max-width:1400px;margin:0 auto;}
 #weatherInline{display:none;font-family:var(--sans);font-size:.75rem;color:#8fb0cc;
-  justify-content:flex-end;gap:4px;overflow:hidden;height:20px;padding: 5px;margin-bottom:20px;}
+  justify-content:flex-end;gap:4px;overflow:hidden;height:20px;padding: 5px;margin-bottom:10px;}
            
 .section-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--muted);
   text-transform:uppercase;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
@@ -970,9 +970,9 @@ function renderWhChart() {
   ).join("");
   const exportBtns = document.getElementById("exportBtns");
   if (exportBtns) exportBtns.innerHTML =
-    `<button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>` +
     orderedSns.map((sn,i)=>`<button class="btn" style="color:${COLORS[i%4]};border-color:${COLORS[i%4]}40"
-      onclick="downloadHistory('${sn}')">↓ ${esc(deviceName(sn, state[sn]?.name??sn))}</button>`).join("");
+    onclick="downloadHistory('${sn}')">↓ ${esc(deviceName(sn, state[sn]?.name??sn))}</button>`).join("") + 
+    `<button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>`;
 
   const canvas=document.getElementById("whChart");
   const dpr=devicePixelRatio||1, W=canvas.offsetWidth||600, H=160;
