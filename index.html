@@ -111,14 +111,12 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .bat-track{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;}
 .bat-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1),background .4s;}
 .bat-pct{font-family:var(--mono);font-size:.78rem;min-width:34px;text-align:right;font-weight:600;}
-.metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);cursor: pointer;user-select: none;;
   border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:12px;}
 .metric{background:var(--surface);padding:9px 12px;display:flex;justify-content:space-between;align-items:center;}
 .metric-label{font-size:.7rem;color:#8fb0cc;}
 .metric-value{font-family:var(--mono);font-size:.78rem;color:var(--hi-text);font-weight:600;}
 .metric-value.hi{color:#ffcc44;}
-/* Make the metrics container look clickable */
-.metrics {cursor: pointer;user-select: none; /* Prevents text highlighting when tapping quickly */}
 /* Hide the extra metrics by default */
 .metric.extra {display: none;}
 /* Show them when the parent container has the 'expanded' class */
