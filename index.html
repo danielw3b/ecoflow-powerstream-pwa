@@ -773,9 +773,9 @@ function cardHtml(sn, s) {
       <span class="bat-pct" style="color:${batColor}">${batSoc}%</span>
     </div>`:""}
     
-    <div class="metrics ${expandedMetrics.has(sn) ? 'expanded' : ''}" onclick="toggleMetrics('${sn}', this)" title="Tap to expand details">
-      <div class="metric"><span class="metric-label">PV1</span><span class="metric-value hi">${pv1.toFixed(1)} W</span></div>
-      <div class="metric"><span class="metric-label">PV2</span><span class="metric-value hi">${pv2.toFixed(1)} W</span></div>
+    <div class="metrics ${expandedMetrics.has(sn) ? 'expanded' : ''}" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">
+      <div class="metric extra"><span class="metric-label">PV1</span><span class="metric-value hi">${pv1.toFixed(1)} W</span></div>
+      <div class="metric extra"><span class="metric-label">PV2</span><span class="metric-value hi">${pv2.toFixed(1)} W</span></div>
       
       <div class="metric extra"><span class="metric-label">PV1 V</span><span class="metric-value">${pv1V!==null?pv1V.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">PV2 V</span><span class="metric-value">${pv2V!==null?pv2V.toFixed(1)+" V":"—"}</span></div>
@@ -783,6 +783,10 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">PV2 A</span><span class="metric-value">${pv2A!==null?pv2A.toFixed(2)+" A":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
+
+      <div class="toggle-indicator" style="font-size: 0.8rem; text-align: center; opacity: 0.6; margin-top: 5px;" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">
+        ${isExpanded ? '▲ Hide details' : '▼ Show details'}
+      </div>
     </div>
 
     <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>`];
