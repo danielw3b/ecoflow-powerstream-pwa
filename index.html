@@ -773,7 +773,7 @@ function cardHtml(sn, s) {
       <span class="bat-pct" style="color:${batColor}">${batSoc}%</span>
     </div>`:""}
     
-    <div class="metrics" onclick="this.classList.toggle('expanded')" title="Tap to expand details">
+    <div class="metrics ${expandedMetrics.has(sn) ? 'expanded' : ''}" onclick="toggleMetrics('${sn}', this)" title="Tap to expand details">
       <div class="metric"><span class="metric-label">PV1</span><span class="metric-value hi">${pv1.toFixed(1)} W</span></div>
       <div class="metric"><span class="metric-label">PV2</span><span class="metric-value hi">${pv2.toFixed(1)} W</span></div>
       
@@ -788,6 +788,19 @@ function cardHtml(sn, s) {
     <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>`];
 }
 
+// Tracks which device serial numbers have their metrics expanded
+const expandedMetrics = new Set();
+// Toggles the state and updates the CSS class instantly
+function toggleMetrics(sn, element) {
+  if (expandedMetrics.has(sn)) {
+    expandedMetrics.delete(sn);
+    element.classList.remove('expanded');
+  } else {
+    expandedMetrics.add(sn);
+    element.classList.add('expanded');
+  }
+}
+  
 function renderDevices() {
   const grid = document.getElementById("devicesGrid");
   const sns  = Object.keys(state);
