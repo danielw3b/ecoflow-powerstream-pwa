@@ -784,7 +784,7 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
-    <div class="toggle-indicator card-time" title="Tap to toggle details"></div>
+    <div class="toggle-indicator card-time" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'</div>
     <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>`];
 }
 
@@ -795,12 +795,10 @@ function toggleMetrics(sn, element) {
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     element.classList.remove('expanded');
-    element.querySelector('.toggle-indicator').display = 'flex';
     element.closest('.metrics').querySelector('.toggle-indicator').textContent = '↓ Details';
   } else {
     expandedMetrics.add(sn);
     element.classList.add('expanded');
-    element.querySelector('.toggle-indicator').display = 'none';
     element.closest('.metrics').querySelector('.toggle-indicator').textContent = '';
   }
 }
