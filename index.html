@@ -784,7 +784,7 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
 
-      <div class="toggle-indicator ${expandedMetrics.has(sn) ? 'expanded' : ''}" style="font-size: 0.8rem; text-align: center; opacity: 0.6; margin-top: 5px;" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">
+      <div class="toggle-indicator" style="font-size: 0.8rem; text-align: center; opacity: 0.6; margin-top: 5px;" title="Tap to toggle details">
         ↓ DETAILS
       </div>
     </div>
@@ -799,11 +799,13 @@ function toggleMetrics(sn, element) {
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     element.classList.remove('expanded');
-    element.querySelector('.toggle-indicator').innerHTML = '↓ DETAILS';
+    element.querySelector('.toggle-indicator').display = 'flex';
+    element.closest('.metrics').querySelector('.toggle-indicator').textContent = '↓ DETAILS';
   } else {
     expandedMetrics.add(sn);
     element.classList.add('expanded');
-    element.querySelector('.toggle-indicator').innerHTML = '';
+    element.querySelector('.toggle-indicator').display = 'none';
+    element.closest('.metrics').querySelector('.toggle-indicator').textContent = '';
   }
 }
   
