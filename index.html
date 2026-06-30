@@ -117,6 +117,12 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .metric-label{font-size:.7rem;color:#8fb0cc;}
 .metric-value{font-family:var(--mono);font-size:.78rem;color:var(--hi-text);font-weight:600;}
 .metric-value.hi{color:#ffcc44;}
+/* Make the metrics container look clickable */
+.metrics {cursor: pointer;user-select: none; /* Prevents text highlighting when tapping quickly */}
+/* Hide the extra metrics by default */
+.metric.extra {display: none;}
+/* Show them when the parent container has the 'expanded' class */
+.metrics.expanded .metric.extra {display: flex; /* Assuming your .metric uses flexbox. Change to 'block' if needed */}
 .card-time{font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;}
 
 /* Charts */
@@ -533,7 +539,7 @@ function loadWh() {
     for (const [sn, days] of Object.entries(saved)) {
       dailyWh[sn] = {};
       for (const [day, wh] of Object.entries(days)) {
-        dailyWh[sn][day] = wh; // Keeps every historical day intact (including May 2026!)
+        dailyWh[sn][day] = wh; // Keeps every historical day intact
       }
     }
 
@@ -768,16 +774,19 @@ function cardHtml(sn, s) {
       <div class="bat-track"><div class="bat-fill" style="width:${Math.max(0,Math.min(100,batSoc))}%;background:${batColor}"></div></div>
       <span class="bat-pct" style="color:${batColor}">${batSoc}%</span>
     </div>`:""}
-    <div class="metrics">
+    
+    <div class="metrics" onclick="this.classList.toggle('expanded')" title="Tap to expand details">
       <div class="metric"><span class="metric-label">PV1</span><span class="metric-value hi">${pv1.toFixed(1)} W</span></div>
       <div class="metric"><span class="metric-label">PV2</span><span class="metric-value hi">${pv2.toFixed(1)} W</span></div>
-      <div class="metric"><span class="metric-label">PV1 V</span><span class="metric-value">${pv1V!==null?pv1V.toFixed(1)+" V":"—"}</span></div>
-      <div class="metric"><span class="metric-label">PV2 V</span><span class="metric-value">${pv2V!==null?pv2V.toFixed(1)+" V":"—"}</span></div>
-      <div class="metric"><span class="metric-label">PV1 A</span><span class="metric-value">${pv1A!==null?pv1A.toFixed(2)+" A":"—"}</span></div>
-      <div class="metric"><span class="metric-label">PV2 A</span><span class="metric-value">${pv2A!==null?pv2A.toFixed(2)+" A":"—"}</span></div>
-      <div class="metric"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
-      <div class="metric"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
+      
+      <div class="metric extra"><span class="metric-label">PV1 V</span><span class="metric-value">${pv1V!==null?pv1V.toFixed(1)+" V":"—"}</span></div>
+      <div class="metric extra"><span class="metric-label">PV2 V</span><span class="metric-value">${pv2V!==null?pv2V.toFixed(1)+" V":"—"}</span></div>
+      <div class="metric extra"><span class="metric-label">PV1 A</span><span class="metric-value">${pv1A!==null?pv1A.toFixed(2)+" A":"—"}</span></div>
+      <div class="metric extra"><span class="metric-label">PV2 A</span><span class="metric-value">${pv2A!==null?pv2A.toFixed(2)+" A":"—"}</span></div>
+      <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
+      <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
+
     <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>`];
 }
 
