@@ -111,7 +111,7 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .bat-track{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;}
 .bat-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1),background .4s;}
 .bat-pct{font-family:var(--mono);font-size:.78rem;min-width:34px;text-align:right;font-weight:600;}
-.metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;cursor: pointer;user-select: none;
+.metrics{display:grid;grid-template-columns:1fr 1fr;background:var(--border);gap:1px;cursor: pointer;user-select: none;
   border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:12px;}
 .metric{background:var(--surface);padding:9px 12px;display:flex;justify-content:space-between;align-items:center;}
 .metric-label{font-size:.7rem;color:#8fb0cc;}
@@ -784,7 +784,7 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
 
-      <div class="toggle-indicator card-time" style="justify-content: flex-end; display: flex;" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
+      <div class="toggle-indicator card-time" style="text-align:center;" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
     </div>
     <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>`];
 }
