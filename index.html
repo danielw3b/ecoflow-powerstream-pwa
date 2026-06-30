@@ -799,11 +799,11 @@ function toggleMetrics(sn, element) {
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     element.classList.remove('expanded');
-    element.querySelector('.toggle-indicator').display = 'flex';
+    element.querySelector('.toggle-indicator').innerHTML = '↓ DETAILS';
   } else {
     expandedMetrics.add(sn);
     element.classList.add('expanded');
-    element.querySelector('.toggle-indicator').display = 'none';
+    element.querySelector('.toggle-indicator').innerHTML = '';
   }
 }
   
