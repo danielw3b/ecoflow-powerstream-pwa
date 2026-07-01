@@ -786,13 +786,14 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
     <div class="metrics-footer" onclick="toggleMetrics('${sn}', this)">
-      <div class="toggle-indicator" title="Tap to toggle details" onclick="toggleMetrics('${sn}', this)">${expandedMetrics.has(sn) ? '↑ Hide' : '↓ Details'}</div>
+      <div class="toggle-indicator" title="Tap to toggle details">${expandedMetrics.has(sn) ? '↑ Hide' : '↓ Details'}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
 }
 
 // Tracks which device serial numbers have their metrics expanded
 const expandedMetrics = new Set();
+/*
 function toggleMetrics(sn, element) {
   // 1. Always find the main .metrics container
   const container = element.classList.contains('metrics') 
@@ -811,7 +812,25 @@ function toggleMetrics(sn, element) {
     if (indicator) indicator.textContent = '↑ Hide'; // Hide or set to ''
   }
 }
-  
+*/
+function toggleMetrics(sn, element) {
+  // 1. Ensure we are working with the footer
+  const footer = element.classList.contains('metrics-footer') ? element : element.closest('.metrics-footer');
+  // 2. Find the indicator specifically within that footer
+  const indicator = footer.querySelector('.toggle-indicator');
+  // 3. Find the main card container (assuming it is the previous sibling)
+  const container = footer.previousElementSibling;
+  if (expandedMetrics.has(sn)) {
+    expandedMetrics.delete(sn);
+    container.classList.remove('expanded');
+    if (indicator) indicator.textContent = '↓ Details';
+  } else {
+    expandedMetrics.add(sn);
+    container.classList.add('expanded');
+    if (indicator) indicator.textContent = '↑ Hide';
+  }
+}
+
 function renderDevices() {
   const grid = document.getElementById("devicesGrid");
   const sns  = Object.keys(state);
