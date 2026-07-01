@@ -793,83 +793,16 @@ function cardHtml(sn, s) {
 
 // Tracks which device serial numbers have their metrics expanded
 const expandedMetrics = new Set();
-/*
 function toggleMetrics(sn, element) {
-  // 1. Always find the main .metrics container
-  const container = element.classList.contains('metrics') 
-    ? element 
-    : element.closest('.metrics') || element.parentElement.previousElementSibling;
-  // 2. Find the indicator (look inside the container or the footer)
-  const indicator = container.querySelector('.toggle-indicator') || 
-                    container.nextElementSibling.querySelector('.toggle-indicator');
-  if (expandedMetrics.has(sn)) {
-    expandedMetrics.delete(sn);
-    container.classList.remove('expanded');
-    if (indicator) indicator.textContent = '↓ Details';
-  } else {
-    expandedMetrics.add(sn);
-    container.classList.add('expanded');
-    if (indicator) indicator.textContent = '↑ Hide'; // Hide or set to ''
-  }
-}
-
-function toggleMetrics(sn, element) {
-  // 1. Ensure we are working with the footer
-  const footer = element.classList.contains('metrics-footer') ? element : element.closest('.metrics-footer');
-  // 2. Find the indicator specifically within that footer
-  const indicator = footer.querySelector('.toggle-indicator');
-  // 3. Find the main card container (assuming it is the previous sibling)
-  const container = element.classList.contains('metrics') 
-    ? element 
-    : element.closest('.metrics') || element.parentElement.previousElementSibling;
-  //const container = footer.previousElementSibling;
-
-  if (expandedMetrics.has(sn)) {
-    expandedMetrics.delete(sn);
-    container.classList.remove('expanded');
-    if (indicator) indicator.textContent = '↓ Details';
-  } else {
-    expandedMetrics.add(sn);
-    container.classList.add('expanded');
-    if (indicator) indicator.textContent = '↑ Hide';
-  }
-}
-
-function toggleMetrics(sn, element) {
-  // 1. Find the parent .metrics card container
-  //const container = element.closest('.metrics');
-  const container = element.classList.contains('metrics') 
-    ? element 
-    : element.closest('.metrics') || element.parentElement.previousElementSibling;
   
-  // 2. Find the indicator specifically within the clicked footer
-  const indicator = element.querySelector('.toggle-indicator');
-
-  // 3. Toggle the expanded class
-  if (expandedMetrics.has(sn)) {
-    expandedMetrics.delete(sn);
-    container.classList.remove('expanded');
-    if (indicator) indicator.textContent = '↓ Details';
-  } else {
-    expandedMetrics.add(sn);
-    container.classList.add('expanded');
-    if (indicator) indicator.textContent = '↑ Hide';
-  }
-}
-*/
-function toggleMetrics(sn, element) {
   // 1. Find the parent .metrics card container
   // If clicked footer, find the previous sibling element (.metrics). If clicked card, use itself.
-  const container = element.classList.contains('metrics') 
-    ? element 
-    : element.previousElementSibling;
- 
+  const container = element.classList.contains('metrics')  ? element : element.previousElementSibling;
   // Guard clause: stop if the DOM structure didn't match
   if (!container) return;
-
+  
   // 2. Find the indicator (look inside element if footer, or find the footer sibling if card)
-  const indicator = element.classList.contains('metrics-footer')
-    ? element.querySelector('.toggle-indicator')
+  const indicator = element.classList.contains('metrics-footer') ? element.querySelector('.toggle-indicator')
     : element.nextElementSibling?.querySelector('.toggle-indicator');
 
   // 3. Toggle the expanded class
