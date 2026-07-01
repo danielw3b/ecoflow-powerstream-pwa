@@ -112,7 +112,7 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .bat-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1),background .4s;}
 .bat-pct{font-family:var(--mono);font-size:.78rem;min-width:34px;text-align:right;font-weight:600;}
 .metrics{display:grid;grid-template-columns:1fr 1fr;background:var(--border);gap:1px;cursor: pointer;user-select: none;
-  border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:12px;}
+  border:0px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:6px;}
 .metric{background:var(--surface);padding:9px 12px;display:flex;justify-content:space-between;align-items:center;}
 .metric-label{font-size:.7rem;color:#8fb0cc;}
 .metric-value{font-family:var(--mono);font-size:.78rem;color:var(--hi-text);font-weight:600;}
@@ -783,8 +783,10 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
-    <div class="toggle-indicator ${expandedMetrics.has(sn) ? 'expanded' : ''}" style="" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
-    <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>`];
+    <div class="metrics-footer" style="display: flex;align-items: center;gap: 8px;">
+      <div class="toggle-indicator ${expandedMetrics.has(sn) ? 'expanded' : ''}" style="font-family: var(--mono);font-size: .62rem;color: var(--muted);cursor: pointer;user-select: none;" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
+      <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
+    </div>`];
 }
 
 // Tracks which device serial numbers have their metrics expanded
@@ -794,11 +796,11 @@ function toggleMetrics(sn, element) {
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     element.classList.remove('expanded');
-    //element.closest('.metrics').querySelector('.toggle-indicator').textContent = '↓ Details';
+    element.closest('.metrics-footer').querySelector('.toggle-indicator').textContent = '↓ Details';
   } else {
     expandedMetrics.add(sn);
     element.classList.add('expanded');
-    //element.closest('.metrics').querySelector('.toggle-indicator').textContent = '';
+    element.closest('.metrics-footer').querySelector('.toggle-indicator').textContent = '';
   }
 }
   
