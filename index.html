@@ -740,7 +740,7 @@ function cardHtml(sn, s) {
     <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
     <div class="offline-msg">
       <div class="offline-icon">🌙</div>
-      <div class="offline-text">Device offline<br>No solar input</div>
+      <div class="offline-text">Device offline<!--<br>No solar input--></div>
       <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "No data"}</div>
     </div>`];
 
@@ -783,7 +783,7 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
-    <div class="toggle-indicator" style="text-align:center;" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
+    <div class="toggle-indicator ${expandedMetrics.has(sn) ? 'expanded' : ''}" style="" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
     <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>`];
 }
 
@@ -794,11 +794,11 @@ function toggleMetrics(sn, element) {
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     element.classList.remove('expanded');
-    element.closest('.metrics').querySelector('.toggle-indicator').textContent = '↓ Details';
+    //element.closest('.metrics').querySelector('.toggle-indicator').textContent = '↓ Details';
   } else {
     expandedMetrics.add(sn);
     element.classList.add('expanded');
-    element.closest('.metrics').querySelector('.toggle-indicator').textContent = '';
+    //element.closest('.metrics').querySelector('.toggle-indicator').textContent = '';
   }
 }
   
