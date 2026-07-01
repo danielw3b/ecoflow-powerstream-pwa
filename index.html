@@ -740,7 +740,7 @@ function cardHtml(sn, s) {
     <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
     <div class="offline-msg">
       <div class="offline-icon">🌙</div>
-      <div class="offline-text">Device offline<!--<br>No solar input--></div>
+      <div class="offline-text">Device offline - No solar input</div>
       <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "No data"}</div>
     </div>`];
 
@@ -783,8 +783,8 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
-    <div class="metrics-footer" style="display: flex;justify-content: space-between;align-items: center;gap: 8px;">
-      <div class="toggle-indicator" style="font-family: var(--mono);font-size: .62rem;color: var(--muted);cursor: pointer;user-select: none;" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
+    <div class="metrics-footer" style="display: flex;justify-content: space-between;align-items: center;gap: 8px;" onclick="toggleMetrics('${sn}', this)">
+      <div class="toggle-indicator" style="font-family: var(--mono);font-size: .62rem;color: var(--muted);cursor: pointer;user-select: none;"  title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
 }
@@ -806,7 +806,7 @@ function toggleMetrics(sn, element) {
   } else {
     expandedMetrics.add(sn);
     container.classList.add('expanded');
-    if (indicator) indicator.textContent = ''; // Hide or set to ''
+    if (indicator) indicator.textContent = '↑ Hide'; // Hide or set to ''
   }
 }
   
