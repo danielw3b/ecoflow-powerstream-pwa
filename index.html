@@ -838,7 +838,8 @@ function toggleMetrics(sn, element) {
 */
 function toggleMetrics(sn, element) {
   // 1. Find the parent .metrics card container
-  const container = element.closest('.metrics');
+  //const container = element.closest('.metrics');
+  const container = element.classList.contains('metrics');
   
   // 2. Find the indicator specifically within the clicked footer
   const indicator = element.querySelector('.toggle-indicator');
