@@ -783,8 +783,8 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
-    <div class="metrics-footer" style="display: flex;align-items: center;gap: 8px;">
-      <div class="toggle-indicator ${expandedMetrics.has(sn) ? 'expanded' : ''}" style="font-family: var(--mono);font-size: .62rem;color: var(--muted);cursor: pointer;user-select: none;" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
+    <div class="metrics-footer" style="display: flex;justify-content: space-between;align-items: center;gap: 8px;">
+      <div class="toggle-indicator" style="font-family: var(--mono);font-size: .62rem;color: var(--muted);cursor: pointer;user-select: none;" onclick="toggleMetrics('${sn}', this)" title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
 }
