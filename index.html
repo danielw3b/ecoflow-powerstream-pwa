@@ -121,6 +121,8 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .metric.extra {display: none;}
 /* Show them when the parent container has the 'expanded' class */
 .metrics.expanded .metric.extra {display: flex; /* Assuming your .metric uses flexbox. Change to 'block' if needed */}
+.metrics-footer{display: flex;justify-content: space-between;align-items: center;gap: 8px;cursor: pointer;user-select: none;}
+.toggle-indicator{font-family: var(--mono);font-size: .62rem;color: var(--muted);cursor: pointer;user-select: none;}
 .card-time{font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;}
 
 /* Charts */
@@ -783,8 +785,8 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
-    <div class="metrics-footer" style="display: flex;justify-content: space-between;align-items: center;gap: 8px;" onclick="toggleMetrics('${sn}', this)">
-      <div class="toggle-indicator" style="font-family: var(--mono);font-size: .62rem;color: var(--muted);cursor: pointer;user-select: none;"  title="Tap to toggle details">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
+    <div class="metrics-footer" onclick="toggleMetrics('${sn}')">
+      <div class="toggle-indicator" title="Tap to toggle details" onclick="toggleMetrics('${sn}', this)">${expandedMetrics.has(sn) ? '' : '↓ Details'}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
 }
