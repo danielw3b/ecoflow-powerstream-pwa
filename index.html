@@ -786,7 +786,7 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
     <div class="metrics-footer" title="Tap to toggle details" onclick="toggleMetrics('${sn}', this)">
-      <div class="toggle-indicator" title="Tap to toggle details">${expandedMetrics.has(sn) ? '↑ Hide' : '↓ Details'}</div>
+      <div class="toggle-indicator">${expandedMetrics.has(sn) ? '↑ Hide' : '↓ Details'}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
 }
@@ -813,6 +813,7 @@ function toggleMetrics(sn, element) {
   }
 }
 */
+/*
 function toggleMetrics(sn, element) {
   // 1. Ensure we are working with the footer
   const footer = element.classList.contains('metrics-footer') ? element : element.closest('.metrics-footer');
@@ -824,7 +825,25 @@ function toggleMetrics(sn, element) {
     : element.closest('.metrics') || element.parentElement.previousElementSibling;
   //const container = footer.previousElementSibling;
 
+  if (expandedMetrics.has(sn)) {
+    expandedMetrics.delete(sn);
+    container.classList.remove('expanded');
+    if (indicator) indicator.textContent = '↓ Details';
+  } else {
+    expandedMetrics.add(sn);
+    container.classList.add('expanded');
+    if (indicator) indicator.textContent = '↑ Hide';
+  }
+}
+*/
+function toggleMetrics(sn, element) {
+  // 1. Find the parent .metrics card container
+  const container = element.closest('.metrics');
   
+  // 2. Find the indicator specifically within the clicked footer
+  const indicator = element.querySelector('.toggle-indicator');
+
+  // 3. Toggle the expanded class
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     container.classList.remove('expanded');
