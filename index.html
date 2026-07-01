@@ -790,17 +790,22 @@ function cardHtml(sn, s) {
 }
 
 // Tracks which device serial numbers have their metrics expanded
-const expandedMetrics = new Set();
-// Toggles the state and updates the CSS class instantly
 function toggleMetrics(sn, element) {
+  // 1. Always find the main .metrics container
+  const container = element.classList.contains('metrics') 
+    ? element 
+    : element.closest('.metrics') || element.parentElement.previousElementSibling;
+  // 2. Find the indicator (look inside the container or the footer)
+  const indicator = container.querySelector('.toggle-indicator') || 
+                    container.nextElementSibling.querySelector('.toggle-indicator');
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
-    element.classList.remove('expanded');
-    element.closest('.metrics-footer').querySelector('.toggle-indicator').textContent = '↓ Details';
+    container.classList.remove('expanded');
+    if (indicator) indicator.textContent = '↓ Details';
   } else {
     expandedMetrics.add(sn);
-    element.classList.add('expanded');
-    element.closest('.metrics-footer').querySelector('.toggle-indicator').textContent = '';
+    container.classList.add('expanded');
+    if (indicator) indicator.textContent = ''; // Hide or set to ''
   }
 }
   
