@@ -785,7 +785,7 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid V</span><span class="metric-value">${vol!==null?vol.toFixed(1)+" V":"—"}</span></div>
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
-    <div class="metrics-footer" onclick="toggleMetrics('${sn}', this)">
+    <div class="metrics-footer" title="Tap to toggle details" onclick="toggleMetrics('${sn}', this)">
       <div class="toggle-indicator" title="Tap to toggle details">${expandedMetrics.has(sn) ? '↑ Hide' : '↓ Details'}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
@@ -819,7 +819,12 @@ function toggleMetrics(sn, element) {
   // 2. Find the indicator specifically within that footer
   const indicator = footer.querySelector('.toggle-indicator');
   // 3. Find the main card container (assuming it is the previous sibling)
-  const container = footer.previousElementSibling;
+  const container = element.classList.contains('metrics') 
+    ? element 
+    : element.closest('.metrics') || element.parentElement.previousElementSibling;
+  //const container = footer.previousElementSibling;
+
+  
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     container.classList.remove('expanded');
@@ -1003,10 +1008,10 @@ function renderWhChart() {
                  : today;
 
   const periodWh = sns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
-  const periodLabel = currentPeriod==="hour"  ? "This hour"
-                    : currentPeriod==="day"   ? "Today"
-                    : currentPeriod==="month" ? "This month"
-                    : "This year";
+  const periodLabel = currentPeriod==="hour"  ? "Now" // This hour
+                    : currentPeriod==="day"   ? "Today" // Today
+                    : currentPeriod==="month" ? "TM" // This month
+                    : "TY"; // This year
   document.getElementById("whTotal").textContent =
     `${periodLabel}: ${periodWh>=1000?(periodWh/1000).toFixed(2)+" kWh":periodWh.toFixed(0)+" Wh"}`;
 
