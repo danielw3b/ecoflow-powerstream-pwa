@@ -790,6 +790,7 @@ function cardHtml(sn, s) {
 }
 
 // Tracks which device serial numbers have their metrics expanded
+const expandedMetrics = new Set();
 function toggleMetrics(sn, element) {
   // 1. Always find the main .metrics container
   const container = element.classList.contains('metrics') 
