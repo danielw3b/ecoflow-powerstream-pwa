@@ -502,7 +502,7 @@ function colorFor(sn) {
 }
 
 // ── Persist Wh to localStorage ───────────────────────────────────────────────
-function saveWh() {
+/*function saveWh() {
   try {
     // Daily — merge, never shrink
     const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
@@ -530,7 +530,64 @@ function saveWh() {
     }
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
   } catch {}
+}*/
+
+function saveWh() {
+  try {
+    // Daily — merge, never shrink
+    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    for (const [sn, days] of Object.entries(dailyWh)) {
+      if (!stored[sn]) stored[sn] = {};
+      for (const [day, wh] of Object.entries(days))
+        if (!(day in stored[sn]) || wh > stored[sn][day]) stored[sn][day] = wh;
+    }
+    for (const [sn, days] of Object.entries(stored)) {
+      if (!dailyWh[sn]) dailyWh[sn] = {};
+      for (const [day, wh] of Object.entries(days)) dailyWh[sn][day] = wh;
+    }
+    localStorage.setItem(WH_KEY, JSON.stringify(stored));
+
+    // Hourly — merge strategy
+    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      if (!storedH[sn]) storedH[sn] = {};
+      for (const [hr, wh] of Object.entries(hours))
+        if (!(hr in storedH[sn]) || wh > storedH[sn][hr]) storedH[sn][hr] = wh;
+    }
+    for (const [sn, hours] of Object.entries(storedH)) {
+      if (!hourlyWh[sn]) hourlyWh[sn] = {};
+      for (const [hr, wh] of Object.entries(hours)) hourlyWh[sn][hr] = wh;
+    }
+
+    // Real pruning of hourly data (older than 48 hours) 
+    const cutOffDate = new Date();
+    cutOffDate.setHours(cutOffDate.getHours() - 48); // Keeps the last 2 days
+
+    for (const sn in storedH) {
+      const cleanedHours = {};
+      for (const [hr, wh] of Object.entries(storedH[sn])) {
+        // Parse PWA format "YYYY-MM-DD HH"
+        const parts = hr.split(' ');
+        if (parts.length === 2) {
+          const dateParts = parts[0].split('-');
+          const hour = parseInt(parts[1], 10);
+          const entryDate = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10), hour);
+          
+          // Only keep data if it is newer than or equal to 48 hours
+          if (entryDate >= cutOffDate) {
+            cleanedHours[hr] = wh;
+          }
+        }
+      }
+      storedH[sn] = cleanedHours;
+      hourlyWh[sn] = cleanedHours; // Keep runtime memory object in sync
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
+    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
+  } catch {}
 }
+
 
 function loadWh() {
   try {
