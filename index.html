@@ -180,7 +180,6 @@ canvas{width:100%;display:block;}
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="saveConfig()">Connect</button>
-      <button id="activateBG" onclick="activateBackgroundAudio()">Background</button>
     </div>
   </div>
 </div>
@@ -1443,30 +1442,6 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-function activateBackgroundAudio() {
-  // 1. creates audio-objekt (loop active)
-  const silentAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAAA");
-  silentAudio.loop = true;
-  silentAudio.play().then(() => {
-    console.log("Lautlose Audioschleife läuft. Brave hält die App aktiv.");
-    // 2. registry media session
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'MQTT Service',
-        artist: 'PWA Live Connection',
-        album: 'Heartbeat Monitor'
-      });     
-      // no pause
-      navigator.mediaSession.setActionHandler('play', () => silentAudio.play());
-      navigator.mediaSession.setActionHandler('pause', () => silentAudio.play()); // loops
-    }
-  }).catch(err => console.error("Audio-Start needs click:", err));
-}
-// Activation using btn
-document.getElementById('activateBG').addEventListener('click', activateBackgroundAudio);
-
-
-  
 requestWakeLock();
 loadConfig();
 loadNames();
