@@ -62,7 +62,9 @@
 </div>
 
 <script>
-const REGION_URL = "https://ecoflow.com";
+// Using a public CORS proxy to append missing server access headers
+const PROXY_URL = "https://herokuapp.com";
+const BASE_URL = "https://api-e.ecoflow.com";
 
 const form = document.getElementById("syncForm");
 const logDiv = document.getElementById("log");
@@ -125,9 +127,10 @@ form.addEventListener("submit", async (e) => {
         log("🔄 Authenticating with EcoFlow Cloud...");
         const base64Password = btoa(password);
         
-        // REPLACED: Removed explicit 'Content-Type' header to bypass preflight OPTIONS redirects
-        const loginResponse = await fetch(`${REGION_URL}/auth/login`, {
+        // Wrapped request with PROXY_URL prefix to circumvent cross-origin restrictions
+        const loginResponse = await fetch(`${PROXY_URL}${BASE_URL}/auth/login`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email, password: base64Password, scene: "APP" })
         });
         const loginResult = await loginResponse.json();
@@ -144,11 +147,11 @@ form.addEventListener("submit", async (e) => {
             cloudWhStructure[sn] = {};
 
             for (const block of dateBlocks) {
-                const statsUrl = `${REGION_URL}/statistics/energy/v1?sn=${sn}&type=day&userId=${userId}&startTime=${block.start}&endTime=${block.end}`;
+                const statsUrl = `${BASE_URL}/statistics/energy/v1?sn=${sn}&type=day&userId=${userId}&startTime=${block.start}&endTime=${block.end}`;
                 
                 try {
-                    // REPLACED: Removed Content-Type here too, passing only Authorization token
-                    const response = await fetch(statsUrl, {
+                    // Proxied statistics gathering route
+                    const response = await fetch(`${PROXY_URL}${statsUrl}`, {
                         method: 'GET',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -165,7 +168,7 @@ form.addEventListener("submit", async (e) => {
                 } catch (err) {
                     console.error(err);
                 }
-                await new Promise(res => setTimeout(res, 250));
+                await new Promise(res => setTimeout(res, 200));
             }
             log(`📊 Loaded ${Object.keys(cloudWhStructure[sn]).length} days for ${sn}.`);
         }
@@ -233,5 +236,6 @@ async function compressGzipBase64(text) {
 
 detectDevices();
 </script>
+
 </body>
 </html>
