@@ -71,8 +71,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 
 main{padding:12px;max-width:1400px;margin:0 auto;}
 #weatherInline{display:none;font-family:var(--sans);font-size:.8rem;color:#8fb0cc;
-  justify-content:flex-end;gap:4px;overflow:hidden;height:20px;padding: 0 5px;margin-bottom:10px;
-  background:rgba(6,12,26,.97);backdrop-filter:blur(10px);position:sticky;top:44px;z-index:100;}
+  justify-content:flex-end;gap:4px;overflow:hidden;height:20px;padding: 0 5px;margin-bottom:5px;}
            
 .section-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--muted);
   text-transform:uppercase;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
@@ -207,6 +206,7 @@ canvas{width:100%;display:block;}
 
 <main>
   <div id="weatherInline"></div>
+
   <!-- Devices grid -->
   <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
     <span>DEVICES</span>
@@ -219,10 +219,12 @@ canvas{width:100%;display:block;}
     </div>
   </div>
 
+  <!-- Solar Power -->
   <div class="chart-section" id="powerSection" style="display:none">
     <div class="section-title">SOLAR POWER — LAST 10 MIN</div>
     <div id="chartsContainer" style="display:flex;flex-direction:column;gap:14px;"></div>
   </div>
+
   <!-- Energy History -->
   <div class="chart-section" id="whSection" style="display:none">
     <div class="section-title">
@@ -242,6 +244,7 @@ canvas{width:100%;display:block;}
       <canvas id="whChart" height="160"></canvas>
     </div>
   </div>
+
   <!-- Recent Updates -->
   <div class="log-section" id="logSection" style="display:none;position:relative;">
     <div class="section-title">RECENT UPDATES</div>
