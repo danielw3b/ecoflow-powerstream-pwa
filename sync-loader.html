@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoFlow Cloud History Downloader</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f4f7; padding: 20px; color: #333; }
+        .card { background: white; max-width: 450px; margin: 40px auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; color: #111; font-size: 22px; }
+        p { color: #666; font-size: 14px; line-height: 1.5; }
+        .form-row { display: flex; gap: 12px; }
+        .form-group { margin-bottom: 18px; flex: 1; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px; }
+        input[type="email"], input[type="password"], input[type="date"], input[type="text"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; font-family: inherit; }
+        input:focus { border-color: #0070f3; outline: none; }
+        button { width: 100%; background: #0070f3; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; transition: background 0.2s; margin-top: 5px; }
+        button:hover { background: #0060df; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #log { margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 150px; overflow-y: auto; border: 1px solid #eee; display: none; }
+        .secure-badge { display: flex; align-items: center; gap: 6px; color: #28a745; font-size: 12px; margin-top: 15px; font-weight: 500; }
+        .detected-badge { font-size: 12px; color: #0070f3; font-weight: bold; margin-bottom: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>☁️ EcoFlow Cloud Import</h2>
+    <p>Enter your Consumer App credentials to fetch your historical daily data as a sync file.</p>
+    
+    <div id="detectionNotice" class="detected-badge"></div>
+
+    <form id="syncForm">
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" required placeholder="your-app-email@gmail.com">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="password">EcoFlow Password</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+            <div class="form-group">
+                <label for="startDate">History Start Date</label>
+                <input type="date" id="startDate" required value="2026-04-01">
+            </div>
+        </div>
+        
+        <div class="form-group" id="manualDeviceGroup">
+            <label for="serialNumbers">Device Serial Numbers (comma-separated)</label>
+            <input type="text" id="serialNumbers" placeholder="e.g. BK01Z..., HW51...">
+        </div>
+
+        <button type="submit" id="submitBtn">Fetch & Export History</button>
+    </form>
+
+    <div class="secure-badge">
+        🔒 <span>Client-Side Only: Your credentials and serials are processed directly in your browser.</span>
+    </div>
+
+    <div id="log"></div>
+</div>
+
+<script>
+const REGION_URL = "https://ecoflow.com";
+
+const form = document.getElementById("syncForm");
+const logDiv = document.getElementById("log");
+const submitBtn = document.getElementById("submitBtn");
+const manualDeviceGroup = document.getElementById("manualDeviceGroup");
+const detectionNotice = document.getElementById("detectionNotice");
+
+let deviceSerials = [];
+
+function detectDevices() {
+    try {
+        const localWh = localStorage.getItem("ecoflow_wh");
+        if (localWh) {
+            const parsed = JSON.parse(localWh);
+            deviceSerials = Object.keys(parsed);
+            
+            if (deviceSerials.length > 0) {
+                manualDeviceGroup.style.display = "none";
+                document.getElementById("serialNumbers").removeAttribute("required");
+                detectionNotice.style.display = "block";
+                detectionNotice.innerText = `✓ Automatically detected ${deviceSerials.length} device(s) from LocalStorage.`;
+                return;
+            }
+        }
+    } catch(e) { 
+        console.warn("Could not read LocalStorage automatically:", e); 
+    }
+    
+    manualDeviceGroup.style.display = "block";
+    document.getElementById("serialNumbers").setAttribute("required", "required");
+}
+
+function log(message) {
+    logDiv.style.display = "block";
+    logDiv.innerHTML += `<div>${message}</div>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    logDiv.innerHTML = "";
+    
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const startDate = document.getElementById("startDate").value;
+
+    if (manualDeviceGroup.style.display !== "none") {
+        const manualInput = document.getElementById("serialNumbers").value;
+        deviceSerials = manualInput.split(",").map(sn => sn.trim()).filter(sn => sn.length > 0);
+    }
+
+    if (deviceSerials.length === 0) {
+        log("❌ Error: No serial numbers provided.");
+        submitBtn.disabled = false;
+        return;
+    }
+
+    try {
+        log("🔄 Authenticating with EcoFlow Cloud...");
+        const base64Password = btoa(password);
+        
+        const loginResponse = await fetch(`${REGION_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: base64Password, scene: "APP" })
+        });
+        const loginResult = await loginResponse.json();
+        
+        if (!loginResult?.data?.token) throw new Error("Login failed. Please verify your password.");
+        const { token, userId } = loginResult.data;
+        log("🔑 Login successful!");
+
+        const dateBlocks = generateDateBlocks(startDate, new Date().toISOString().split('T')[0]);
+        let cloudWhStructure = {};
+
+        for (const sn of deviceSerials) {
+            log(`📡 Fetching cloud data for device: ${sn}...`);
+            cloudWhStructure[sn] = {};
+
+            for (const block of dateBlocks) {
+                const statsUrl = `${REGION_URL}/statistics/energy/v1?sn=${sn}&type=day&userId=${userId}&startTime=${block.start}&endTime=${block.end}`;
+                
+                try {
+                    const response = await fetch(statsUrl, {
+                        method: 'GET',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const result = await response.json();
+
+                    if (result?.data && Array.isArray(result.data)) {
+                        result.data.forEach(record => {
+                            const recordDate = record.date || record.timestamp?.split(' ')[0]; 
+                            if (recordDate && record.total2w !== undefined) {
+                                cloudWhStructure[sn][recordDate] = parseFloat(record.total2w);
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+                await new Promise(res => setTimeout(res, 200));
+            }
+            log(`📊 Loaded ${Object.keys(cloudWhStructure[sn]).length} days for ${sn}.`);
+        }
+
+        const exportStructure = {
+            "ecoflow_wh": JSON.stringify(cloudWhStructure),
+            "ecoflow_config": "",
+            "ecoflow_names": "",
+            "ecoflow_wh_hourly": ""
+        };
+
+        log("📦 GZIP compressing datasets...");
+        const jsonString = JSON.stringify(exportStructure);
+        const compressedBase64 = await compressGzipBase64(jsonString);
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ compressedData: compressedBase64 }));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "ecoflow-config.gz.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+
+        log("✅ File 'ecoflow-config.gz.json' successfully generated!");
+
+    } catch (error) {
+        log(`❌ Error: ${error.message}`);
+    } finally {
+        submitBtn.disabled = false;
+    }
+});
+
+function generateDateBlocks(startStr, endStr) {
+    let blocks = [];
+    let currentStart = new Date(startStr);
+    const finalEnd = new Date(endStr);
+
+    while (currentStart <= finalEnd) {
+        let currentEnd = new Date(currentStart);
+        currentEnd.setDate(currentEnd.getDate() + 30);
+        if (currentEnd > finalEnd) currentEnd = new Date(finalEnd);
+
+        blocks.push({
+            start: currentStart.toISOString().split('T')[0],
+            end: currentEnd.toISOString().split('T')[0]
+        });
+        currentStart.setDate(currentStart.getDate() + 31);
+    }
+    return blocks;
+}
+
+async function compressGzipBase64(text) {
+    const stream = new Blob([text], { type: 'text/plain' }).stream();
+    const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+    const response = new Response(compressedStream);
+    const buffer = await response.arrayBuffer();
+    
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+detectDevices();
+</script>
+</body>
+</html>
