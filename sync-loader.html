@@ -62,7 +62,6 @@
 </div>
 
 <script>
-// Serverless browser wrapper to natively resolve missing cross-origin headers
 const ALLORIGINS_URL = "https://allorigins.win";
 const BASE_URL = "https://ecoflow.com";
 
@@ -126,11 +125,8 @@ form.addEventListener("submit", async (e) => {
     try {
         log("🔄 Authenticating with EcoFlow Cloud...");
         const base64Password = btoa(password);
-        
-        // Formulating payload payload string
         const payloadData = { email: email, password: base64Password, scene: "APP" };
         
-        // Passing request safely wrapped inside the AllOrigins engine
         const targetLoginUrl = encodeURIComponent(`${BASE_URL}/auth/login`);
         const loginResponse = await fetch(`${ALLORIGINS_URL}${targetLoginUrl}`, {
             method: 'POST',
@@ -252,7 +248,5 @@ async function compressGzipBase64(text) {
 
 detectDevices();
 </script>
-
-
 </body>
 </html>
