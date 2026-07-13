@@ -125,9 +125,9 @@ form.addEventListener("submit", async (e) => {
         log("🔄 Authenticating with EcoFlow Cloud...");
         const base64Password = btoa(password);
         
+        // REPLACED: Removed explicit 'Content-Type' header to bypass preflight OPTIONS redirects
         const loginResponse = await fetch(`${REGION_URL}/auth/login`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email, password: base64Password, scene: "APP" })
         });
         const loginResult = await loginResponse.json();
@@ -147,6 +147,7 @@ form.addEventListener("submit", async (e) => {
                 const statsUrl = `${REGION_URL}/statistics/energy/v1?sn=${sn}&type=day&userId=${userId}&startTime=${block.start}&endTime=${block.end}`;
                 
                 try {
+                    // REPLACED: Removed Content-Type here too, passing only Authorization token
                     const response = await fetch(statsUrl, {
                         method: 'GET',
                         headers: { 'Authorization': `Bearer ${token}` }
@@ -164,7 +165,7 @@ form.addEventListener("submit", async (e) => {
                 } catch (err) {
                     console.error(err);
                 }
-                await new Promise(res => setTimeout(res, 200));
+                await new Promise(res => setTimeout(res, 250));
             }
             log(`📊 Loaded ${Object.keys(cloudWhStructure[sn]).length} days for ${sn}.`);
         }
