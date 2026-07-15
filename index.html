@@ -979,6 +979,10 @@ function renderWhChart() {
   const today    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   const nowHour  = `${today} ${pad(now.getHours())}`;
 
+  const monthShort = now.toLocaleString('en', { month: 'short' });
+  const thisYear   = now.toLocaleString('en', { year: 'long' });
+  
+
   // ── CUTOFF FILTER: Keep only the last 30 days when on the "day" tab ──
   if (currentPeriod === "day") {
     const thirtyDaysAgo = new Date();
@@ -1001,8 +1005,8 @@ function renderWhChart() {
   const periodWh = sns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
   const periodLabel = currentPeriod==="hour"  ? "Now" // This hour
                     : currentPeriod==="day"   ? "Today" // Today
-                    : currentPeriod==="month" ? "TM" // This month
-                    : "TY"; // This year
+                    : currentPeriod==="month" ? monthShort //"TM" // This month
+                    : thisYear; //"TY"; // This year
   document.getElementById("whTotal").textContent =
     `${periodLabel}: ${periodWh>=1000?(periodWh/1000).toFixed(2)+" kWh":periodWh.toFixed(0)+" Wh"}`;
 
