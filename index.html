@@ -980,7 +980,7 @@ function renderWhChart() {
   const nowHour  = `${today} ${pad(now.getHours())}`;
 
   const monthShort = now.toLocaleString('en', { month: 'short' });
-  const thisYear   = now.toLocaleString('en', { year: 'long' });
+  const thisYear   = now.toLocaleString('en', { year: 'numeric' });
   
 
   // ── CUTOFF FILTER: Keep only the last 30 days when on the "day" tab ──
