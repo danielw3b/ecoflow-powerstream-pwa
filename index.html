@@ -866,9 +866,10 @@ function initPwaPerformanceTimers() {
   setUiRenderSpeed(1000);
   resetIdleTimer();
 
-  // Setup batch database savings to localStorage once per minute
+  // Setup batch database savings to localStorage twice per minute
   if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
-  pwaSaveIntervalId = setInterval(saveWh, 60000);
+  // Change 60000 to 30000 for a 30-second background save cycle
+  pwaSaveIntervalId = setInterval(saveWh, 30000);
 
   // Monitor basic interaction metrics across mobile and desktop environments
   window.addEventListener("mousemove", resetIdleTimer, { passive: true });
