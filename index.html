@@ -423,7 +423,9 @@ function connectMqtt(creds, devices) {
       if (type === 2) { // CONNACK
         if (body[1] !== 0) { setStatus("error", `MQTT rc=${body[1]}`); return; }
         setStatus("live", "MQTT Live");
-        
+        // ── START PERIODIC UI AND STORAGE BATCHING LOOP ────────────────
+        initPwaPerformanceTimers();
+        // ───────────────────────────────────────────────────────────────
         mqttRetry = 2000; // unused but harmless
         if (!subscribed) {
           subscribed = true;
@@ -475,8 +477,11 @@ function connectMqtt(creds, devices) {
   mqttWs.onclose = () => {
     clearInterval(pingTimer); pingTimer = null;
     clearTimeout(pongTimer);  pongTimer = null;
+    // ── CLEAR LOOP INTERVALS UPON DISCONNECT ───────────────────────────
+    clearInterval(uiRenderIntervalId); uiRenderIntervalId = null;
+    clearInterval(pwaSaveIntervalId);  pwaSaveIntervalId = null;
+    // ───────────────────────────────────────────────────────────────────
     setStatus("error", "Reconnecting…");
-    
     setTimeout(() => connectMqtt(creds, devices), RECONNECT_MS);
   };
   mqttWs.onerror = () => mqttWs.close();
@@ -507,7 +512,7 @@ function colorFor(sn) {
 }
 
 // ── Persist Wh to localStorage ───────────────────────────────────────────────
-function saveWh() {
+/*function saveWh() {
   try {
     // Daily — merge, never shrink
     const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
@@ -560,8 +565,64 @@ function saveWh() {
 
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
   } catch {}
-}
+}*/
 
+// ── PERSIST WH TO LOCALSTORAGE (OPTIMIZED) ───────────────────────────────────
+function saveWh() {
+  try {
+    // 1. Daily values — Merge memory and disk structures
+    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    for (const [sn, days] of Object.entries(dailyWh)) {
+      if (!stored[sn]) stored[sn] = {};
+      for (const [day, wh] of Object.entries(days)) {
+        if (!(day in stored[sn]) || wh > stored[sn][day]) {
+          stored[sn][day] = wh;
+        }
+      }
+    }
+    for (const [sn, days] of Object.entries(stored)) {
+      if (!dailyWh[sn]) dailyWh[sn] = {};
+      for (const [day, wh] of Object.entries(days)) dailyWh[sn][day] = wh;
+    }
+    localStorage.setItem(WH_KEY, JSON.stringify(stored));
+
+    // 2. Hourly values — Aggregate and clean old records
+    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      if (!storedH[sn]) storedH[sn] = {};
+      for (const [hr, wh] of Object.entries(hours)) {
+        if (!(hr in storedH[sn]) || wh > storedH[sn][hr]) {
+          storedH[sn][hr] = wh;
+        }
+      }
+    }
+
+    // Set rolling 48-hour cutoff timestamp
+    const cutOffDate = new Date();
+    cutOffDate.setHours(cutOffDate.getHours() - 48);
+    
+    // Generate a lexicographically sortable string: "YYYY-MM-DD HH"
+    const pad = (n) => String(n).padStart(2, '0');
+    const cutOffStr = `${cutOffDate.getFullYear()}-${pad(cutOffDate.getMonth() + 1)}-${pad(cutOffDate.getDate())} ${pad(cutOffDate.getHours())}`;
+
+    // Perform ultra-fast pruning using a simple string comparison (avoids expensive Date parsing)
+    for (const sn in storedH) {
+      const cleanedHours = {};
+      for (const [hr, wh] of Object.entries(storedH[sn])) {
+        // String format allows direct comparison ("2026-03-30 14" >= "2026-03-28 14")
+        if (hr >= cutOffStr) {
+          cleanedHours[hr] = wh;
+        }
+      }
+      storedH[sn] = cleanedHours;
+      hourlyWh[sn] = cleanedHours; // Sync runtime memory cache
+    }
+
+    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
+  } catch (e) {
+    console.error("PWA storage optimization failed:", e);
+  }
+}
 
 function loadWh() {
   try {
@@ -681,10 +742,10 @@ function handleMqtt(topic, payload, devices, clientId) {
   if (logRows.length > MAX_LOG) logRows.pop();
 
   setStatus("live", "Live");
-  renderDevices();
-  renderPowerChart();
-  renderWhChart();
-  renderLog();
+  //renderDevices();
+  //renderPowerChart();
+  //renderWhChart();
+  //renderLog();
 }
 
 function accumulateWh(sn, watts) {
@@ -724,7 +785,32 @@ function accumulateWh(sn, watts) {
   }
 
   lastSnap[sn] = { ts: now, watts };
-  saveWh();
+  //saveWh();
+}
+
+// ── PERFORMANCE INTERVALL TIMERS ─────────────────────────────────────────────
+let uiRenderIntervalId = null;
+let pwaSaveIntervalId = null;
+
+/**
+ * Initializes performance-friendly throttled intervals.
+ * Decouples immediate MQTT parsing from heavy DOM and storage operations.
+ */
+function initPwaPerformanceTimers() {
+  // 1. UI Throttling: Redraw the UI every 5 seconds instead of every single second
+  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
+  uiRenderIntervalId = setInterval(() => {
+    if (typeof renderDevices === "function") renderDevices();
+    if (typeof renderPowerChart === "function") renderPowerChart();
+    if (typeof renderWhChart === "function") renderWhChart();
+    if (typeof renderLog === "function") renderLog();
+  }, 5000); // 5-second interval drastically saves mobile CPU/GPU power
+
+  // 2. Storage Batching: Persist collected memory structures to disk once per minute
+  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
+  pwaSaveIntervalId = setInterval(saveWh, 60000);
+
+  console.log("🔋 Power-Safe Mode Active: UI-Throttle (5s) and Batch-Save (60s) initialized.");
 }
 
 // ════════════════════════════════════════════════════════════════
