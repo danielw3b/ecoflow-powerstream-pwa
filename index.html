@@ -477,10 +477,23 @@ function connectMqtt(creds, devices) {
   mqttWs.onclose = () => {
     clearInterval(pingTimer); pingTimer = null;
     clearTimeout(pongTimer);  pongTimer = null;
+    
     // ── CLEAR LOOP INTERVALS UPON DISCONNECT ───────────────────────────
-    clearInterval(uiRenderIntervalId); uiRenderIntervalId = null;
-    clearInterval(pwaSaveIntervalId);  pwaSaveIntervalId = null;
+    //clearInterval(uiRenderIntervalId); uiRenderIntervalId = null;
+    //clearInterval(pwaSaveIntervalId);  pwaSaveIntervalId = null;
     // ───────────────────────────────────────────────────────────────────
+
+    // Clean up routines on onclose
+    function clearPwaPerformanceTimers() {
+      clearInterval(uiRenderIntervalId); uiRenderIntervalId = null;
+      clearInterval(pwaSaveIntervalId);  pwaSaveIntervalId = null;
+      clearTimeout(idleTimeoutId);       idleTimeoutId = null;
+      
+      window.removeEventListener("mousemove", resetIdleTimer);
+      window.removeEventListener("touchstart", resetIdleTimer);
+      window.removeEventListener("keydown", resetIdleTimer);
+    }
+    
     setStatus("error", "Reconnecting…");
     setTimeout(() => connectMqtt(creds, devices), RECONNECT_MS);
   };
@@ -789,13 +802,13 @@ function accumulateWh(sn, watts) {
 }
 
 // ── PERFORMANCE INTERVALL TIMERS ─────────────────────────────────────────────
+/*
 let uiRenderIntervalId = null;
 let pwaSaveIntervalId = null;
 
-/**
- * Initializes performance-friendly throttled intervals.
- * Decouples immediate MQTT parsing from heavy DOM and storage operations.
- */
+// Initializes performance-friendly throttled intervals.
+// Decouples immediate MQTT parsing from heavy DOM and storage operations.
+
 function initPwaPerformanceTimers() {
   // 1. UI Throttling: Redraw the UI every 5 seconds instead of every single second
   if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
@@ -811,8 +824,58 @@ function initPwaPerformanceTimers() {
   pwaSaveIntervalId = setInterval(saveWh, 60000);
 
   console.log("🔋 Power-Safe Mode Active: UI-Throttle (5s) and Batch-Save (60s) initialized.");
+}*/
+
+// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
+let uiRenderIntervalId = null;
+let pwaSaveIntervalId = null;
+let idleTimeoutId = null;
+let currentRenderSpeed = 5000;
+
+// Central render function pulling from live background memory
+function runUiRender() {
+  if (typeof renderDevices === "function") renderDevices();
+  if (typeof renderPowerChart === "function") renderPowerChart();
+  if (typeof renderWhChart === "function") renderWhChart();
+  if (typeof renderLog === "function") renderLog();
 }
 
+// Safely update intervals without dropping states
+function setUiRenderSpeed(ms) {
+  if (currentRenderSpeed === ms && uiRenderIntervalId) return;
+  currentRenderSpeed = ms;
+  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
+  uiRenderIntervalId = setInterval(runUiRender, ms);
+}
+
+// Triggered on any screen touch, click, or movement
+function resetIdleTimer() {
+  // Switch back to high performance 1s intervals when actively viewed
+  setUiRenderSpeed(1000); 
+
+  clearTimeout(idleTimeoutId);
+  // After 20 sec (20000ms) of no user activity, drop to battery saving mode
+  idleTimeoutId = setTimeout(() => {
+    console.log("🔋 Phone is unattended. Dropping UI refresh to 10s to preserve battery.");
+    setUiRenderSpeed(10000); // 10-second updates for background logging
+  }, 20000);
+}
+
+function initPwaPerformanceTimers() {
+  // Start with default rendering speed
+  setUiRenderSpeed(1000);
+  resetIdleTimer();
+
+  // Setup batch database savings to localStorage once per minute
+  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
+  pwaSaveIntervalId = setInterval(saveWh, 60000);
+
+  // Monitor basic interaction metrics across mobile and desktop environments
+  window.addEventListener("mousemove", resetIdleTimer, { passive: true });
+  window.addEventListener("touchstart", resetIdleTimer, { passive: true });
+  window.addEventListener("keydown", resetIdleTimer, { passive: true });
+}
+  
 // ════════════════════════════════════════════════════════════════
 //  RENDERING
 // ════════════════════════════════════════════════════════════════
