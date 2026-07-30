@@ -3,10 +3,10 @@
   <polygon points="307,76 128,292 256,292 205,446 384,210 256,210" fill="#ffb830"/>
 </svg> -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <circle cx="256" cy="256" r="256" fill="#060c1a"/>
-  <circle cx="256" cy="256" r="160" fill="#2d2b1f"/>
-  <circle cx="256" cy="256" r="130" fill="#544823"/>
-  <circle cx="256" cy="256" r="100" fill="#7a6527"/>
+  <rect width="512" height="512" fill="#060c1a"/>
+  <circle cx="256" cy="256" r="140" fill="#a47d2b"/>
+  <circle cx="256" cy="256" r="110" fill="#ce9e31"/>
+  <circle cx="256" cy="256" r="80" fill="#f5be38"/>
   <polygon points="286,131 176,263 256,263 224,370 336,211 256,211" fill="#ffb830"/>
 </svg>
 
