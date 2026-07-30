@@ -3,7 +3,7 @@
   <polygon points="307,76 128,292 256,292 205,446 384,210 256,210" fill="#ffb830"/>
 </svg>-->
 
-<svg xmlns="http://w3.org" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <!-- Weichzeichner-Filter für den Glow-Effekt -->
     <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
