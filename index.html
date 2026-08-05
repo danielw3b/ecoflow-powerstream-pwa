@@ -1357,7 +1357,7 @@ async function fetchWeather() {
     if (!cachedCoords) {
       const pos = await new Promise((res) =>
         navigator.geolocation
-          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout:15000})
+          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout:30000})
           : res(null)
       );
       
