@@ -1363,17 +1363,19 @@ async function fetchWeather() {
       
       if (pos?.coords) {
         cachedCoords = {
-          lat: pos.coords.latitude.toFixed(4),
-          lon: pos.coords.longitude.toFixed(4)
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude
         };
       }
     }
 
-    // Extract values from variable, fallback to generic coords if GPS was blocked
-    const lat = cachedCoords?.lat ?? 51.1657;
-    const lon = cachedCoords?.lon ?? 10.4515;
+    // Abort if no coordinates could be retrieved
+    if (!cachedCoords) return;
 
-    const url = `https://open-meteo.com{lat}&longitude=${lon}` +
+    const lat = cachedCoords.lat;
+    const lon = cachedCoords.lon;
+
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
       `&daily=sunshine_duration&wind_speed_unit=ms&timezone=auto`;
     const r = await fetch(url);
@@ -1387,7 +1389,6 @@ async function fetchWeather() {
     const dir   = c.winddirection_10m;
     const cloud = c.cloudcover;
     const rad   = c.direct_radiation;
-    
     // sunshine_duration is daily in seconds → convert to hours
     const sunHours = d.daily?.sunshine_duration?.[0]
       ? (d.daily.sunshine_duration[0] / 3600).toFixed(1)
