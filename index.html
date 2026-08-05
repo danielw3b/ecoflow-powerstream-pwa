@@ -1295,6 +1295,7 @@ function renderLog() {
 // ════════════════════════════════════════════════════════════════
 //  WEATHER (open-meteo, no API key needed)
 // ════════════════════════════════════════════════════════════════
+/*
 const WMO = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",
   61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",
   95:"⛈️",96:"⛈️",99:"⛈️"};
@@ -1322,6 +1323,71 @@ async function fetchWeather() {
     const dir   = c.winddirection_10m;
     const cloud = c.cloudcover;
     const rad   = c.direct_radiation;
+    // sunshine_duration is daily in seconds → convert to hours
+    const sunHours = d.daily?.sunshine_duration?.[0]
+      ? (d.daily.sunshine_duration[0] / 3600).toFixed(1)
+      : null;
+    const windArrow = `<span style="display:inline-block;transform:rotate(${dir}deg);line-height:1">↑</span>`;
+    const inlineEl  = document.getElementById("weatherInline");
+    if (inlineEl) {
+      inlineEl.style.display = "flex";
+      inlineEl.innerHTML =
+        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°/${tempf}F</b></span>` +
+        `&nbsp;<span title="Wind">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
+        `&nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
+        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
+        (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
+    }
+  } catch {}
+}
+*/
+// ════════════════════════════════════════════════════════════════
+//  WEATHER (open-meteo, in-memory session persistence)
+// ════════════════════════════════════════════════════════════════
+const WMO = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",
+  61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",
+  95:"⛈️",96:"⛈️",99:"⛈️"};
+
+// Global session variable to hold coordinates in RAM
+let cachedCoords = null; 
+
+async function fetchWeather() {
+  try {
+    // Only query browser GPS if our in-memory variable is empty
+    if (!cachedCoords) {
+      const pos = await new Promise((res) =>
+        navigator.geolocation
+          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout:15000})
+          : res(null)
+      );
+      
+      if (pos?.coords) {
+        cachedCoords = {
+          lat: pos.coords.latitude.toFixed(4),
+          lon: pos.coords.longitude.toFixed(4)
+        };
+      }
+    }
+
+    // Extract values from variable, fallback to generic coords if GPS was blocked
+    const lat = cachedCoords?.lat ?? 51.1657;
+    const lon = cachedCoords?.lon ?? 10.4515;
+
+    const url = `https://open-meteo.com{lat}&longitude=${lon}` +
+      `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
+      `&daily=sunshine_duration&wind_speed_unit=ms&timezone=auto`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const c    = d.current;
+    const icon = WMO[c.weathercode] ?? "🌡️";
+    const temp  = Math.round(c.temperature_2m);
+    const tempf = Math.round((temp*1.8)+32);
+    const speed = c.windspeed_10m;
+    const speedmph = Math.round(speed*2.23694);
+    const dir   = c.winddirection_10m;
+    const cloud = c.cloudcover;
+    const rad   = c.direct_radiation;
+    
     // sunshine_duration is daily in seconds → convert to hours
     const sunHours = d.daily?.sunshine_duration?.[0]
       ? (d.daily.sunshine_duration[0] / 3600).toFixed(1)
