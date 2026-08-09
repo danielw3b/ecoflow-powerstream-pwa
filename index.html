@@ -524,62 +524,6 @@ function colorFor(sn) {
   return snColorMap[sn];
 }
 
-// ── Persist Wh to localStorage ───────────────────────────────────────────────
-/*function saveWh() {
-  try {
-    // Daily — merge, never shrink
-    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
-    for (const [sn, days] of Object.entries(dailyWh)) {
-      if (!stored[sn]) stored[sn] = {};
-      for (const [day, wh] of Object.entries(days))
-        if (!(day in stored[sn]) || wh > stored[sn][day]) stored[sn][day] = wh;
-    }
-    for (const [sn, days] of Object.entries(stored)) {
-      if (!dailyWh[sn]) dailyWh[sn] = {};
-      for (const [day, wh] of Object.entries(days)) dailyWh[sn][day] = wh;
-    }
-    localStorage.setItem(WH_KEY, JSON.stringify(stored));
-
-    // Hourly — merge strategy
-    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
-    for (const [sn, hours] of Object.entries(hourlyWh)) {
-      if (!storedH[sn]) storedH[sn] = {};
-      for (const [hr, wh] of Object.entries(hours))
-        if (!(hr in storedH[sn]) || wh > storedH[sn][hr]) storedH[sn][hr] = wh;
-    }
-    for (const [sn, hours] of Object.entries(storedH)) {
-      if (!hourlyWh[sn]) hourlyWh[sn] = {};
-      for (const [hr, wh] of Object.entries(hours)) hourlyWh[sn][hr] = wh;
-    }
-    // Real pruning of hourly data (older than 48 hours) 
-    const cutOffDate = new Date();
-    cutOffDate.setHours(cutOffDate.getHours() - 48); // Keeps the last 2 days
-
-    for (const sn in storedH) {
-      const cleanedHours = {};
-      for (const [hr, wh] of Object.entries(storedH[sn])) {
-        // Parse PWA format "YYYY-MM-DD HH"
-        const parts = hr.split(' ');
-        if (parts.length === 2) {
-          const dateParts = parts[0].split('-');
-          const hour = parseInt(parts[1], 10);
-          const entryDate = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10), hour);
-          
-          // Only keep data if it is newer than or equal to 48 hours
-          if (entryDate >= cutOffDate) {
-            cleanedHours[hr] = wh;
-          }
-        }
-      }
-      storedH[sn] = cleanedHours;
-      hourlyWh[sn] = cleanedHours; // Keep runtime memory object in sync
-    }
-    // ──────────────────────────────────────────────────────────────────────────
-
-    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
-  } catch {}
-}*/
-
 // ── PERSIST WH TO LOCALSTORAGE (OPTIMIZED) ───────────────────────────────────
 function saveWh() {
   try {
@@ -800,31 +744,6 @@ function accumulateWh(sn, watts) {
   lastSnap[sn] = { ts: now, watts };
   //saveWh();
 }
-
-// ── PERFORMANCE INTERVALL TIMERS ─────────────────────────────────────────────
-/*
-let uiRenderIntervalId = null;
-let pwaSaveIntervalId = null;
-
-// Initializes performance-friendly throttled intervals.
-// Decouples immediate MQTT parsing from heavy DOM and storage operations.
-
-function initPwaPerformanceTimers() {
-  // 1. UI Throttling: Redraw the UI every 5 seconds instead of every single second
-  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
-  uiRenderIntervalId = setInterval(() => {
-    if (typeof renderDevices === "function") renderDevices();
-    if (typeof renderPowerChart === "function") renderPowerChart();
-    if (typeof renderWhChart === "function") renderWhChart();
-    if (typeof renderLog === "function") renderLog();
-  }, 5000); // 5-second interval drastically saves mobile CPU/GPU power
-
-  // 2. Storage Batching: Persist collected memory structures to disk once per minute
-  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
-  pwaSaveIntervalId = setInterval(saveWh, 60000);
-
-  console.log("🔋 Power-Safe Mode Active: UI-Throttle (5s) and Batch-Save (60s) initialized.");
-}*/
 
 // ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
 let uiRenderIntervalId = null;
@@ -1293,55 +1212,6 @@ function renderLog() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  WEATHER (open-meteo, no API key needed)
-// ════════════════════════════════════════════════════════════════
-/*
-const WMO = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",
-  61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",
-  95:"⛈️",96:"⛈️",99:"⛈️"};
-
-async function fetchWeather() {
-  try {
-    const pos = await new Promise((res) =>
-      navigator.geolocation
-        ? navigator.geolocation.getCurrentPosition(res, ()=>res(null), {timeout:30000})
-        : res(null)
-    );
-    const lat = pos?.coords?.latitude;
-    const lon = pos?.coords?.longitude;
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
-      `&daily=sunshine_duration&wind_speed_unit=ms&timezone=auto`;
-    const r = await fetch(url);
-    const d = await r.json();
-    const c    = d.current;
-    const icon = WMO[c.weathercode] ?? "🌡️";
-    const temp  = Math.round(c.temperature_2m);
-    const tempf = Math.round((temp*1.8)+32);
-    const speed = c.windspeed_10m;
-    const speedmph = Math.round(speed*2.23694);
-    const dir   = c.winddirection_10m;
-    const cloud = c.cloudcover;
-    const rad   = c.direct_radiation;
-    // sunshine_duration is daily in seconds → convert to hours
-    const sunHours = d.daily?.sunshine_duration?.[0]
-      ? (d.daily.sunshine_duration[0] / 3600).toFixed(1)
-      : null;
-    const windArrow = `<span style="display:inline-block;transform:rotate(${dir}deg);line-height:1">↑</span>`;
-    const inlineEl  = document.getElementById("weatherInline");
-    if (inlineEl) {
-      inlineEl.style.display = "flex";
-      inlineEl.innerHTML =
-        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°/${tempf}F</b></span>` +
-        `&nbsp;<span title="Wind">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
-        `&nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
-        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
-        (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
-    }
-  } catch {}
-}
-*/
-// ════════════════════════════════════════════════════════════════
 //  WEATHER (open-meteo, in-memory session persistence)
 // ════════════════════════════════════════════════════════════════
 const WMO = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",
@@ -1578,7 +1448,7 @@ function installPwa() {
 }
 
 // ── Wake Lock ─────────────────────────────────────────────────────────────────
-let wakeLock = null;
+/*let wakeLock = null;
 async function requestWakeLock() {
   if (!("wakeLock" in navigator)) return;
   try {
@@ -1592,18 +1462,56 @@ async function requestWakeLock() {
     document.getElementById("wakeLockIcon").title = "Screen stays on";
   } catch {}
 }
-
-/*
-// Simple visibility handler — only re-acquire wake lock, nothing else
-// MQTT reconnects itself via onclose → setTimeout → connectMqtt
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") requestWakeLock();
-});
 */
-// ════════════════════════════════════════════════════════════════
-// Improved Visibility Watcher — Handles Wake Lock & Frozen MQTT Sockets
-// ════════════════════════════════════════════════════════════════
-document.addEventListener("visibilitychange", () => {
+// ── Enhanced Request / Toggle Function ────────────────────────────────────────
+async function toggleWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+
+  // IF ACTIVE: Release it manually when clicked
+  if (wakeLock !== null) {
+    try {
+      await wakeLock.release();
+      wakeLock = null; // Reset variable
+      // Note: The "release" event listener we attached will automatically 
+      // handle changing the icon opacity to 0.3 and title.
+      console.log("Wake lock manually released by user click.");
+    } catch (err) {
+      console.error(`Failed to manually release wake lock: ${err.message}`);
+    }
+    return;
+  }
+
+  // IF INACTIVE: Request a new one
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+      document.getElementById("wakeLockIcon").style.opacity = ".3";
+      document.getElementById("wakeLockIcon").title = "Screen lock inactive";
+      console.log("Wake Lock was released by the OS.");
+    });
+    
+    document.getElementById("wakeLockIcon").style.opacity = "1";
+    document.getElementById("wakeLockIcon").title = "Screen stays on";
+    console.log("Wake Lock acquired successfully!");
+    
+  } catch (err) {
+    console.error(`Wake Lock failed: ${err.name} - ${err.message}`);
+  }
+}
+
+// ── Bind to the Click Event ──────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  const wakeLockIcon = document.getElementById("wakeLockIcon");
+  if (wakeLockIcon) {
+    // Change this from requestWakeLock to toggleWakeLock
+    wakeLockIcon.addEventListener("click", toggleWakeLock);
+  }
+});
+
+// ── Improved Visibility Watcher — Handles Wake Lock & Frozen MQTT Sockets ─────
+/*document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     // 1. Re-acquire wake lock instantly
     requestWakeLock();
@@ -1612,6 +1520,21 @@ document.addEventListener("visibilitychange", () => {
     if (mqttWs && mqttWs.readyState !== 1) { 
       console.warn("MQTT connection state unhealthy on wakeup, forcing reconnect chain...");
       try { mqttWs.close(); } catch {} // Fires native onclose -> triggers your automatic timeout reconnect
+    }
+  }
+});
+*/
+// ── Improved Visibility Watcher ───────────────────────────────────────────────
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {    
+    // 1. Re-acquire wake lock after a tiny 250ms delay to let the window fully activate
+    setTimeout(() => {
+      requestWakeLock();
+    }, 250);
+    // 2. Kick frozen MQTT socket back to life if it got stuck in the background
+    if (mqttWs && mqttWs.readyState !== 1) { 
+      console.warn("MQTT connection state unhealthy on wakeup, forcing reconnect chain...");
+      try { mqttWs.close(); } catch {} 
     }
   }
 });
