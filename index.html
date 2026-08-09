@@ -1516,26 +1516,19 @@ document.addEventListener("DOMContentLoaded", () => {
 // ── Optimized Visibility Watcher ─────────────────────────────────────────────
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
+    
     // 1. Give the OS 250ms to fully wake up before requesting the lock
     setTimeout(() => {
       requestWakeLock();
     }, 250);
-    // 2. Safely kick frozen MQTT socket back to life
-    if (mqttWs) {
-      // readyState 1 means OPEN. If it is anything else (0=CONNECTING, 2=CLOSING, 3=CLOSED):
-      if (mqttWs.readyState !== 1) {
-        console.warn(`MQTT state unhealthy (${mqttWs.readyState}) on wakeup, handling reconnect...`);
-        try {
-          // Only call close() if the socket is actively open/connecting to prevent the Chrome warning
-          if (mqttWs.readyState === 1 || mqttWs.readyState === 0) {
-            mqttWs.close();
-          } else {
-            // If it's already closed or closing, manually kick off your custom reconnect function here
-            // e.g., startMqttConnection(); 
-          }
-        } catch (err) {
-          console.error(`Error resetting socket: ${err.message}`);
-        }
+    
+    // 2. Clear out zombie/frozen connections to let onclose do its job
+    if (mqttWs && (mqttWs.readyState === 1 || mqttWs.readyState === 0)) {
+      console.warn(`MQTT state unhealthy (${mqttWs.readyState}) on wakeup, forcing native reconnect...`);
+      try { 
+        mqttWs.close(); // This triggers your robust onclose block!
+      } catch (err) {
+        console.error(`Error closing socket: ${err.message}`);
       }
     }
   }
