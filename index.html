@@ -1463,25 +1463,15 @@ async function requestWakeLock() {
   } catch {}
 }
 */
-// ── Enhanced Request / Toggle Function ────────────────────────────────────────
+// ── Streamlined Wake Lock (Activation Only) ──────────────────────────────────
+let wakeLock = null;
 async function requestWakeLock() {
   if (!("wakeLock" in navigator)) return;
+  
+  // Guard Clause: If already active, exit immediately. 
+  // User cannot accidentally turn it off.
+  if (wakeLock !== null) return; 
 
-  // IF ACTIVE: Release it manually when clicked
-  if (wakeLock !== null) {
-    try {
-      await wakeLock.release();
-      wakeLock = null; // Reset variable
-      // Note: The "release" event listener we attached will automatically 
-      // handle changing the icon opacity to 0.3 and title.
-      console.log("Wake lock manually released by user click.");
-    } catch (err) {
-      console.error(`Failed to manually release wake lock: ${err.message}`);
-    }
-    return;
-  }
-
-  // IF INACTIVE: Request a new one
   try {
     wakeLock = await navigator.wakeLock.request("screen");
     
@@ -1501,12 +1491,11 @@ async function requestWakeLock() {
   }
 }
 
-// ── Bind to the Click Event ──────────────────────────────────────────────────
+// ── Bind To Manual Click Safety Net ──────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   const wakeLockIcon = document.getElementById("wakeLockIcon");
   if (wakeLockIcon) {
-    // Change this from requestWakeLock to toggleWakeLock
-    wakeLockIcon.addEventListener("click", toggleWakeLock);
+    wakeLockIcon.addEventListener("click", requestWakeLock);
   }
 });
 
@@ -1524,14 +1513,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 */
-// ── Improved Visibility Watcher ───────────────────────────────────────────────
+// ── Automated Visibility Watcher ─────────────────────────────────────────────
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {    
-    // 1. Re-acquire wake lock after a tiny 250ms delay to let the window fully activate
+  if (document.visibilityState === "visible") {
+    
+    // Give the OS 250ms to fully wake up before requesting the lock
     setTimeout(() => {
       requestWakeLock();
     }, 250);
-    // 2. Kick frozen MQTT socket back to life if it got stuck in the background
+    
+    // Kick frozen MQTT socket back to life
     if (mqttWs && mqttWs.readyState !== 1) { 
       console.warn("MQTT connection state unhealthy on wakeup, forcing reconnect chain...");
       try { mqttWs.close(); } catch {} 
