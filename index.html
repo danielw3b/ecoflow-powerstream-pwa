@@ -1214,7 +1214,7 @@ function renderLog() {
 // ════════════════════════════════════════════════════════════════
 //  WEATHER (open-meteo, in-memory session persistence)
 // ════════════════════════════════════════════════════════════════
-const WMO = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",
+/*const WMO = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",
   61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",
   95:"⛈️",96:"⛈️",99:"⛈️"};
 
@@ -1247,7 +1247,7 @@ async function fetchWeather() {
 
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
-      `&daily=sunshine_duration&wind_speed_unit=ms&timezone=auto`;
+      `&daily=sunshine_duration&timezone=auto`; //&wind_speed_unit=ms
     const r = await fetch(url);
     const d = await r.json();
     const c    = d.current;
@@ -1255,7 +1255,7 @@ async function fetchWeather() {
     const temp  = Math.round(c.temperature_2m);
     const tempf = Math.round((temp*1.8)+32);
     const speed = c.windspeed_10m;
-    const speedmph = Math.round(speed*2.23694);
+    const speedmph = Math.round(speed*0.621371);
     const dir   = c.winddirection_10m;
     const cloud = c.cloudcover;
     const rad   = c.direct_radiation;
@@ -1268,14 +1268,129 @@ async function fetchWeather() {
     if (inlineEl) {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
-        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°/${tempf}F</b></span>` +
-        `&nbsp;<span title="Wind">${windArrow}${speed}m/s[${speedmph}mph]</span>` +
+        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°|${tempf}F</b></span>` +
+        `&nbsp;<span title="Wind">${windArrow} ${speed}kmh|${speedmph}mph</span>` +
         `&nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
         (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
         (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
     }
   } catch {}
+}*/
+
+// ════════════════════════════════════════════════════════════════
+//  WEATHER (open-meteo, in-memory session persistence, 'is_day', metric/imperial)
+// ════════════════════════════════════════════════════════════════
+// Mapping WMO codes to [Day Icon, Night Icon]
+const WMO = {
+  0: ["☀️", "🌙"],  // Clear sky
+  1: ["🌤️", "☁️"],  // Mainly clear
+  2: ["⛅", "☁️"],  // Partly cloudy
+  3: ["☁️", "☁️"],  // Overcast
+  45: ["🌫️", "🌫️"], // Fog
+  48: ["🌫️", "🌫️"], // Depositing rime fog
+  51: ["🌧️", "🌧️"], // Light drizzle
+  53: ["🌧️", "🌧️"], // Moderate drizzle
+  55: ["🌧️", "🌧️"], // Dense drizzle
+  56: ["🥶", "🥶"], // Light freezing drizzle
+  57: ["🥶", "🥶"], // Dense freezing drizzle
+  61: ["🌧️", "🌧️"], // Light rain
+  63: ["🌧️", "🌧️"], // Moderate rain
+  65: ["🌧️", "🌧️"], // Heavy rain
+  66: ["🥶", "🥶"], // Light freezing rain
+  67: ["🥶", "🥶"], // Heavy freezing rain
+  71: ["🌨️", "🌨️"], // Light snowfall
+  73: ["🌨️", "🌨️"], // Moderate snowfall
+  75: ["🌨️", "🌨️"], // Heavy snowfall
+  77: ["🌨️", "🌨️"], // Snow grains
+  80: ["🌦️", "🌧️"], // Light rain showers
+  81: ["🌦️", "🌧️"], // Moderate rain showers
+  82: ["⛈️", "⛈️"], // Violent rain showers
+  85: ["🌨️", "🌨️"], // Light snow showers
+  86: ["🌨️", "🌨️"], // Heavy snow showers
+  95: ["⛈️", "⛈️"], // Thunderstorm
+  96: ["⛈️", "⛈️"], // Thunderstorm with light hail
+  99: ["⛈️", "⛈️"]  // Thunderstorm with heavy hail
+};
+
+let cachedCoords = null; // Global variable to cache coordinates
+
+async function fetchWeather() {
+  try {
+    // 1. Detect the user's preferred measurement system via official Intl API
+    const locale = new Intl.Locale(navigator.language || 'en-US');
+    const system = locale.measurementSystem; 
+    const isImperial = system === 'us' || system === 'uk';
+
+    // Configure specific units for API request and UI display
+    const tempUnit = isImperial ? 'fahrenheit' : 'celsius';
+    const windUnit = isImperial ? 'mph' : 'kmh';
+    const displayTempUnit = isImperial ? '°F' : '°C';
+    const displayWindUnit = isImperial ? ' mph' : ' km/h';
+
+    // 2. Query browser GPS if no cached coordinates exist
+    if (!cachedCoords) {
+      const pos = await new Promise((res) =>
+        navigator.geolocation
+          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout: 30000})
+          : res(null)
+      );
+      
+      if (pos?.coords) {
+        cachedCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      }
+    }
+
+    if (!cachedCoords) return;
+
+    const lat = cachedCoords.lat;
+    const lon = cachedCoords.lon;
+
+    // 3. Fetch data from Open-Meteo API including 'is_day' for dynamic day/night icons
+    const url = `https://open-meteo.com{lat}&longitude=${lon}` +
+      `&current=temperature_2m,weathercode,is_day,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
+      `&daily=sunshine_duration&timezone=auto` +
+      `&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}`;
+
+    const r = await fetch(url);
+    const d = await r.json();
+    const c = d.current;
+    
+    // 4. Select the appropriate icon based on weathercode and day/night status (1 = day, 0 = night)
+    const iconArray = WMO[c.weathercode] ?? ["🌡️", "🌡️"];
+    const icon = iconArray[c.is_day] ?? "🌡️"; 
+
+    const dir  = c.winddirection_10m;
+    const rad  = c.direct_radiation;
+
+    // 5. Format numbers professionally using Intl.NumberFormat based on user's locale
+    const numFormatter = new Intl.NumberFormat(locale.baseName, { maximumFractionDigits: 0 });
+    const decimalFormatter = new Intl.NumberFormat(locale.baseName, { maximumFractionDigits: 1 });
+
+    const tempFormatted = numFormatter.format(c.temperature_2m);
+    const speedFormatted = numFormatter.format(c.windspeed_10m);
+
+    // Convert sunshine duration from seconds to hours safely
+    const sunHours = d.daily?.sunshine_duration?.[0]
+      ? decimalFormatter.format(d.daily.sunshine_duration[0] / 3600)
+      : null;
+
+    // 6. Build and inject HTML output
+    const windArrow = `<span style="display:inline-block;transform:rotate(${dir}deg);line-height:1">↑</span>`;
+    const inlineEl  = document.getElementById("weatherInline");
+    
+    if (inlineEl) {
+      inlineEl.style.display = "flex";
+      inlineEl.innerHTML =
+        `<span title="Temperature">${icon} <b style="color:#ffcc44">${tempFormatted}${displayTempUnit}</b></span>` +
+        `&nbsp;<span title="Wind">${windArrow} ${speedFormatted}${displayWindUnit}</span>` +
+        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
+        (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
+    }
+  } catch (err) {
+    console.error("Error fetching or formatting weather data:", err);
+  }
 }
+
 
 // ════════════════════════════════════════════════════════════════
 //  PERIOD TOGGLE (Day / Month / Year)
