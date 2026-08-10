@@ -1212,72 +1212,6 @@ function renderLog() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  WEATHER (open-meteo, in-memory session persistence)
-// ════════════════════════════════════════════════════════════════
-/*const WMO = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",
-  61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",
-  95:"⛈️",96:"⛈️",99:"⛈️"};
-
-// Global session variable to hold coordinates in RAM
-let cachedCoords = null; 
-
-async function fetchWeather() {
-  try {
-    // Only query browser GPS if our in-memory variable is empty
-    if (!cachedCoords) {
-      const pos = await new Promise((res) =>
-        navigator.geolocation
-          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout:30000})
-          : res(null)
-      );
-      
-      if (pos?.coords) {
-        cachedCoords = {
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude
-        };
-      }
-    }
-
-    // Abort if no coordinates could be retrieved
-    if (!cachedCoords) return;
-
-    const lat = cachedCoords.lat;
-    const lon = cachedCoords.lon;
-
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
-      `&daily=sunshine_duration&timezone=auto`; //&wind_speed_unit=ms
-    const r = await fetch(url);
-    const d = await r.json();
-    const c    = d.current;
-    const icon = WMO[c.weathercode] ?? "🌡️";
-    const temp  = Math.round(c.temperature_2m);
-    const tempf = Math.round((temp*1.8)+32);
-    const speed = c.windspeed_10m;
-    const speedmph = Math.round(speed*0.621371);
-    const dir   = c.winddirection_10m;
-    const cloud = c.cloudcover;
-    const rad   = c.direct_radiation;
-    // sunshine_duration is daily in seconds → convert to hours
-    const sunHours = d.daily?.sunshine_duration?.[0]
-      ? (d.daily.sunshine_duration[0] / 3600).toFixed(1)
-      : null;
-    const windArrow = `<span style="display:inline-block;transform:rotate(${dir}deg);line-height:1">↑</span>`;
-    const inlineEl  = document.getElementById("weatherInline");
-    if (inlineEl) {
-      inlineEl.style.display = "flex";
-      inlineEl.innerHTML =
-        `<span title="Temperatur">${icon} <b style="color:#ffcc44">${temp}°|${tempf}F</b></span>` +
-        `&nbsp;<span title="Wind">${windArrow} ${speed}kmh|${speedmph}mph</span>` +
-        `&nbsp;<!--<span title="Cloudcover">☁️${cloud}%</span>-->` +
-        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
-        (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
-    }
-  } catch {}
-}*/
-
-// ════════════════════════════════════════════════════════════════
 //  WEATHER (open-meteo, in-memory gps, 'is_day', metric/imperial)
 // ════════════════════════════════════════════════════════════════
 // Mapping WMO codes to [Night Icon, Day Icon]
@@ -1560,22 +1494,6 @@ function installPwa() {
   _installPrompt.userChoice.then(() => { _installPrompt = null; });
 }
 
-// ── Wake Lock ─────────────────────────────────────────────────────────────────
-/*let wakeLock = null;
-async function requestWakeLock() {
-  if (!("wakeLock" in navigator)) return;
-  try {
-    wakeLock = await navigator.wakeLock.request("screen");
-    wakeLock.addEventListener("release", () => {
-      wakeLock = null;
-      document.getElementById("wakeLockIcon").style.opacity = ".3";
-      document.getElementById("wakeLockIcon").title = "Screen lock inactive";
-    });
-    document.getElementById("wakeLockIcon").style.opacity = "1";
-    document.getElementById("wakeLockIcon").title = "Screen stays on";
-  } catch {}
-}
-*/
 // ── Streamlined Wake Lock (Activation Only) ──────────────────────────────────
 let wakeLock = null;
 async function requestWakeLock() {
@@ -1612,41 +1530,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ── Improved Visibility Watcher — Handles Wake Lock & Frozen MQTT Sockets ─────
-/*document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    // 1. Re-acquire wake lock instantly
-    requestWakeLock();
-    
-    // 2. Kick frozen MQTT socket back to life if it got stuck in the background
-    if (mqttWs && mqttWs.readyState !== 1) { 
-      console.warn("MQTT connection state unhealthy on wakeup, forcing reconnect chain...");
-      try { mqttWs.close(); } catch {} // Fires native onclose -> triggers your automatic timeout reconnect
-    }
-  }
-});
-*/
-// ── Optimized Visibility Watcher ─────────────────────────────────────────────
-/*document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    
-    // 1. Give the OS 1000ms to fully wake up before requesting the lock
-    setTimeout(() => {
-      requestWakeLock();
-    }, 1000);
-    
-    // 2. Clear out zombie/frozen connections to let onclose do its job
-    if (mqttWs && (mqttWs.readyState === 1 || mqttWs.readyState === 0)) {
-      console.warn(`MQTT state unhealthy (${mqttWs.readyState}) on wakeup, forcing native reconnect...`);
-      try { 
-        mqttWs.close(); // This triggers your robust onclose block!
-      } catch (err) {
-        console.error(`Error closing socket: ${err.message}`);
-      }
-    }
-  }
-});
-*/
 // ── Smart Visibility Watcher ─────────────────────────────────────────────
 // Keep track of when the app went into the background
 let backgroundTimestamp = Date.now();
