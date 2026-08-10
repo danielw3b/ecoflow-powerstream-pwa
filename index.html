@@ -1346,7 +1346,7 @@ async function fetchWeather() {
     const lon = cachedCoords.lon;
 
     // 3. Fetch data from Open-Meteo API including 'is_day' for dynamic day/night icons
-    const url = `https://open-meteo.com{lat}&longitude=${lon}` +
+    const url = `https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude=${lon}` +
       `&current=temperature_2m,weathercode,is_day,windspeed_10m,winddirection_10m,cloudcover,direct_radiation` +
       `&daily=sunshine_duration&timezone=auto` +
       `&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}`;
