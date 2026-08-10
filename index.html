@@ -1517,13 +1517,14 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     
-    // 1. Give the OS 250ms to fully wake up before requesting the lock
+    // 1. Give the OS 1000ms to fully wake up before requesting the lock
     setTimeout(() => {
       requestWakeLock();
-    }, 250);
+    }, 1000);
     
     // 2. Clear out zombie/frozen connections to let onclose do its job
-    if (mqttWs && (mqttWs.readyState === 1 || mqttWs.readyState === 0)) {
+    //if (mqttWs && (mqttWs.readyState === 1 || mqttWs.readyState === 0)) {
+    if (mqttWs && mqttWs.readyState !== 1) { 
       console.warn(`MQTT state unhealthy (${mqttWs.readyState}) on wakeup, forcing native reconnect...`);
       try { 
         mqttWs.close(); // This triggers your robust onclose block!
