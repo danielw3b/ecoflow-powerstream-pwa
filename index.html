@@ -1295,7 +1295,7 @@ async function fetchWeather() {
     const iconArray = WMO[c.weathercode] ?? ["🌡️", "🌡️"];
     const icon = iconArray[c.is_day] ?? "🌡️"; 
 
-    const dir  = c.winddirection_10m;
+    const dir  = Number(c.winddirection_10m);
     const rad  = c.direct_radiation;
 
     // 5. Format values safely
@@ -1311,7 +1311,7 @@ async function fetchWeather() {
     //const windArrow = `<span style="display:inline-block;transform:rotate(${dir + 180}deg);line-height:1">↑</span>`;
     // SVG-for mobile view
     const windArrow = `
-    <svg style="transform:rotate(${dir + 180}deg); width:24px; height:24px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg style="transform:rotate(${dir + 180}deg); width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="12" y1="20" x2="12" y2="4"></line>
       <polyline points="5 11 12 4 19 11"></polyline>
     </svg>`;
