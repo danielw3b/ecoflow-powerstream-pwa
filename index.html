@@ -1523,8 +1523,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 1000);
     
     // 2. Clear out zombie/frozen connections to let onclose do its job
-    //if (mqttWs && (mqttWs.readyState === 1 || mqttWs.readyState === 0)) {
-    if (mqttWs && mqttWs.readyState !== 1) { 
+    if (mqttWs && (mqttWs.readyState === 1 || mqttWs.readyState === 0)) {
       console.warn(`MQTT state unhealthy (${mqttWs.readyState}) on wakeup, forcing native reconnect...`);
       try { 
         mqttWs.close(); // This triggers your robust onclose block!
