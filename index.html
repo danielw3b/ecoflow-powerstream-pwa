@@ -1317,7 +1317,8 @@ let cachedCoords = null; // Global variable to cache coordinates
 async function fetchWeather() {
   try {
     // 1. Detect the user's preferred measurement system safely via resolvedOptions
-    const numFormatterOpts = new Intl.NumberFormat(navigator.language || 'en-US').resolvedOptions();
+    const userLocale = navigator.language || 'en-US';
+    const numFormatterOpts = new Intl.NumberFormat(userLocale).resolvedOptions();
     const system = numFormatterOpts.measurementSystem; // Reliably returns 'metric', 'us', or 'uk'
     const isImperial = system === 'us' || system === 'uk';
 
@@ -1351,20 +1352,20 @@ async function fetchWeather() {
       `&daily=sunshine_duration&timezone=auto` +
       `&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}`;
 
-    const r = await fetch(url);
+        const r = await fetch(url);
     const d = await r.json();
     const c = d.current;
     
-    // 4. Select the appropriate icon based on weathercode and day/night status (1 = day, 0 = night)
+    // 4. Select the appropriate icon based on weathercode and day/night status (0 = night, 1 = day)
     const iconArray = WMO[c.weathercode] ?? ["🌡️", "🌡️"];
     const icon = iconArray[c.is_day] ?? "🌡️"; 
 
     const dir  = c.winddirection_10m;
     const rad  = c.direct_radiation;
 
-    // 5. Format numbers professionally using Intl.NumberFormat based on user's locale
-    const numFormatter = new Intl.NumberFormat(locale.baseName, { maximumFractionDigits: 0 });
-    const decimalFormatter = new Intl.NumberFormat(locale.baseName, { maximumFractionDigits: 1 });
+    // 5. Format numbers professionally using Intl.NumberFormat based on user's locale (Fixed reference error)
+    const numFormatter = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 0 });
+    const decimalFormatter = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 1 });
 
     const tempFormatted = numFormatter.format(c.temperature_2m);
     const speedFormatted = numFormatter.format(c.windspeed_10m);
@@ -1390,7 +1391,6 @@ async function fetchWeather() {
     console.error("Error fetching or formatting weather data:", err);
   }
 }
-
 
 // ════════════════════════════════════════════════════════════════
 //  PERIOD TOGGLE (Day / Month / Year)
