@@ -1514,7 +1514,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 */
 // ── Optimized Visibility Watcher ─────────────────────────────────────────────
-document.addEventListener("visibilitychange", () => {
+/*document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     
     // 1. Give the OS 1000ms to fully wake up before requesting the lock
@@ -1534,7 +1534,43 @@ document.addEventListener("visibilitychange", () => {
     }
   }
 });
+*/
+// ── Smart Visibility Watcher ─────────────────────────────────────────────
+// Keep track of when the app went into the background
+let backgroundTimestamp = Date.now();
 
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    backgroundTimestamp = Date.now();
+  }
+  
+  if (document.visibilityState === "visible") {
+    const timeInBackground = Date.now() - backgroundTimestamp;
+
+    // 1. Always request the wake lock back after the 1000ms OS warmup delay
+    setTimeout(() => {
+      requestWakeLock();
+    }, 1000);
+    
+    // 2. ONLY touch the MQTT socket if it is actually broken, 
+    // OR if the app was hidden for a long time (e.g., more than 30 seconds)
+    if (mqttWs) {
+      const isSocketBroken = (mqttWs.readyState !== 1);
+      const wasHiddenLongTime = (timeInBackground > 30000); // 30,000 ms = 30 seconds
+
+      if (isSocketBroken || wasHiddenLongTime) {
+        // Only call close() if it's currently open/connecting to force a clean reset
+        if (mqttWs.readyState === 1 || mqttWs.readyState === 0) {
+          console.warn(`MQTT reset triggered (Broken: ${isSocketBroken}, Long Absence: ${wasHiddenLongTime})`);
+          try { mqttWs.close(); } catch {}
+        }
+      } else {
+        console.log("Short app switch detected. MQTT connection preserved smoothly!");
+      }
+    }
+  }
+});
+  
 requestWakeLock();
 loadConfig();
 loadNames();
