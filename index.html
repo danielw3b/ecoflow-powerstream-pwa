@@ -1316,9 +1316,9 @@ let cachedCoords = null; // Global variable to cache coordinates
 
 async function fetchWeather() {
   try {
-    // 1. Detect the user's preferred measurement system via official Intl API
-    const locale = new Intl.Locale(navigator.language || 'en-US');
-    const system = locale.measurementSystem; 
+    // 1. Detect the user's preferred measurement system safely via resolvedOptions
+    const numFormatterOpts = new Intl.NumberFormat(navigator.language || 'en-US').resolvedOptions();
+    const system = numFormatterOpts.measurementSystem; // Reliably returns 'metric', 'us', or 'uk'
     const isImperial = system === 'us' || system === 'uk';
 
     // Configure specific units for API request and UI display
