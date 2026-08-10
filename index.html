@@ -1316,11 +1316,10 @@ let cachedCoords = null; // Global variable to cache coordinates
 
 async function fetchWeather() {
   try {
-    // 1. Detect the user's preferred measurement system safely via resolvedOptions
-    const userLocale = navigator.language || 'en-US';
-    const numFormatterOpts = new Intl.NumberFormat(userLocale).resolvedOptions();
-    const system = numFormatterOpts.measurementSystem; // Reliably returns 'metric', 'us', or 'uk'
-    const isImperial = system === 'us' || system === 'uk';
+    // 1. Detect the user's preferred measurement system via region string split
+    const lang = navigator.language || 'en-US';
+    const region = lang.split('-')[1]?.toUpperCase();
+    const isImperial = ['US', 'LR', 'MM'].includes(region);
 
     // Configure specific units for API request and UI display
     const tempUnit = isImperial ? 'fahrenheit' : 'celsius';
@@ -1337,7 +1336,10 @@ async function fetchWeather() {
       );
       
       if (pos?.coords) {
-        cachedCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        cachedCoords = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude
+        };
       }
     }
 
@@ -1352,7 +1354,7 @@ async function fetchWeather() {
       `&daily=sunshine_duration&timezone=auto` +
       `&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}`;
 
-        const r = await fetch(url);
+    const r = await fetch(url);
     const d = await r.json();
     const c = d.current;
     
@@ -1363,16 +1365,13 @@ async function fetchWeather() {
     const dir  = c.winddirection_10m;
     const rad  = c.direct_radiation;
 
-    // 5. Format numbers professionally using Intl.NumberFormat based on user's locale (Fixed reference error)
-    const numFormatter = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 0 });
-    const decimalFormatter = new Intl.NumberFormat(userLocale, { maximumFractionDigits: 1 });
-
-    const tempFormatted = numFormatter.format(c.temperature_2m);
-    const speedFormatted = numFormatter.format(c.windspeed_10m);
+    // 5. Format values safely
+    const temp  = Math.round(c.temperature_2m);
+    const speed = Math.round(c.windspeed_10m);
 
     // Convert sunshine duration from seconds to hours safely
     const sunHours = d.daily?.sunshine_duration?.[0]
-      ? decimalFormatter.format(d.daily.sunshine_duration[0] / 3600)
+      ? (d.daily.sunshine_duration[0] / 3600).toFixed(1)
       : null;
 
     // 6. Build and inject HTML output
@@ -1382,8 +1381,8 @@ async function fetchWeather() {
     if (inlineEl) {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
-        `<span title="Temperature">${icon} <b style="color:#ffcc44">${tempFormatted}${displayTempUnit}</b></span>` +
-        `&nbsp;<span title="Wind">${windArrow} ${speedFormatted}${displayWindUnit}</span>` +
+        `<span title="Temperature">${icon} <b style="color:#ffcc44">${temp}${displayTempUnit}</b></span>` +
+        `&nbsp;<span title="Wind">${windArrow} ${speed}${displayWindUnit}</span>` +
         (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
         (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
     }
