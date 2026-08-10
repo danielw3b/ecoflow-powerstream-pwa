@@ -1308,7 +1308,7 @@ async function fetchWeather() {
       : null;
 
     // 6. Build and inject HTML output
-    const windArrow = `<span style="display:inline-block;transform:rotate(${180 - dir}deg);line-height:1">↑</span>`;
+    const windArrow = `<span style="display:inline-block;transform:rotate(${dir + 180}deg);line-height:1">↑</span>`;
     const inlineEl  = document.getElementById("weatherInline");
     
     if (inlineEl) {
