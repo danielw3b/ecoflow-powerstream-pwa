@@ -1276,7 +1276,7 @@ function renderPowerChart() {
   let W = parseInt(wrap.dataset.cachedWidth, 10) || 0;
   if (!W) {
     W = canvas.offsetWidth || 600;
-    wrap.dataset.cachedWidth = W; // Cache it on the parent container
+    wrap.dataset.cachedWidth = W;
   }
 
   // Optimization: ONLY mutate canvas buffers if a physical screen resize/rotation happened
@@ -1311,8 +1311,7 @@ function renderPowerChart() {
     timeDisplayEl.innerHTML = targetTimeHtml;
   }
 
-  // Optimization: Short-circuit visual canvas calculation entirely if values didn't drift
-  if (canvas.dataset.renderKey === historyTimelineKey) return;
+  // FIXED: Removed the aggressive early return short-circuit that caused the canvas to go blank during time-slicing ticks
   canvas.dataset.renderKey = historyTimelineKey;
 
   // Clear background
@@ -1776,10 +1775,9 @@ function renderLog() {
     return;
   }
 
-  // Optimization: Virtual DOM change detection — generate a unique hash key based on log timestamps
-  // This prevents tearing down and rebuilding the table when no new MQTT packet arrived
-  const logChangeKey = recentLogs.map(r => r.ts).join("-");
-  if (body.dataset.key === logChangeKey) return; // Silent return! Cuts down processing time to <1ms
+  // Optimization: Include BOTH timestamps and device order in the key to preserve dynamic CSS styling
+  const logChangeKey = recentLogs.map(r => r.ts + "-" + snList.indexOf(r.sn)).join("|");
+  if (body.dataset.key === logChangeKey) return; // Guard clause for identical state
 
   // High-performance string concatenation for batch HTML insertion (only runs when a new packet lands)
   body.innerHTML = recentLogs.map(r => {
@@ -1799,7 +1797,6 @@ function renderLog() {
     </tr>`;
   }).join("");
 
-  // Store the key so we can skip the next interval tick if it's identical
   body.dataset.key = logChangeKey;
 }
 
