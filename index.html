@@ -1049,6 +1049,7 @@ function toggleMetrics(sn, element) {
   }
 }
 
+/*
 function renderDevices() {
   const grid = document.getElementById("devicesGrid");
   const sns  = Object.keys(state);
@@ -1078,6 +1079,48 @@ function renderDevices() {
     }
   });
 }
+*/
+
+function renderDevices() {
+  const grid = document.getElementById("devicesGrid");
+  const sns  = Object.keys(state);
+  if (!sns.length) return;
+
+  // Remove placeholder from DOM if present
+  const placeholder = grid.querySelector("[data-placeholder]");
+  if (placeholder) placeholder.remove();
+
+  // Optimization: Use a DocumentFragment to batch new DOM injections outside the active render tree
+  const fragment = document.createDocumentFragment();
+  let hasNewElements = false;
+
+  sns.forEach(sn => {
+    const s = state[sn];
+    const id = `dc-${sn}`;
+    const [cls, inner] = cardHtml(sn, s);
+    let el = document.getElementById(id);
+    
+    if (!el) {
+      el = document.createElement("div");
+      el.id = id;
+      fragment.appendChild(el); // Appends to invisible fragment, preventing forced layout reflows
+      hasNewElements = true;
+    }
+    
+    // Virtual DOM change detection — only mutate layout parameters when raw values drift
+    const key = s.status + (s.lastSeen||0) +
+      (s.data?.powGetPv??0).toFixed(0) + (s.data?.gridConnectionPower??0).toFixed(0);
+      
+    if (el.dataset.key !== key) {
+      el.className = cls;
+      el.innerHTML = inner;
+      el.dataset.key = key;
+    }
+  });
+
+  // Flush all new device cards to the DOM at once
+  if (hasNewElements) grid.appendChild(fragment);
+}  
 
 function renderPowerChart() {
   const container = document.getElementById("chartsContainer");
@@ -1340,6 +1383,7 @@ function editName(sn) {
   renderWhChart(); // update legend/export with new name
 }
 
+/*
 function renderLog() {
   const anyLive = Object.values(state).some(s => s.status === "live");
   document.getElementById("logSection").style.display   = anyLive ? "" : "none";
@@ -1353,6 +1397,39 @@ function renderLog() {
     const pv1=d.powGetPv??0, pv2=d.powGetPv2??0, inv=d.gridConnectionPower??0;
     const freq=d.gridConnectionFreq??null;
     const name = deviceName(r.sn, r.name);
+    return `<tr class="log-row-${snIdx}">
+      <td class="col-time">${fmtTime(r.ts)}</td>
+      <td style="color:${snIdx===0?"#22e8ff":"#ffb830"};max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</td>
+      <td style="color:#ffcc44">${(pv1+pv2).toFixed(0)}W</td>
+      <td style="color:#22e8ff">${inv.toFixed(0)}W</td>
+      <td style="color:${(d.batSoc??100)>20?"var(--bat)":"var(--bat-low)"}">${d.batSoc!=null?d.batSoc+"%":"—"}</td>
+      <td style="color:var(--muted)">${freq!=null?freq.toFixed(1):"—"}</td>
+    </tr>`;
+  }).join("");
+}
+*/
+function renderLog() {
+  const anyLive = Object.values(state).some(s => s.status === "live");
+  const targetDisplay = anyLive ? "" : "none";
+  
+  const logSec = document.getElementById("logSection");
+  const powSec = document.getElementById("powerSection");
+
+  // Optimization: Style Gating — only touch the DOM if layout visibility actually changes
+  if (logSec.style.display !== targetDisplay) logSec.style.display = targetDisplay;
+  if (powSec.style.display !== targetDisplay) powSec.style.display = targetDisplay;
+  
+  const body = document.getElementById("logBody");
+  const snList = Object.keys(state);
+  
+  // High-performance string concatenation for batch HTML insertion
+  body.innerHTML = logRows.slice(0, 30).map(r => {
+    const snIdx = snList.indexOf(r.sn) % 2;
+    const d = r.data;
+    const pv1 = d.powGetPv??0, pv2 = d.powGetPv2??0, inv = d.gridConnectionPower??0;
+    const freq = d.gridConnectionFreq??null;
+    const name = deviceName(r.sn, r.name);
+    
     return `<tr class="log-row-${snIdx}">
       <td class="col-time">${fmtTime(r.ts)}</td>
       <td style="color:${snIdx===0?"#22e8ff":"#ffb830"};max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</td>
