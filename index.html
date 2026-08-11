@@ -869,7 +869,7 @@ function initPwaPerformanceTimers() {
   window.addEventListener("mousemove", resetIdleTimer, { passive: true });
   window.addEventListener("touchstart", resetIdleTimer, { passive: true });
   window.addEventListener("keydown", resetIdleTimer, { passive: true });
-}*/ 
+} 
 
 // ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
 let uiRenderIntervalId = null;
@@ -944,6 +944,97 @@ function initPwaPerformanceTimers() {
   }, 30000);
 
   // Monitor basic interaction metrics using high-performance passive event listeners
+  window.addEventListener("mousemove", resetIdleTimer, { passive: true });
+  window.addEventListener("touchstart", resetIdleTimer, { passive: true });
+  window.addEventListener("keydown", resetIdleTimer, { passive: true });
+}*/
+
+// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
+let uiRenderIntervalId = null;
+let pwaSaveIntervalId = null;
+let idleTimeoutId = null;
+let currentRenderSpeed = 5000;
+
+// Track rendering phases in RAM to prevent main-thread blocking
+let renderTickCount = 0;
+
+// Central render function pulling from live background memory
+function runUiRender() {
+  // PHASE 1: Fast GUI and log elements are rendered on every interval tick
+  if (typeof renderDevices === "function") renderDevices();
+  if (typeof renderLog === "function") renderLog();
+
+  // PHASE 2: Heavy charts are time-sliced to distribute CPU load evenly
+  if (currentRenderSpeed === 1000) {
+    // Alternating chart updates every 2 seconds during active high-perf mode
+    if (renderTickCount % 2 === 0) {
+      if (typeof renderPowerChart === "function") renderPowerChart();
+    } else {
+      if (typeof renderWhChart === "function") renderWhChart();
+    }
+    renderTickCount++;
+  } else {
+    // In background/idle mode, render everything at once since time permits
+    if (typeof renderPowerChart === "function") renderPowerChart();
+    if (typeof renderWhChart === "function") renderWhChart();
+  }
+}
+
+// Safely update intervals without dropping states
+function setUiRenderSpeed(ms) {
+  if (currentRenderSpeed === ms && uiRenderIntervalId) return;
+  currentRenderSpeed = ms;
+  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
+  uiRenderIntervalId = setInterval(runUiRender, ms);
+}
+
+// Triggered on any screen touch, click, or movement
+function resetIdleTimer(e) {
+  // OPTIMIZATION: If triggered by mousemove, only reset if we are actually in power-saving mode (>= 5000ms).
+  // This prevents micro-mouse movements on laptops/Chromebooks from keeping the CPU permanently awake.
+  if (e && e.type === "mousemove" && currentRenderSpeed < 5000) {
+    return; // Ignore mouse chatter if the UI is already in high-performance mode
+  }
+
+  // Switch back to high performance 1s intervals when actively viewed
+  setUiRenderSpeed(1000); 
+
+  clearTimeout(idleTimeoutId);
+  // After 20 sec (20000ms) of no user activity, drop to battery saving mode
+  idleTimeoutId = setTimeout(() => {
+    console.log("🔋 Phone/Chromebook is unattended. Dropping UI refresh to 10s to preserve battery.");
+    setUiRenderSpeed(10000); // 10-second updates for background logging
+  }, 20000);
+}
+
+// Initialize performance timers and orchestrate non-blocking UI/DB threads
+function initPwaPerformanceTimers() {
+  // Start with default high-performance rendering speed
+  setUiRenderSpeed(1000);
+  
+  // Initialize the first background shutdown timer safely
+  clearTimeout(idleTimeoutId);
+  idleTimeoutId = setTimeout(() => {
+    console.log("🔋 Phone/Chromebook is unattended. Dropping UI refresh to 10s to preserve battery.");
+    setUiRenderSpeed(10000);
+  }, 20000);
+
+  // Clear existing save loop before re-instantiating
+  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
+  
+  // Setup batch database savings to localStorage twice per minute
+  pwaSaveIntervalId = setInterval(() => {
+    // Defer heavy disk-write operations until the main thread is completely idle
+    requestAnimationFrame(() => {
+      if (typeof saveWh === "function") {
+        saveWh();
+        console.log("💾 RAM database asynchronously persisted to localStorage.");
+      }
+    });
+  }, 30000);
+
+  // Monitor basic interaction metrics using high-performance passive event listeners
+  // Note: We now pass the event object 'e' automatically to the handler
   window.addEventListener("mousemove", resetIdleTimer, { passive: true });
   window.addEventListener("touchstart", resetIdleTimer, { passive: true });
   window.addEventListener("keydown", resetIdleTimer, { passive: true });
