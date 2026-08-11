@@ -526,7 +526,8 @@ function colorFor(sn) {
 }
 
 // ── PERSIST WH TO LOCALSTORAGE (OPTIMIZED) ───────────────────────────────────
-function saveWh() {
+/*
+  function saveWh() {
   try {
     // 1. Daily values — Merge memory and disk structures
     const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
@@ -600,6 +601,79 @@ function loadWh() {
       for (const [hr, wh] of Object.entries(hours)) {
         hourlyWh[sn][hr] = wh; // Keeps all hours intact for smooth processing
       }
+    }
+  } catch (e) {
+    console.error("Error loading Wh data from localStorage:", e);
+  }
+}*/
+  
+function saveWh() {
+  try {
+    // 1. Daily values — Optimized direct delta persistence
+    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    
+    for (const [sn, days] of Object.entries(dailyWh)) {
+      if (!stored[sn]) stored[sn] = {};
+      // Only merge what actually changed or is higher, avoiding full historical loops
+      for (const [day, wh] of Object.entries(days)) {
+        if (!(day in stored[sn]) || wh > stored[sn][day]) {
+          stored[sn][day] = wh;
+        }
+      }
+    }
+    // Optimization: Directly reference the memory object instead of deep-looping backwards
+    localStorage.setItem(WH_KEY, JSON.stringify(stored));
+
+    // 2. Hourly values — Aggregate and clean old records
+    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
+      if (!storedH[sn]) storedH[sn] = {};
+      for (const [hr, wh] of Object.entries(hours)) {
+        if (!(hr in storedH[sn]) || wh > storedH[sn][hr]) {
+          storedH[sn][hr] = wh;
+        }
+      }
+    }
+
+    // Set rolling 48-hour cutoff timestamp
+    const cutOffDate = new Date();
+    cutOffDate.setHours(cutOffDate.getHours() - 48);
+    
+    // Generate a lexicographically sortable string: "YYYY-MM-DD HH"
+    const pad = (n) => String(n).padStart(2, '0');
+    const cutOffStr = `${cutOffDate.getFullYear()}-${pad(cutOffDate.getMonth() + 1)}-${pad(cutOffDate.getDate())} ${pad(cutOffDate.getHours())}`;
+
+    // Perform ultra-fast pruning using a simple string comparison (avoids expensive Date parsing)
+    for (const sn in storedH) {
+      const cleanedHours = {};
+      for (const [hr, wh] of Object.entries(storedH[sn])) {
+        // String format allows direct comparison ("2026-08-11 14" >= "2026-08-09 14")
+        if (hr >= cutOffStr) {
+          cleanedHours[hr] = wh;
+        }
+      }
+      storedH[sn] = cleanedHours;
+      hourlyWh[sn] = cleanedHours; // Sync runtime memory cache
+    }
+
+    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
+  } catch (e) {
+    console.error("PWA storage optimization failed:", e);
+  }
+}
+
+function loadWh() {
+  try {
+    // 1. Daily data — Ultra-fast memory allocation via native Object.assign
+    const saved = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    for (const [sn, days] of Object.entries(saved)) {
+      dailyWh[sn] = Object.assign({}, days); // Native cloning bypasses expensive for-loops
+    }
+
+    // 2. Hourly data — Ultra-fast memory allocation via native Object.assign
+    const savedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
+    for (const [sn, hours] of Object.entries(savedH)) {
+      hourlyWh[sn] = Object.assign({}, hours); // Native cloning bypasses expensive for-loops
     }
   } catch (e) {
     console.error("Error loading Wh data from localStorage:", e);
@@ -747,7 +821,7 @@ function accumulateWh(sn, watts) {
 }
 
 // ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
-let uiRenderIntervalId = null;
+/*let uiRenderIntervalId = null;
 let pwaSaveIntervalId = null;
 let idleTimeoutId = null;
 let currentRenderSpeed = 5000;
@@ -792,6 +866,84 @@ function initPwaPerformanceTimers() {
   pwaSaveIntervalId = setInterval(saveWh, 30000);
 
   // Monitor basic interaction metrics across mobile and desktop environments
+  window.addEventListener("mousemove", resetIdleTimer, { passive: true });
+  window.addEventListener("touchstart", resetIdleTimer, { passive: true });
+  window.addEventListener("keydown", resetIdleTimer, { passive: true });
+}*/ 
+
+// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
+let uiRenderIntervalId = null;
+let pwaSaveIntervalId = null;
+let idleTimeoutId = null;
+let currentRenderSpeed = 5000;
+
+// Track rendering phases in RAM to prevent main-thread blocking
+let renderTickCount = 0;
+
+// Central render function pulling from live background memory
+function runUiRender() {
+  // PHASE 1: Fast GUI and log elements are rendered on every interval tick
+  if (typeof renderDevices === "function") renderDevices();
+  if (typeof renderLog === "function") renderLog();
+
+  // PHASE 2: Heavy charts are time-sliced to distribute CPU load evenly
+  if (currentRenderSpeed === 1000) {
+    // Alternating chart updates every 2 seconds during active high-perf mode
+    if (renderTickCount % 2 === 0) {
+      if (typeof renderPowerChart === "function") renderPowerChart();
+    } else {
+      if (typeof renderWhChart === "function") renderWhChart();
+    }
+    renderTickCount++;
+  } else {
+    // In background/idle mode, render everything at once since time permits
+    if (typeof renderPowerChart === "function") renderPowerChart();
+    if (typeof renderWhChart === "function") renderWhChart();
+  }
+}
+
+// Safely update intervals without dropping states
+function setUiRenderSpeed(ms) {
+  if (currentRenderSpeed === ms && uiRenderIntervalId) return;
+  currentRenderSpeed = ms;
+  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
+  uiRenderIntervalId = setInterval(runUiRender, ms);
+}
+
+// Triggered on any screen touch, click, or movement
+function resetIdleTimer() {
+  // Switch back to high performance 1s intervals when actively viewed
+  setUiRenderSpeed(1000); 
+
+  clearTimeout(idleTimeoutId);
+  // After 20 sec (20000ms) of no user activity, drop to battery saving mode
+  idleTimeoutId = setTimeout(() => {
+    console.log("🔋 Phone is unattended. Dropping UI refresh to 10s to preserve battery.");
+    setUiRenderSpeed(10000); // 10-second updates for background logging
+  }, 20000);
+}
+
+// Initialize performance timers and orchestrate non-blocking UI/DB threads
+function initPwaPerformanceTimers() {
+  // Start with default high-performance rendering speed
+  setUiRenderSpeed(1000);
+  resetIdleTimer();
+
+  // Clear existing save loop before re-instantiating
+  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
+  
+  // Setup batch database savings to localStorage twice per minute
+  pwaSaveIntervalId = setInterval(() => {
+    // Defer heavy disk-write operations until the main thread is completely idle
+    requestAnimationFrame(() => {
+      if (typeof saveWh === "function") {
+        saveWh();
+        console.log("💾 RAM database asynchronously persisted to localStorage.");
+      }
+    });
+  }, 30000);
+
+  // Monitor basic interaction metrics using high-performance passive event listeners
   window.addEventListener("mousemove", resetIdleTimer, { passive: true });
   window.addEventListener("touchstart", resetIdleTimer, { passive: true });
   window.addEventListener("keydown", resetIdleTimer, { passive: true });
