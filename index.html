@@ -1122,7 +1122,7 @@ function renderDevices() {
   if (hasNewElements) grid.appendChild(fragment);
 }  
 
-function renderPowerChart() {
+/*function renderPowerChart() {
   const container = document.getElementById("chartsContainer");
   const sns = Object.keys(hist);
   if (!sns.length) return;
@@ -1228,9 +1228,162 @@ function renderPowerChart() {
   }).join(" · ");
   document.getElementById("power-time").innerHTML =
     latestTs ? `${vals} &nbsp;${fmtTime(new Date(latestTs))}` : "";
+}*/
+
+function renderPowerChart() {
+  const container = document.getElementById("chartsContainer");
+  const sns = Object.keys(hist);
+  if (!sns.length) return;
+
+  // One shared chart wrap
+  let wrap = document.getElementById("cw-combined");
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "cw-combined";
+    wrap.className = "chart-wrap";
+    wrap.innerHTML = `
+      <div class="chart-header">
+        <div class="chart-legend" id="power-legend"></div>
+        <span id="power-time" style="font-family:var(--mono);font-size:.65rem;color:var(--muted)"></span>
+      </div>
+      <canvas id="cc-combined" height="140"></canvas>`;
+    container.appendChild(wrap);
+  }
+
+  // Legend sorting strategy
+  const sortedSns = sns.sort((a,b) => Object.keys(snColorMap).indexOf(a) - Object.keys(snColorMap).indexOf(b));
+  
+  // Optimization: Generate a unique structural fingerprint hash based on serial numbers and names
+  const legendChangeKey = sortedSns.map(sn => sn + (state[sn]?.name ?? "")).join("-");
+  
+  // Optimization: Virtual DOM gating for the chart legend to avoid layout thrashing
+  if (wrap.dataset.legendKey !== legendChangeKey) {
+    document.getElementById("power-legend").innerHTML = sortedSns.map(sn => `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${colorFor(sn)}"></div>
+        <span style="color:${colorFor(sn)}">${esc(deviceName(sn, state[sn]?.name ?? sn))}</span>
+      </div>`).join("");
+    wrap.dataset.legendKey = legendChangeKey;
+  }
+    
+  const canvas = document.getElementById("cc-combined");
+  if (!canvas) return;
+  
+  const dpr = devicePixelRatio || 1;
+  const H = 140;
+  
+  // Optimization: Use cached geometric parameters to protect the thread from offsetWidth reads
+  let W = parseInt(wrap.dataset.cachedWidth, 10) || 0;
+  if (!W) {
+    W = canvas.offsetWidth || 600;
+    wrap.dataset.cachedWidth = W; // Cache it on the parent container
+  }
+
+  // Optimization: ONLY mutate canvas buffers if a physical screen resize/rotation happened
+  const expectedWidthBuffer = W * dpr;
+  const expectedHeightBuffer = H * dpr;
+  if (canvas.width !== expectedWidthBuffer || canvas.height !== expectedHeightBuffer) {
+    canvas.width = expectedWidthBuffer;
+    canvas.height = expectedHeightBuffer;
+    const initialCtx = canvas.getContext("2d");
+    initialCtx.scale(dpr, dpr);
+  }
+
+  const ctx = canvas.getContext("2d");
+  const PL = 42, PR = 10, PT = 10, PB = 8;
+  const cW = W - PL - PR, cH = H - PT - PB;
+
+  // Track if numerical timeline data actually changed before redrawing canvas bits
+  const historyTimelineKey = sortedSns.map(sn => (hist[sn] || []).length + "-" + (hist[sn]?.at(-1)?.watts ?? 0).toFixed(0)).join("|");
+  
+  // Optimization: Read the latest execution timestamp across all hardware streams
+  const latestTs = Math.max(...sns.map(sn => hist[sn].at(-1)?.ts ?? 0));
+  
+  // Render live text updates to header independently from heavy visual draws
+  const vals = sns.map((sn, i) => {
+    const w = hist[sn].at(-1)?.watts ?? 0;
+    return `<span style="color:${COLORS[i%4]}">${w.toFixed(0)}W</span>`;
+  }).join(" · ");
+  
+  const targetTimeHtml = latestTs ? `${vals} &nbsp;${fmtTime(new Date(latestTs))}` : "";
+  const timeDisplayEl = document.getElementById("power-time");
+  if (timeDisplayEl.innerHTML !== targetTimeHtml) {
+    timeDisplayEl.innerHTML = targetTimeHtml;
+  }
+
+  // Optimization: Short-circuit visual canvas calculation entirely if values didn't drift
+  if (canvas.dataset.renderKey === historyTimelineKey) return;
+  canvas.dataset.renderKey = historyTimelineKey;
+
+  // Clear background
+  ctx.fillStyle = "#060c1a"; ctx.fillRect(0, 0, W, H);
+
+  // Compute boundaries
+  const allWatts = sortedSns.flatMap(sn => (hist[sn]||[]).map(p => p.watts));
+  const maxW = Math.max(...allWatts, 50);
+
+  // Grid lines
+  ctx.strokeStyle = "rgba(30,58,95,.55)"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = PT + cH * i / 4;
+    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
+  }
+
+  // Compile gradients ONCE right before drawing lines
+  const gradientCache = {};
+  sortedSns.forEach(sn => {
+    const color = colorFor(sn);
+    const grad = ctx.createLinearGradient(0, PT, 0, PT + cH);
+    grad.addColorStop(0, color + "40");
+    grad.addColorStop(1, "transparent");
+    gradientCache[sn] = grad;
+  });
+
+  // Render path curves
+  sortedSns.forEach(sn => {
+    const pts = hist[sn];
+    if (!pts || pts.length < 2) return;
+    const color = colorFor(sn);
+
+    // Line drawing operation
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = "round";
+    pts.forEach((p, i) => {
+      const x = PL + cW * i / (MAX_H - 1);
+      const y = PT + cH * (1 - p.watts / maxW);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill region underneath path line
+    ctx.beginPath(); 
+    ctx.fillStyle = gradientCache[sn];
+    pts.forEach((p, i) => {
+      const x = PL + cW * i / (MAX_H - 1);
+      const y = PT + cH * (1 - p.watts / maxW);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo(PL + cW * (pts.length - 1) / (MAX_H - 1), PT + cH);
+    ctx.lineTo(PL, PT + cH); ctx.closePath(); ctx.fill();
+
+    // Latest value dot marker
+    const lat = pts.at(-1);
+    if (lat) {
+      const x = PL + cW * (pts.length - 1) / (MAX_H - 1);
+      const y = PT + cH * (1 - lat.watts / maxW);
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = color; ctx.fill();
+    }
+  });
+
+  // Y axis metric indices
+  ctx.fillStyle = "rgba(107,138,170,.9)"; ctx.font = "9px monospace"; ctx.textAlign = "right";
+  for (let i = 0; i <= 4; i++) {
+    ctx.fillText(Math.round(maxW * (1 - i / 4)) + "W", PL - 4, PT + cH * i / 4 + 3);
+  }
 }
 
-function renderWhChart() {
+
+/*function renderWhChart() {
   const buckets  = aggregateWh(currentPeriod);
   const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
   if (!sns.length) return;
@@ -1361,7 +1514,200 @@ function renderWhChart() {
   ctx.fillStyle="rgba(107,138,170,.9)"; ctx.font="9px monospace"; ctx.textAlign="right";
   for(let i=0;i<=4;i++){const v=maxWh*(1-i/4);
     ctx.fillText(v>=1000?(v/1000).toFixed(1)+"kWh":v.toFixed(0)+"Wh", PL-4, PT+cH*i/4+3);}
+}*/
+
+function renderWhChart() {
+  const buckets  = aggregateWh(currentPeriod);
+  const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
+  
+  const sectionEl = document.getElementById("whSection");
+  if (!sns.length) {
+    if (sectionEl) sectionEl.style.display = "none";
+    return;
+  }
+  
+  let allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn])))].sort();
+  if (!allLabels.length) {
+    if (sectionEl) sectionEl.style.display = "none";
+    return;
+  }
+
+  // Use LOCAL time throughout — fixes 2h timezone offset
+  const now      = new Date();
+  const pad      = n => String(n).padStart(2,"0");
+  const today    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const nowHour  = `${today} ${pad(now.getHours())}`;
+
+  const monthShort = now.toLocaleString('en', { month: 'short' });
+  const thisYear   = now.getFullYear();
+
+  // ── CUTOFF FILTER: Keep only the last 30 days when on the "day" tab ──
+  if (currentPeriod === "day") {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    const cutoffStr = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
+    allLabels = allLabels.filter(label => label >= cutoffStr);
+  }
+  
+  if (!allLabels.length) return;
+
+  const canvas = document.getElementById("whChart");
+  if (!canvas) return;
+
+  // Track operational changes using an inclusive structural fingerprint lookup key
+  const stableSns = Object.keys(state);
+  const orderedSns = sns.sort((a,b) => stableSns.indexOf(a) - stableSns.indexOf(b));
+  
+  const thisKey  = currentPeriod==="hour"   ? nowHour
+                 : currentPeriod==="month" ? today.slice(0,7)
+                 : currentPeriod==="year"  ? today.slice(0,4)
+                 : today;
+
+  const periodWh = orderedSns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
+  
+  // Optimization: Form an evaluation string to guard DOM loops from execution thrashing
+  const dataFingerprintKey = `${currentPeriod}|${thisKey}|${periodWh.toFixed(0)}|${allLabels.length}|${orderedSns.map(sn => sn + (buckets[sn][thisKey]??0).toFixed(0)).join("-")}`;
+  
+  // Optimization: Short-circuit execution if historical state data is static
+  if (canvas.dataset.renderKey === dataFingerprintKey) return;
+  canvas.dataset.renderKey = dataFingerprintKey;
+
+  // Reveal chart display node conditionally
+  if (sectionEl.style.display !== "") sectionEl.style.display = "";
+
+  const periodLabel = currentPeriod==="hour"  ? "Now"
+                    : currentPeriod==="day"   ? "Today"
+                    : currentPeriod==="month" ? monthShort
+                    : thisYear;
+                    
+  document.getElementById("whTotal").textContent =
+    `${periodLabel}: ${periodWh>=1000?(periodWh/1000).toFixed(2)+" kWh":periodWh.toFixed(0)+" Wh"}`;
+
+  // Optimization: Structural cache gating for static HTML metadata strings
+  const legendHash = orderedSns.map(sn => sn + (state[sn]?.name??sn)).join("|");
+  if (canvas.dataset.legendHash !== legendHash) {
+    document.getElementById("whLegend").innerHTML = orderedSns.map((sn,i)=>
+      `<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i%4]}"></div>
+       <span style="color:${COLORS[i%4]}">${esc(deviceName(sn, state[sn]?.name??sn))}</span></div>`
+    ).join("");
+
+    const exportBtns = document.getElementById("exportBtns");
+    if (exportBtns) {
+      exportBtns.innerHTML = orderedSns.map((sn,i)=>
+        `<button class="btn" style="color:${COLORS[i%4]};border-color:${COLORS[i%4]}40" onclick="downloadHistory('${sn}')">↓ ${esc(deviceName(sn, state[sn]?.name??sn))}</button>`
+      ).join("") + `<button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>`;
+    }
+    canvas.dataset.legendHash = legendHash;
+  }
+
+  const dpr = devicePixelRatio || 1;
+  const H = 160;
+  
+  // Optimization: Safely determine context scale factors without thrashing offsetWidth
+  let W = parseInt(canvas.dataset.cachedWidth, 10) || 0;
+  if (!W) {
+    W = canvas.offsetWidth || 600;
+    canvas.dataset.cachedWidth = W;
+  }
+
+  const expectedWidthBuffer = W * dpr;
+  const expectedHeightBuffer = H * dpr;
+  if (canvas.width !== expectedWidthBuffer || canvas.height !== expectedHeightBuffer) {
+    canvas.width = expectedWidthBuffer;
+    canvas.height = expectedHeightBuffer;
+    const initialCtx = canvas.getContext("2d");
+    initialCtx.scale(dpr, dpr);
+  }
+
+  const ctx = canvas.getContext("2d");
+  const PL = 56, PR = 10, PT = 14, PB = 28, cW = W - PL - PR, cH = H - PT - PB;
+  
+  // Clear canvas backplate
+  ctx.fillStyle = "#060c1a"; ctx.fillRect(0, 0, W, H);
+  
+  const maxWh = Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn][l]??0)), 100);
+  
+  // Y-Axis grid lines
+  ctx.strokeStyle = "rgba(30,58,95,.6)"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = PT + cH * i / 4;
+    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
+  }
+  
+  const gW = cW / allLabels.length;
+  const bW = Math.max(3, Math.min(28, gW / (orderedSns.length + 1)));
+  const gP = (gW - bW * orderedSns.length) / 2;
+
+  // Pre-compile linear layout canvas gradients once per frame execution pass
+  const standardGradients = [];
+  const historicGradients = [];
+  orderedSns.forEach((sn, si) => {
+    const c = COLORS[si%4];
+    
+    const gStd = ctx.createLinearGradient(0, PT, 0, PT + cH);
+    gStd.addColorStop(0, c);
+    gStd.addColorStop(1, c + "88");
+    standardGradients[si] = gStd;
+
+    const gHist = ctx.createLinearGradient(0, PT, 0, PT + cH);
+    gHist.addColorStop(0, c + "bb");
+    gHist.addColorStop(1, c + "33");
+    historicGradients[si] = gHist;
+  });
+
+  // Render vertical layout metric yield bars
+  allLabels.forEach((label, di) => {
+    const gx = PL + di * gW;
+    const isCurrent = (label === thisKey);
+    
+    orderedSns.forEach((sn, si) => {
+      const wh = buckets[sn][label] ?? 0;
+      const bH = wh > 0 ? Math.max(2, cH * wh / maxWh) : 0;
+      const x = gx + gP + si * bW;
+      const y = PT + cH - bH;
+      
+      if (bH > 0) {
+        ctx.fillStyle = isCurrent ? standardGradients[si] : historicGradients[si];
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(x, y, bW - 1, bH, [2, 2, 0, 0]); else ctx.rect(x, y, bW - 1, bH);
+        ctx.fill();
+        
+        // Inline numeric value rendering
+        if (bH > 16 && bW > 10) {
+          ctx.fillStyle = isCurrent ? "#fff" : "rgba(200,220,240,.8)";
+          ctx.font = `${isCurrent ? "bold " : ""}8px monospace`; ctx.textAlign = "center";
+          ctx.fillText(wh >= 1000 ? (wh / 1000).toFixed(1) + "k" : wh.toFixed(0), x + bW / 2 - .5, y - 3);
+        }
+      }
+    });
+
+    // X-axis timestamps mapping
+    ctx.fillStyle = isCurrent ? "#e0f0ff" : "rgba(107,138,170,.85)";
+    ctx.font = `${isCurrent ? "bold " : ""}9px monospace`; ctx.textAlign = "center";
+    let disp;
+    if (currentPeriod === "hour") {
+      const h = parseInt(label.slice(11), 10);
+      disp = (label === nowHour) ? "Now" : `${h}h`;
+    } else if (currentPeriod === "day") {
+      disp = (label === today) ? "Today" : label.slice(8);
+    } else if (currentPeriod === "month") {
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      disp = months[parseInt(label.slice(5), 10) - 1] ?? label.slice(5);
+    } else {
+      disp = label;
+    }
+    ctx.fillText(disp, gx + gW / 2, H - PB + 14);
+  });
+
+  // Left-aligned scaling data labels
+  ctx.fillStyle = "rgba(107,138,170,.9)"; ctx.font = "9px monospace"; ctx.textAlign = "right";
+  for (let i = 0; i <= 4; i++) {
+    const v = maxWh * (1 - i / 4);
+    ctx.fillText(v >= 1000 ? (v / 1000).toFixed(1) + "kWh" : v.toFixed(0) + "Wh", PL - 4, PT + cH * i / 4 + 3);
+  }
 }
+
 
 function editName(sn) {
   const current = customNames[sn] || state[sn]?.originalName || state[sn]?.name || sn;
@@ -1717,8 +2063,25 @@ async function init() {
   }
 }
 
-window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); });
+//window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); });
+// Optimized resize listener: clears performance caches first, then re-renders charts instantly
+window.addEventListener("resize", () => {
+  ["cw-combined", "whChart"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.removeAttribute("data-cached-width");
+      el.removeAttribute("data-legend-key");
+      el.removeAttribute("data-legend-hash");
+      el.removeAttribute("data-render-key");
+    }
+  });
+  
+  // Trigger immediate re-render with fresh layout dimensions
+  if (typeof renderPowerChart === "function") renderPowerChart();
+  if (typeof renderWhChart === "function") renderWhChart();
+}, { passive: true });
 
+  
 // ── PWA — service worker for installability ─────────────────────────────────
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const sw = 'self.addEventListener("install",()=>self.skipWaiting());' +
