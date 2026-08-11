@@ -71,7 +71,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 
 main{padding:12px;max-width:1400px;margin:0 auto;}
 #weatherInline{display:none;font-family:var(--sans);font-size: 0.9rem;color:#8fb0cc;
-  justify-content:center;gap:8px;overflow:hidden;padding: 5px;margin-bottom:12px;
+  justify-content:center;gap:8px;overflow:hidden;padding: 5px;margin-bottom:5px;
   /*background:var(--card);border:1px solid var(--border);border-radius:var(--radius);*/}
 
 .section-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--muted);
@@ -1764,6 +1764,16 @@ function renderLog() {
   if (logSec.style.display !== targetDisplay) logSec.style.display = targetDisplay;
   if (powSec.style.display !== targetDisplay) powSec.style.display = targetDisplay;
   
+  // Find the actual element handling the scrollbars inside your wrapper
+  const logWrap = logSec ? logSec.querySelector(".log-wrap") : null;
+  
+  // NEW OPTIMIZATION: Scroll Gating — skip rendering if the user is actively scrolling the logs
+  // This completely stops layout thrashing and GPU paint invalidations during viewport movements
+  if (logWrap && logWrap.scrollTop > 0 && (logWrap.scrollHeight - logWrap.clientHeight - logWrap.scrollTop) > 5) {
+    // If the user has scrolled down to inspect history, freeze rendering to keep frames ultra-smooth
+    return;
+  }
+  
   const body = document.getElementById("logBody");
   const snList = Object.keys(state);
   
@@ -1779,7 +1789,7 @@ function renderLog() {
   const logChangeKey = recentLogs.map(r => r.ts + "-" + snList.indexOf(r.sn)).join("|");
   if (body.dataset.key === logChangeKey) return; // Guard clause for identical state
 
-  // High-performance string concatenation for batch HTML insertion (only runs when a new packet lands)
+  // High-performance string concatenation for batch HTML insertion
   body.innerHTML = recentLogs.map(r => {
     const snIdx = snList.indexOf(r.sn) % 2;
     const d = r.data;
