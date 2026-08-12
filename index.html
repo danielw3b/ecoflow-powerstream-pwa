@@ -947,7 +947,7 @@ function initPwaPerformanceTimers() {
   window.addEventListener("mousemove", resetIdleTimer, { passive: true });
   window.addEventListener("touchstart", resetIdleTimer, { passive: true });
   window.addEventListener("keydown", resetIdleTimer, { passive: true });
-}*/
+}
 
 // ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
 let uiRenderIntervalId = null;
@@ -1038,7 +1038,99 @@ function initPwaPerformanceTimers() {
   window.addEventListener("mousemove", resetIdleTimer, { passive: true });
   window.addEventListener("touchstart", resetIdleTimer, { passive: true });
   window.addEventListener("keydown", resetIdleTimer, { passive: true });
+}*/
+
+// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
+let uiRenderIntervalId = null;
+let pwaSaveIntervalId = null;
+let idleTimeoutId = null;
+let currentRenderSpeed = 5000;
+
+// Track rendering phases in RAM to prevent main-thread blocking
+let renderTickCount = 0;
+
+// Central render function pulling from live background memory
+function runUiRender() {
+  // PHASE 1: Fast GUI and log elements are rendered on every interval tick
+  if (typeof renderDevices === "function") renderDevices();
+  if (typeof renderLog === "function") renderLog();
+
+  // PHASE 2: Heavy charts are time-sliced to distribute CPU load evenly
+  if (currentRenderSpeed === 1000) {
+    // Alternating chart updates every 2 seconds during active high-perf mode
+    if (renderTickCount % 2 === 0) {
+      if (typeof renderPowerChart === "function") renderPowerChart();
+    } else {
+      if (typeof renderWhChart === "function") renderWhChart();
+    }
+    renderTickCount++;
+  } else {
+    // In background/idle mode, render everything at once since time permits
+    if (typeof renderPowerChart === "function") renderPowerChart();
+    if (typeof renderWhChart === "function") renderWhChart();
+  }
 }
+
+// Safely update intervals without dropping states
+function setUiRenderSpeed(ms) {
+  if (currentRenderSpeed === ms && uiRenderIntervalId) return;
+  currentRenderSpeed = ms;
+  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
+  uiRenderIntervalId = setInterval(runUiRender, ms);
+}
+
+// Triggered on active physical screen interactions
+function resetIdleTimer() {
+  // Switch back to high performance 1s intervals instantly when active
+  setUiRenderSpeed(1000); 
+
+  clearTimeout(idleTimeoutId);
+  // Drop to power saving mode after 20 seconds of pure layout inactivity
+  idleTimeoutId = setTimeout(() => {
+    console.log("🔋 UI is unattended. Dropping UI refresh to 10s to preserve battery.");
+    setUiRenderSpeed(10000);
+  }, 20000);
+}
+
+// Handle native OS visibility shifts (minimizing, backgrounding, tab switching)
+function handleVisibilityChange() {
+  if (document.hidden) {
+    console.log("🔋 PWA moved to background. Locking refresh cycle to 10s.");
+    clearTimeout(idleTimeoutId);
+    setUiRenderSpeed(10000); // Instantly drop to 10s when hidden
+  } else {
+    console.log("⚡ PWA restored to foreground. Boosting fresh live thread.");
+    resetIdleTimer(); // Instantly boost to 1s when window focuses
+  }
+}
+
+// Initialize performance timers and orchestrate non-blocking UI/DB threads
+function initPwaPerformanceTimers() {
+  // Establish default high-performance render baseline
+  setUiRenderSpeed(1000);
+  resetIdleTimer();
+
+  // Setup batch database savings to localStorage twice per minute
+  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
+  pwaSaveIntervalId = setInterval(() => {
+    requestAnimationFrame(() => {
+      if (typeof saveWh === "function") {
+        saveWh();
+        console.log("💾 RAM database asynchronously persisted to localStorage.");
+      }
+    });
+  }, 30000);
+
+  // Monitor interaction metrics using lightweight, native browser focus lifecycles
+  document.addEventListener("visibilitychange", handleVisibilityChange, { passive: true });
+  window.addEventListener("focus", resetIdleTimer, { passive: true });
+  
+  // Real touch and click inputs remain as high-priority awake triggers
+  window.addEventListener("touchstart", resetIdleTimer, { passive: true });
+  window.addEventListener("click", resetIdleTimer, { passive: true });
+  window.addEventListener("keydown", resetIdleTimer, { passive: true });
+}
+
   
 // ════════════════════════════════════════════════════════════════
 //  RENDERING
