@@ -684,7 +684,7 @@ function loadWh() {
 // PRIMARY: /status MQTT topic → instant online/offline detection
 // FALLBACK: If no /status message AND no data arrives for 2 minutes → offline
 // NOTE: No "waiting" loop — once subscribed, only incoming data or /status topics change the state
-setInterval(() => {
+/*setInterval(() => {
   let changed = false;
   let needsReconnect = false;
   const now = Date.now();
@@ -721,7 +721,53 @@ setInterval(() => {
     }
   }
 }, 30000); // Execute check every 30 seconds
+*/
+// ── Offline Watcher ───────────────────────────────────────────────────────────
+// PRIMARY: /status MQTT topic → instant online/offline detection
+// FALLBACK: If no /status message AND no data arrives for 2 minutes → offline
+// NOTE: Automatically throttles reconnect attempts to prevent infinite loop traps
+setInterval(() => {
+  let changed = false;
+  let needsReconnect = false;
+  const now = Date.now();
+
+  for (const [sn, s] of Object.entries(state)) {
+    // 2 minutes (120,000 ms) without data or status message → assume connection stalled
+    if (s.status === "live" && s.lastSeen && (now - s.lastSeen) > 120000) {
+      s.status = "offline"; 
+      changed = true;
+      needsReconnect = true; // Flag that the data stream has completely stalled
+    }
+    // "waiting" status → flip to offline if stuck for 2 minutes
+    if (s.status === "waiting" && s.firstSubscribedAt && (now - s.firstSubscribedAt) > 120000) {
+      s.status = "offline"; 
+      changed = true;
+      needsReconnect = true;
+    }
+  }
   
+  // Re-render UI if any device state changed
+  if (changed) { 
+    renderDevices(); 
+    renderLog(); 
+  } 
+  
+  // Force a clean MQTT reconnect if the data stream stalled
+  if (needsReconnect) {
+    // Ensure the WebSocket instance exists and is globally available
+    if (typeof mqttWs !== 'undefined' && mqttWs !== null) {
+      // FIX: Only call close() if the socket is actively OPEN.
+      // If it is CONNECTING (1) or already CLOSING (2), do NOT interrupt the browser!
+      if (mqttWs.readyState === WebSocket.OPEN) {
+        console.warn("Data stream stalled for 2 minutes. Resetting MQTT connection wrapper...");  
+        mqttWs.close(); // Triggers the native onclose handler to rebuild the connection cleanly
+      } else {
+        console.log(`⏳ MQTT reconnect deferred. Socket is currently in readyState: ${mqttWs.readyState}`);
+      }
+    }
+  }
+}, 30000); // Execute check every 30 seconds
+
 function handleMqtt(topic, payload, devices, clientId) {
   const parts = topic.split("/");
   const sn    = parts[parts.length - 2];
