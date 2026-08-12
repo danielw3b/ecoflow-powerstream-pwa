@@ -391,7 +391,7 @@ const RECONNECT_MS = 5000;
 // ── Each tab/device connects to MQTT independently ───────────────────────────
 // The broker handles multiple connections with the same clientId fine.
 // ecoflow-server.js also just reconnects directly — same approach here.
-function connectMqtt(creds, devices) {
+/*function connectMqtt(creds, devices) {
   const host     = creds.url.replace(/^mqtts?:\/\//, "");
   const clientId = creds.certificateAccount;
   const wsUrl    = `wss://${host}:8084/mqtt`;
@@ -498,6 +498,133 @@ function connectMqtt(creds, devices) {
     setStatus("error", "Reconnecting…");
     setTimeout(() => connectMqtt(creds, devices), RECONNECT_MS);
   };
+  mqttWs.onerror = () => mqttWs.close();
+}*/
+
+// ── Each tab/device connects to MQTT independently without pipeline collision ──
+function connectMqtt(creds, devices) {
+  const host = creds.url.replace(/^mqtts?:\/\//, "");
+  const accountId = creds.certificateAccount;
+  const wsUrl = `wss://${host}:8084/mqtt`;
+
+  // OPTIMIZATION: Compute a purely volatile, deterministic hardware fingerprint 
+  // to prevent identical ClientIDs from kicking family devices offline.
+  const userAgent = navigator.userAgent.toLowerCase();
+  const screenWidth = window.screen.width || 0;
+  const screenHeight = window.screen.height || 0;
+  let platform = "Device";
+  if (userAgent.includes("cros")) platform = "Chromebook";
+  else if (userAgent.includes("android")) platform = "Android";
+  else if (userAgent.includes("iphone") || userAgent.includes("ipad")) platform = "iOS";
+  else if (userAgent.includes("windows")) platform = "Windows";
+  else if (userAgent.includes("macintosh")) platform = "Mac";
+  const geometricHash = ((screenWidth * 7) + (screenHeight * 13)) % 1000;
+  
+  // Final dynamic but stable ClientID (Bypasses localStorage to protect your nightly sync merges)
+  const clientId = `${accountId}_${platform}${geometricHash}`;
+
+  setStatus("conn", "Connecting MQTT…");
+  if (mqttWs) { try { mqttWs.close(); } catch {} mqttWs = null; }
+  mqttWs = new WebSocket(wsUrl, ["mqtt"]);
+  mqttWs.binaryType = "arraybuffer";
+
+  let mqttBuf = new Uint8Array(0), pid = 1, subscribed = false;
+
+  mqttWs.onopen = () => {
+    // We pass the unique fingerprinted clientId to the connection broker, 
+    // but preserve the official accountId for authentication credentials.
+    mqttWs.send(mqttConnect(clientId, accountId, creds.certificatePassword));
+  };
+
+  mqttWs.onmessage = e => {
+    const chunk = new Uint8Array(e.data);
+    mqttBuf = concat(mqttBuf, chunk);
+
+    let off = 0;
+    while (off < mqttBuf.length) {
+      const fb   = mqttBuf[off], type = (fb >> 4) & 0xF;
+      let pos    = off + 1, mul = 1, rlen = 0;
+      for (let i=0;i<4;i++){if(pos>=mqttBuf.length)goto_end:{ off=mqttBuf.length; break goto_end;}
+        const b=mqttBuf[pos++];rlen+=(b&0x7F)*mul;mul*=128;if(!(b&0x80))break;}
+      if (pos + rlen > mqttBuf.length) break;
+      const body = mqttBuf.slice(pos, pos + rlen);
+      off = pos + rlen;
+
+      if (type === 2) { // CONNACK
+        if (body[1] !== 0) { setStatus("error", `MQTT rc=${body[1]}`); return; }
+        setStatus("live", "MQTT Live");
+        
+        // START UI TIMERS (Ensures clean runtime allocations)
+        initPwaPerformanceTimers();
+        
+        mqttRetry = 2000; 
+        if (!subscribed) {
+          subscribed = true;
+          for (const d of devices) {
+            // Topics must strictly use the original accountId template required by the EcoFlow cloud
+            mqttWs.send(mqttSub(pid++, `/open/${accountId}/${d.sn}/quota`, 1));
+            mqttWs.send(mqttSub(pid++, `/open/${accountId}/${d.sn}/status`, 1));
+          }
+          for (const d of devices) {
+            if (!state[d.sn]) {
+              state[d.sn] = { name:d.deviceName, status:"waiting", data:{}, lastSeen:null,
+                              firstSubscribedAt: Date.now() };
+            }
+            if (!state[d.sn].firstSubscribedAt) state[d.sn].firstSubscribedAt = Date.now();
+          }
+          renderDevices();
+        }
+        pingTimer = setInterval(() => {
+          if (mqttWs?.readyState === 1) {
+            mqttWs.send(mqttPingReq());
+            clearTimeout(pongTimer);
+            pongTimer = setTimeout(() => {
+              console.warn("No PINGRESP — forcing reconnect");
+              mqttWs?.close();
+            }, 15000);
+          }
+        }, 20000);
+      }
+      else if (type === 3) { // PUBLISH
+        const qos = (fb>>1)&3;
+        let p = 0;
+        const tl = (body[p]<<8)|body[p+1]; p+=2;
+        const topic = new TextDecoder().decode(body.slice(p, p+tl)); p+=tl;
+        if (qos > 0) p += 2;
+        const payload = new TextDecoder().decode(body.slice(p));
+        handleMqtt(topic, payload, devices, accountId);
+      }
+      else if (type === 9) {} // SUBACK
+      else if (type === 12) mqttWs.send(mqttPingResp()); 
+      else if (type === 13) { clearTimeout(pongTimer); pongTimer = null; } 
+    }
+    mqttBuf = mqttBuf.slice(off);
+  };
+
+  mqttWs.onclose = () => {
+    // Clean up routines on onclose to prevent resource stack leaks
+    function clearPwaPerformanceTimers() {
+      if (uiRenderIntervalId) { clearInterval(uiRenderIntervalId); uiRenderIntervalId = null; }
+      if (pwaSaveIntervalId) { clearInterval(pwaSaveIntervalId); pwaSaveIntervalId = null; }
+      if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
+      if (pongTimer) { clearTimeout(pongTimer); pongTimer = null; }
+      if (idleTimeoutId) { clearTimeout(idleTimeoutId); idleTimeoutId = null; }
+      
+      // Clean high-performance passive lifecycle event listeners cleanly
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", resetIdleTimer);
+      window.removeEventListener("touchstart", resetIdleTimer);
+      window.removeEventListener("click", resetIdleTimer);
+      window.removeEventListener("keydown", resetIdleTimer);
+    }
+
+    // FIX: Actively call the cleanup function to clear performance cycles from RAM
+    clearPwaPerformanceTimers();
+    
+    setStatus("error", "Reconnecting…");
+    setTimeout(() => connectMqtt(creds, devices), RECONNECT_MS);
+  };
+  
   mqttWs.onerror = () => mqttWs.close();
 }
 
