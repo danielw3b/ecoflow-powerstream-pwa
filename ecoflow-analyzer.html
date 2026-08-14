@@ -31,8 +31,8 @@
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 15px; }
         .form-group { display: flex; flex-direction: column; }
         label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 5px; }
-        input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 4px; font-family: monospace; }
-        input:focus { outline: 1px solid var(--accent); }
+        input, select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 4px; font-family: monospace; }
+        input:focus, select:focus { outline: 1px solid var(--accent); }
         
         button {
             background: var(--accent); color: white; border: none; padding: 12px 20px;
@@ -61,7 +61,7 @@
 
 <div class="container">
     <h1>🌤️ Solar & Weather Analyzer</h1>
-    <p style="color: var(--text-dim)">Locally analyzes your EcoFlow PWA energy history and cross-references it with Open-Meteo weather data.</p>
+    <p style="color: var(--text-dim)">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>
 
     <div class="card">
         <h2>⚙️ Configuration</h2>
@@ -70,6 +70,16 @@
             <h3>📍 Location & Hardware</h3>
             <div class="grid">
                 <div class="form-group">
+                    <label>Select Inverter / Circuit</label>
+                    <select id="cfg_inverter" onchange="loadInverterConfig()" required>
+                        <option value="">-- Load from localStorage --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Total Module Area (m²)</label>
+                    <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
+                </div>
+                <div class="form-group">
                     <label>Latitude (LAT)</label>
                     <input type="number" step="any" id="cfg_lat" required placeholder="e.g. 50.815">
                 </div>
@@ -77,10 +87,9 @@
                     <label>Longitude (LON)</label>
                     <input type="number" step="any" id="cfg_lon" required placeholder="e.g. 7.0378">
                 </div>
-                <div class="form-group">
-                    <label>Total Module Area (m²)</label>
-                    <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
-                </div>
+            </div>
+            
+            <div class="grid">
                 <div class="form-group" style="justify-content: flex-end;">
                     <button type="button" class="btn-secondary" onclick="detectLocation()">📍 Auto-Detect GPS</button>
                 </div>
@@ -144,14 +153,39 @@
 </div>
 
 <script>
-    // Configuration key for localStorage persistence
-    const CONFIG_KEY = 'ecoflow_analyzer_config';
     let globalCsvRows = [];
     let globalConfig = {};
 
-    // Load saved configuration into the form on startup
-    function loadUserConfig() {
-        const saved = localStorage.getItem(CONFIG_KEY);
+    // Get storage key for specific inverter
+    function getStorageKey() {
+        const sn = document.getElementById('cfg_inverter').value;
+        return sn ? `ecoflow_analyzer_config_${sn}` : 'ecoflow_analyzer_config_default';
+    }
+
+    // Initialize inverter dropdown from localStorage data
+    function initInverters() {
+        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+        const serials = Object.keys(dailyStorage);
+        const select = document.getElementById('cfg_inverter');
+        
+        select.innerHTML = '<option value="">-- Select Inverter / Circuit --</option>';
+        serials.forEach(sn => {
+            const opt = document.createElement('option');
+            opt.value = sn;
+            opt.textContent = `Inverter / Circuit: ${sn}`;
+            select.appendChild(opt);
+        });
+
+        if (serials.length > 0) {
+            select.value = serials[0];
+            loadInverterConfig();
+        }
+    }
+
+    // Load configuration for the selected inverter
+    function loadInverterConfig() {
+        const key = getStorageKey();
+        const saved = localStorage.getItem(key);
         if (saved) {
             try {
                 const cfg = JSON.parse(saved);
@@ -163,15 +197,16 @@
                 console.error("Error parsing saved configuration:", e);
             }
         } else {
-            // Set default dates if no config exists
+            // Set default dates if no config exists for this inverter
             document.getElementById('cfg_startDate').value = "2024-05-01";
             document.getElementById('cfg_tariffStart').value = "2024-05-01";
         }
     }
 
-    // Extract values from form, save to localStorage, and return as object
+    // Extract values from form, save to inverter-specific localStorage, and return as object
     function getUserConfig() {
         const config = {
+            inverter: document.getElementById('cfg_inverter').value,
             lat: parseFloat(document.getElementById('cfg_lat').value),
             lon: parseFloat(document.getElementById('cfg_lon').value),
             moduleArea: parseFloat(document.getElementById('cfg_moduleArea').value),
@@ -185,7 +220,7 @@
             tariffStart: document.getElementById('cfg_tariffStart').value,
             startDate: document.getElementById('cfg_startDate').value
         };
-        localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+        localStorage.setItem(getStorageKey(), JSON.stringify(config));
         return config;
     }
 
@@ -203,8 +238,14 @@
         }
     }
 
-    // Main analysis workflow
+    // Main analysis workflow for the selected inverter
     async function runAnalysis() {
+        const selectedSn = document.getElementById('cfg_inverter').value;
+        if (!selectedSn) {
+            alert("Please select an inverter / circuit first.");
+            return;
+        }
+
         document.getElementById('loading').style.display = 'block';
         document.getElementById('runBtn').disabled = true;
         document.getElementById('csvBtn').style.display = 'none';
@@ -221,14 +262,7 @@
 
         // Retrieve stored energy data from PWA
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-        const serials = Object.keys(dailyStorage);
-
-        if (serials.length === 0) {
-            resultsDiv.innerHTML = '<p class="bad">❌ No energy data found in localStorage (ecoflow_wh).</p>';
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('runBtn').disabled = false;
-            return;
-        }
+        const deviceDaily = dailyStorage[selectedSn] || {};
 
         const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum&timezone=auto`;
         
@@ -244,10 +278,7 @@
             const dates = dailyData.daily.time;
             const radSumRaw = dailyData.daily.shortwave_radiation_sum;
 
-            for (const sn of serials) {
-                await analyzeDevice(sn, dates, radSumRaw, dailyStorage[sn] || {});
-            }
-
+            await analyzeDevice(selectedSn, dates, radSumRaw, deviceDaily);
             renderFinancialReport();
             document.getElementById('csvBtn').style.display = 'block';
 
@@ -260,10 +291,10 @@
         document.getElementById('runBtn').disabled = false;
     }
 
-    // Process daily data and fetch hourly data for anomalies
+    // Process daily data and fetch hourly data for anomalies for a single device
     async function analyzeDevice(sn, dates, radSumRaw, deviceDaily) {
         const resultsDiv = document.getElementById('results');
-        let html = `<div class="card"><h2>📡 Device: ${sn}</h2>`;
+        let html = `<div class="card"><h2>📡 Inverter / Circuit: ${sn}</h2>`;
         html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation</th><th>Max Theory</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>`;
         
         globalCsvRows.push([`DEVICE: ${sn}`]);
@@ -276,7 +307,6 @@
             const dateStr = dates[i];
             if (radSumRaw[i] === null) continue;
 
-            // Convert MJ to Wh if needed (Open-Meteo unit check)
             let radiationWhM2 = radSumRaw[i] < 100 ? radSumRaw[i] * 277.778 : radSumRaw[i];
             const maxTheoryWh = radiationWhM2 * globalConfig.moduleArea;
             const realYieldWh = deviceDaily[dateStr] || 0;
@@ -287,7 +317,6 @@
             let diagnosis = "";
             let cssClass = "";
             
-            // Plausibility checks
             const isWlanHang = maxTheoryWh > 15000 && realYieldWh < 300;
             const isCriticalFail = maxTheoryWh > 8000 && realYieldWh === 0;
             const isLowYield = maxTheoryWh > 10000 && efficiency < 14;
@@ -304,7 +333,6 @@
                 diagnosis = `📉 Low Yield`; cssClass = "warn"; 
             }
 
-            // Flag days for hourly deep-dive (excluding startup days for buffer)
             if ((isWlanHang || isCriticalFail || isLowYield) && dateStr !== globalConfig.startDate) {
                 anomalies.push({ date: dateStr, maxTheoryWh, realYieldWh, efficiency, reason: diagnosis });
             }
@@ -323,7 +351,6 @@
         html += `</table>`;
         globalCsvRows.push([]);
 
-        // Perform hourly deep-dive for flagged anomalies
         if (anomalies.length > 0) {
             html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Hourly Anomaly Deep-Dive</h3>`;
             html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
@@ -338,7 +365,6 @@
                 
                 let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
                 for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
-                    // Only count daylight hours (roughly 6:00 to 20:00)
                     if (j >= 6 && j <= 20) {
                         cloudSum += hData.hourly.cloud_cover[j];
                         daylightHours++;
@@ -347,7 +373,7 @@
                     if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
                 }
                 
-                const avgClouds = Math.round(cloudSum / daylightHours);
+                const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                 const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
                 
                 let explanation = "Mixed Weather";
@@ -372,7 +398,7 @@
 
         html += `</div>`;
         resultsDiv.innerHTML += html;
-        window.tariffDaysCounter = tariffDaysCounter; // Store for financial report
+        window.tariffDaysCounter = tariffDaysCounter;
     }
 
     // Generate ROI and financial summary
@@ -385,8 +411,8 @@
         const costReal = realGridUse * (globalConfig.energyPriceCt / 100);
         const savingsNet = costWithoutSolar - costReal;
         
-        const autarkyRate = (savedKwh / theoryDemand) * 100;
-        const roiPercent = (savingsNet / globalConfig.investmentCost) * 100;
+        const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
+        const roiPercent = globalConfig.investmentCost > 0 ? (savingsNet / globalConfig.investmentCost) * 100 : 0;
         const cur = globalConfig.currency;
 
         let html = `<div class="card" style="border-color: var(--accent);">
@@ -417,12 +443,12 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `Solar_Analysis_${globalConfig.startDate}.csv`;
+        link.download = `Solar_Analysis_${globalConfig.inverter}_${globalConfig.startDate}.csv`;
         link.click();
     }
 
-    // Initialize application
-    window.addEventListener('DOMContentLoaded', loadUserConfig);
+    // Initialize application on load
+    window.addEventListener('DOMContentLoaded', initInverters);
 </script>
 </body>
 </html>
