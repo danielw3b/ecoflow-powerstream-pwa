@@ -58,46 +58,47 @@
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h1>🌤️ Solar & Weather Analyzer</h1>
-    <p style="color: var(--text-dim)">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>
-
     <div class="card">
         <h2>⚙️ Configuration</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
-            
-            <h3>📍 Location & Hardware</h3>
+    
+            <h3>📍 Location & GPS</h3>
+            <div class="grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <button type="button" class="btn-secondary" onclick="detectLocation()">📍 Auto-Detect GPS</button>
+                </div>
+                <div class="form-group">
+                    <label for="cfg_lat">Latitude (LAT)</label>
+                    <input type="number" step="any" id="cfg_lat" required placeholder="e.g. 50.819">
+                </div>
+                <div class="form-group">
+                    <label for="cfg_lon">Longitude (LON)</label>
+                    <input type="number" step="any" id="cfg_lon" required placeholder="e.g. 7.0341">
+                </div>
+            </div>
+        
+            <h3>🔌 System Selection & Hardware</h3>
             <div class="grid">
                 <div class="form-group">
-                    <label>Select Inverter / Circuit</label>
+                    <label for="cfg_inverter">Select Inverter / Circuit</label>
                     <select id="cfg_inverter" onchange="loadInverterConfig()" required>
                         <option value="">-- Load from localStorage --</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Total Module Area (m²)</label>
+                    <label for="cfg_moduleArea">Total Module Area (m²)</label>
                     <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
-                    <label for="cfg_totalWp">Total Panel Power (Wp):</label>
+                </div>
+                <div class="form-group">
+                    <label for="cfg_totalWp">Total Panel Power (Wp)</label>
                     <input type="number" id="cfg_totalWp" value="900" required placeholder="e.g. 860">
-                    <label for="cfg_selfConsumptionRate">Self-Consumption Rate (%):</label>
+                </div>
+                <div class="form-group">
+                    <label for="cfg_selfConsumptionRate">Self-Consumption Rate (%)</label>
                     <input type="number" id="cfg_selfConsumptionRate" value="75" min="0" max="100" required placeholder="e.g. 75">
                 </div>
-                <div class="form-group">
-                    <label>Latitude (LAT)</label>
-                    <input type="number" step="any" id="cfg_lat" required placeholder="e.g. 50.815">
-                </div>
-                <div class="form-group">
-                    <label>Longitude (LON)</label>
-                    <input type="number" step="any" id="cfg_lon" required placeholder="e.g. 7.0378">
-                </div>
             </div>
-            
-            <div class="grid">
-                <div class="form-group" style="justify-content: flex-end;">
-                    <button type="button" class="btn-secondary" onclick="detectLocation()">📍 Auto-Detect GPS</button>
-                </div>
-            </div>
+
 
             <h3>💶 Tariff & Investment</h3>
             <div class="grid">
@@ -319,22 +320,22 @@
         // Scientific PV parameters using entered total Watt Peak (Wp)
         const totalWp = globalConfig.totalWp || 860; 
         const tempCoefficient = -0.004; // Efficiency degradation of -0.4% per °C over 25°C
-    
+        
         for (let i = 0; i < dates.length; i++) {
             const dateStr = dates[i];
             if (radSumRaw[i] === null) continue;
     
-            // Normalize Open-Meteo radiation payload (Convert MJ/m² to kWh/m² if required)
-            let totalRadKwhM2 = radSumRaw[i] > 100 ? radSumRaw[i] / 3.6 : radSumRaw[i];
+            // FIXED: Open-Meteo delivers MJ/m² daily. We strictly divide by 3.6 to get true kWh/m².
+            let totalRadKwhM2 = radSumRaw[i] / 3.6;
     
             // 1. Estimate direct vs diffuse components using the standard Liu-Jordan PV model
-            let diffuseShare = 0.30; // Default clear/mixed baseline
+            let diffuseShare = 0.30; 
             if (totalRadKwhM2 < 1.5) {
-                diffuseShare = 0.85; // Heavy cloud cover, mostly diffuse light
+                diffuseShare = 0.85; 
             } else if (totalRadKwhM2 < 3.5) {
-                diffuseShare = 0.50; // Variable or scattered cloud cover
+                diffuseShare = 0.50; 
             } else if (totalRadKwhM2 > 5.5) {
-                diffuseShare = 0.18; // Very bright, direct sunlight
+                diffuseShare = 0.18; 
             }
     
             let dirKwhM2 = totalRadKwhM2 * (1 - diffuseShare);
