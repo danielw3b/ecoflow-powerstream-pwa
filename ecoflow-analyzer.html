@@ -58,15 +58,16 @@
     </style>
 </head>
 <body>
+
+<div class="container">
+    <h1>🌤️ Solar & Weather Analyzer</h1>
+    <p style="color: var(--text-dim)">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>
     <div class="card">
         <h2>⚙️ Configuration</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
     
             <h3>📍 Location & GPS</h3>
             <div class="grid">
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <button type="button" class="btn-secondary" onclick="detectLocation()">📍 Auto-Detect GPS</button>
-                </div>
                 <div class="form-group">
                     <label for="cfg_lat">Latitude (LAT)</label>
                     <input type="number" step="any" id="cfg_lat" required placeholder="e.g. 50.819">
@@ -74,6 +75,9 @@
                 <div class="form-group">
                     <label for="cfg_lon">Longitude (LON)</label>
                     <input type="number" step="any" id="cfg_lon" required placeholder="e.g. 7.0341">
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <button type="button" class="btn-secondary" onclick="detectLocation()">📍 Auto-Detect GPS</button>
                 </div>
             </div>
         
