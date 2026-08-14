@@ -78,6 +78,11 @@
                 <div class="form-group">
                     <label>Total Module Area (m²)</label>
                     <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
+                    <label for="cfg_totalWp">Total Panel Power (Wp):</label>
+                    <input type="number" id="cfg_totalWp" value="900" required placeholder="e.g. 860">
+                  <label for="cfg_selfConsumptionRate">Self-Consumption Rate (%):</label>
+                  <input type="number" id="cfg_selfConsumptionRate" value="75" min="0" max="100" required placeholder="e.g. 75">
+
                 </div>
                 <div class="form-group">
                     <label>Latitude (LAT)</label>
@@ -181,7 +186,7 @@
             loadInverterConfig();
         }
     }
-
+    
     // Load configuration for the selected inverter
     function loadInverterConfig() {
         const key = getStorageKey();
@@ -200,9 +205,11 @@
             // Set default dates if no config exists for this inverter
             document.getElementById('cfg_startDate').value = "2024-05-01";
             document.getElementById('cfg_tariffStart').value = "2024-05-01";
+            // Optionaler Standardwert für neue Inverter
+            if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "860";
         }
     }
-
+    
     // Extract values from form, save to inverter-specific localStorage, and return as object
     function getUserConfig() {
         const config = {
@@ -210,6 +217,8 @@
             lat: parseFloat(document.getElementById('cfg_lat').value),
             lon: parseFloat(document.getElementById('cfg_lon').value),
             moduleArea: parseFloat(document.getElementById('cfg_moduleArea').value),
+            totalWp: parseFloat(document.getElementById('cfg_totalWp').value) || 900, // NEU: Auslesen der Watt-Peak-Leistung
+            selfConsumptionRate: parseFloat(document.getElementById('cfg_selfConsumptionRate').value) || 75 //e.g., 100% for a battery system, 75% for a standard grid-tied balcony kit without a battery
             currency: document.getElementById('cfg_currency').value || '€',
             investmentCost: parseFloat(document.getElementById('cfg_investmentCost').value),
             energyPriceCt: parseFloat(document.getElementById('cfg_energyPriceCt').value),
@@ -245,120 +254,164 @@
             alert("Please select an inverter / circuit first.");
             return;
         }
-
+    
         document.getElementById('loading').style.display = 'block';
         document.getElementById('runBtn').disabled = true;
         document.getElementById('csvBtn').style.display = 'none';
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = '';
         globalCsvRows = [];
-
+    
         globalConfig = getUserConfig();
-
+    
         // Calculate end date (yesterday)
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const endDate = yesterday.toISOString().split('T')[0];
-
+    
         // Retrieve stored energy data from PWA
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
         const deviceDaily = dailyStorage[selectedSn] || {};
-
-        const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum&timezone=auto`;
+    
+        // ERWEITERT: Abfrage von Direktstrahlung, Diffusstrahlung UND der maximalen Tagestemperatur
+        const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=direct_radiation_sum,diffuse_radiation_sum,temperature_2m_max&timezone=auto`;
         
         try {
             const dailyResponse = await fetch(dailyUrl);
             if (!dailyResponse.ok) throw new Error(`Open-Meteo API Error: ${dailyResponse.status}`);
             const dailyData = await dailyResponse.json();
-            
-            if (!dailyData.daily || !dailyData.daily.shortwave_radiation_sum) {
-                throw new Error("Missing radiation data in API response.");
+  
+            // VALIDIERUNG: Prüfen, ob alle drei wissenschaftlichen Datenreihen vorhanden sind
+            if (!dailyData.daily || 
+                !dailyData.daily.direct_radiation_sum || 
+                !dailyData.daily.diffuse_radiation_sum || 
+                !dailyData.daily.temperature_2m_max) {
+              throw new Error("Missing scientific weather variables in API response.");
             }
-
+  
             const dates = dailyData.daily.time;
-            const radSumRaw = dailyData.daily.shortwave_radiation_sum;
-
-            await analyzeDevice(selectedSn, dates, radSumRaw, deviceDaily);
+  
+            // Extrahieren der Arrays für die mathematische Auswertung
+            const directRadRaw = dailyData.daily.direct_radiation_sum;
+            const diffuseRadRaw = dailyData.daily.diffuse_radiation_sum;
+            const maxTempRaw = dailyData.daily.temperature_2m_max;
+  
+            // Übergabe der getrennten Strahlungswerte sowie der Temperaturdaten an die Analyse
+            await analyzeDevice(selectedSn, dates, directRadRaw, diffuseRadRaw, maxTempRaw, deviceDaily);
+  
             renderFinancialReport();
             document.getElementById('csvBtn').style.display = 'block';
-
-        } catch (error) {
+  
+          } catch (error) {
             console.error(error);
             resultsDiv.innerHTML += `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
-        }
-
+          }
+  
         document.getElementById('loading').style.display = 'none';
         document.getElementById('runBtn').disabled = false;
     }
 
-    // Process daily data and fetch hourly data for anomalies for a single device
-    async function analyzeDevice(sn, dates, radSumRaw, deviceDaily) {
+
+    // Process daily data with scientific radiation splits and temperature correction
+    async function analyzeDevice(sn, dates, directRadRaw, diffuseRadRaw, maxTempRaw, deviceDaily) {
         const resultsDiv = document.getElementById('results');
         let html = `<div class="card"><h2>📡 Inverter / Circuit: ${sn}</h2>`;
-        html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation</th><th>Max Theory</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>`;
+        html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation (Dir/Diff)</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Performance Ratio</th><th>Diagnosis</th></tr>`;
         
         globalCsvRows.push([`DEVICE: ${sn}`]);
-        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Theory (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
-
+        globalCsvRows.push(["Date", "Direct Rad (kWh/m2)", "Diffuse Rad (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Performance Ratio (%)", "Diagnosis"]);
+    
         const anomalies = [];
         let tariffDaysCounter = 0;
-
+    
+        // Scientific PV constants using real nominal power
+        const totalWp = globalConfig.totalWp || 800; // Pulls entered Wp from config
+        const diffuseFactor = 0.45;                  // Diffuse light delivers approx 45% of direct efficiency
+        const tempCoefficient = -0.004;              // Power loss of -0.4% per degree Celsius above 25°C
+    
         for (let i = 0; i < dates.length; i++) {
             const dateStr = dates[i];
-            if (radSumRaw[i] === null) continue;
-
-            let radiationWhM2 = radSumRaw[i] < 100 ? radSumRaw[i] * 277.778 : radSumRaw[i];
-            const maxTheoryWh = radiationWhM2 * globalConfig.moduleArea;
+            if (directRadRaw[i] === null || diffuseRadRaw[i] === null) continue;
+    
+            // Correct Open-Meteo units (Convert MJ/m² to kWh/m² if necessary)
+            let dirKwhM2 = directRadRaw[i] > 100 ? directRadRaw[i] / 3.6 : directRadRaw[i];
+            let diffKwhM2 = diffuseRadRaw[i] > 100 ? diffuseRadRaw[i] / 3.6 : diffuseRadRaw[i];
+    
+            // 1. Calculate temperature correction factor
+            const dayTemp = maxTempRaw[i] || 25;
+            let tempLossFactor = 1.0;
+            if (dayTemp > 25) {
+                tempLossFactor = 1.0 + ((dayTemp - 25) * tempCoefficient);
+            }
+    
+            // 2. Scientific expectation calculation directly via Wp (Area cancels out physically)
+            const expectedDirectWh = dirKwhM2 * totalWp * tempLossFactor;
+            const expectedDiffuseWh = diffKwhM2 * totalWp * diffuseFactor * tempLossFactor;
+            const expectedSollWh = expectedDirectDirectWh = expectedDirectWh + expectedDiffuseWh;
+    
             const realYieldWh = deviceDaily[dateStr] || 0;
-            let efficiency = maxTheoryWh > 100 ? (realYieldWh / maxTheoryWh) * 100 : 0;
-
+    
+            // 3. Performance Ratio calculation
+            let performanceRatio = expectedSollWh > 100 ? (realYieldWh / expectedSollWh) * 100 : 0;
+    
             if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) tariffDaysCounter++;
-
+    
             let diagnosis = "";
             let cssClass = "";
             
-            const isWlanHang = maxTheoryWh > 15000 && realYieldWh < 300;
-            const isCriticalFail = maxTheoryWh > 8000 && realYieldWh === 0;
-            const isLowYield = maxTheoryWh > 10000 && efficiency < 14;
-
+            const isWlanHang = expectedSollWh > 2000 && realYieldWh < 150;
+            const isCriticalFail = expectedSollWh > 1500 && realYieldWh === 0;
+            const isLowYield = expectedSollWh > 2000 && performanceRatio < 70;
+    
             if (isWlanHang) { 
                 diagnosis = "⚠️ Suspected Data Loss"; cssClass = "warn"; 
             } else if (isCriticalFail) { 
                 diagnosis = "❌ Critical: No Data"; cssClass = "bad"; 
-            } else if (efficiency > 12) { 
-                diagnosis = `✅ Good Yield`; cssClass = "good"; 
-            } else if (maxTheoryWh < 10000) { 
-                diagnosis = "☁️ Bad Weather"; cssClass = "text-dim"; 
+            } else if (performanceRatio >= 85) { 
+                diagnosis = `✅ Optimal Yield`; cssClass = "good"; 
+            } else if (performanceRatio >= 70) {
+                diagnosis = `✅ Normal Yield`; cssClass = "good";
+            } else if (expectedSollWh < 800) { 
+                diagnosis = "☁️ Insufficient Solar Light"; cssClass = "text-dim"; 
             } else { 
-                diagnosis = `📉 Low Yield`; cssClass = "warn"; 
+                diagnosis = `📉 Low Performance`; cssClass = "warn"; 
             }
-
+    
             if ((isWlanHang || isCriticalFail || isLowYield) && dateStr !== globalConfig.startDate) {
-                anomalies.push({ date: dateStr, maxTheoryWh, realYieldWh, efficiency, reason: diagnosis });
+                anomalies.push({ date: dateStr, maxTheoryWh: expectedSollWh, realYieldWh, efficiency: performanceRatio, reason: diagnosis });
             }
-
+    
             html += `<tr>
                 <td>${dateStr}</td>
-                <td>${(radiationWhM2/1000).toFixed(2)} kWh/m²</td>
-                <td>${(maxTheoryWh/1000).toFixed(2)} kWh</td>
+                <td>${dirKwhM2.toFixed(2)} / ${diffKwhM2.toFixed(2)} kWh/m²</td>
+                <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
                 <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
-                <td class="${cssClass}">${efficiency.toFixed(1)}%</td>
+                <td class="${cssClass}">${performanceRatio.toFixed(1)}%</td>
                 <td class="${cssClass}">${diagnosis}</td>
             </tr>`;
-
-            globalCsvRows.push([dateStr, (radiationWhM2/1000).toFixed(2).replace('.',','), (maxTheoryWh/1000).toFixed(2).replace('.',','), (realYieldWh/1000).toFixed(2).replace('.',','), efficiency.toFixed(1).replace('.',','), diagnosis]);
+    
+            globalCsvRows.push([
+                dateStr, 
+                dirKwhM2.toFixed(2).replace('.',','), 
+                diffKwhM2.toFixed(2).replace('.',','), 
+                dayTemp.toFixed(1).replace('.',','),
+                (expectedSollWh/1000).toFixed(2).replace('.',','), 
+                (realYieldWh/1000).toFixed(2).replace('.',','), 
+                performanceRatio.toFixed(1).replace('.',','), 
+                diagnosis
+            ]);
         }
         html += `</table>`;
         globalCsvRows.push([]);
-
+    
         if (anomalies.length > 0) {
-            html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context (<14% Efficiency)</h3>`;
-            html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
+            html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context (<70% Performance Ratio)</h3>`;
+            html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Perf. Ratio</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
-            globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
-
+            globalCsvRows.push(["Date", "Real (kWh)", "Performance Ratio (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
+    
             for (const target of anomalies) {
-                const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                const hUrl = `https://open-meteo.com{globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
                 const hResp = await fetch(hUrl);
                 if (!hResp.ok) continue;
                 const hData = await hResp.json();
@@ -376,11 +429,11 @@
                 const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                 const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
                 
-                let explanation = "Mixed Weather";
-                if (avgClouds > 75 && sunHours < 3) explanation = "Heavy cloud cover.";
-                else if (avgClouds <= 35 && maxPeak > 600 && target.efficiency < 10) explanation = "Sunny, but yield dropped (Shadows/Heat?).";
-                else if (avgClouds > 40 && sunHours >= 4) explanation = "Variable clouds impaired yield.";
-
+                let explanation = "Technical Check Required";
+                if (avgClouds > 75 && sunHours < 3) explanation = "Heavy cloud fields heavily reduced baseline expectations.";
+                else if (avgClouds <= 35 && maxPeak > 600) explanation = "Clear sky but performance loss. Check for shadows or heat clipping.";
+                else if (avgClouds > 40 && sunHours >= 4) explanation = "Moving cloud clusters disrupted generation paths.";
+    
                 html += `<tr>
                     <td>${target.date}</td>
                     <td>${(target.realYieldWh/1000).toFixed(2)}</td>
@@ -395,35 +448,50 @@
             html += `</table>`;
             globalCsvRows.push([]);
         }
-
+    
         html += `</div>`;
         resultsDiv.innerHTML += html;
         window.tariffDaysCounter = tariffDaysCounter;
     }
 
-    // Generate ROI and financial summary
+
+    
+    // Generate dynamic ROI and financial summary based on individual inverter yield
     function renderFinancialReport() {
-        const realGridUse = globalConfig.meterCurrent - globalConfig.meterStart;
+        // 1. Calculate total real generation for this specific inverter during the active tariff period
+        // To ensure exact matching, we pull directly from the active device storage
+        const selectedSn = document.getElementById('cfg_inverter').value;
+        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+        const deviceDaily = dailyStorage[selectedSn] || {};
+        
+        let totalGeneratedWh = 0;
+        for (const [dateStr, wh] of Object.entries(deviceDaily)) {
+            if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
+                totalGeneratedWh += wh;
+            }
+        }
+        const totalGeneratedKwh = totalGeneratedWh / 1000;
+    
+        // 2. Apply the self-consumption rate (default to 100% if not set via UI)
+        const selfConsumptionRate = globalConfig.selfConsumptionRate !== undefined ? globalConfig.selfConsumptionRate : 100;
+        const savedKwh = totalGeneratedKwh * (selfConsumptionRate / 100);
+        
+        // 3. Financial calculations based on isolated solar performance
+        const savingsNet = savedKwh * (globalConfig.energyPriceCt / 100);
         const theoryDemand = window.tariffDaysCounter * globalConfig.dailyConsumption;
-        const savedKwh = theoryDemand - realGridUse;
-        
-        const costWithoutSolar = theoryDemand * (globalConfig.energyPriceCt / 100);
-        const costReal = realGridUse * (globalConfig.energyPriceCt / 100);
-        const savingsNet = costWithoutSolar - costReal;
-        
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = globalConfig.investmentCost > 0 ? (savingsNet / globalConfig.investmentCost) * 100 : 0;
         const cur = globalConfig.currency;
-
+    
         let html = `<div class="card" style="border-color: var(--accent);">
             <h2 style="color: var(--accent);">💰 Financial & ROI Report</h2>
             <table>
                 <tr><th>Metric</th><th>Value</th><th>Context</th></tr>
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td>Since ${globalConfig.tariffStart}</td></tr>
-                <tr><td>Est. Demand w/o Solar</td><td>${theoryDemand.toFixed(2)} kWh</td><td>Based on ${globalConfig.dailyConsumption} kWh/day</td></tr>
-                <tr><td>Solar Energy Used directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Saved from grid</td></tr>
-                <tr><td>Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Self-sufficiency</td></tr>
-                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td>Cash saved</td></tr>
+                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td>Total output from this unit</td></tr>
+                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Based on ${selfConsumptionRate}% self-consumption</td></tr>
+                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
+                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td>Cash saved by this inverter</td></tr>
                 <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${cur}${globalConfig.investmentCost} investment</td></tr>
             </table>
         </div>`;
@@ -431,6 +499,7 @@
         document.getElementById('results').innerHTML += html;
         
         globalCsvRows.push(["FINANCIAL REPORT"]);
+        globalCsvRows.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
         globalCsvRows.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
         globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
         globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
