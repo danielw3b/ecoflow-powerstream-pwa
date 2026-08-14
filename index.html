@@ -262,7 +262,7 @@ canvas{width:100%;display:block;}
     <div class="section-title">EXPORT</div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;">
       <div style="font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-bottom:12px;line-height:1.6;">
-        Energy history CSV — collected locally.
+        ENERGY HISTORY CSV - locally accumulated.
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;" id="exportBtns">
         <button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>
@@ -387,119 +387,6 @@ function mqttPingResp(){return new Uint8Array([0xD0,0x00]);}
 
 let mqttWs = null, pingTimer = null, pongTimer = null;
 const RECONNECT_MS = 5000;
-
-// ── Each tab/device connects to MQTT independently ───────────────────────────
-// The broker handles multiple connections with the same clientId fine.
-// ecoflow-server.js also just reconnects directly — same approach here.
-/*function connectMqtt(creds, devices) {
-  const host     = creds.url.replace(/^mqtts?:\/\//, "");
-  const clientId = creds.certificateAccount;
-  const wsUrl    = `wss://${host}:8084/mqtt`;
-
-  setStatus("conn", "Connecting MQTT…");
-  if (mqttWs) { try { mqttWs.close(); } catch {} mqttWs = null; }
-  mqttWs = new WebSocket(wsUrl, ["mqtt"]);
-  mqttWs.binaryType = "arraybuffer";
-
-  let mqttBuf = new Uint8Array(0), pid = 1, subscribed = false;
-
-  mqttWs.onopen = () => {
-    mqttWs.send(mqttConnect(clientId, clientId, creds.certificatePassword));
-  };
-
-  mqttWs.onmessage = e => {
-    const chunk = new Uint8Array(e.data);
-    mqttBuf = concat(mqttBuf, chunk);
-
-    let off = 0;
-    while (off < mqttBuf.length) {
-      const fb   = mqttBuf[off], type = (fb >> 4) & 0xF;
-      let pos    = off + 1, mul = 1, rlen = 0;
-      for (let i=0;i<4;i++){if(pos>=mqttBuf.length)goto_end:{ off=mqttBuf.length; break goto_end;}
-        const b=mqttBuf[pos++];rlen+=(b&0x7F)*mul;mul*=128;if(!(b&0x80))break;}
-      if (pos + rlen > mqttBuf.length) break;
-      const body = mqttBuf.slice(pos, pos + rlen);
-      off = pos + rlen;
-
-      if (type === 2) { // CONNACK
-        if (body[1] !== 0) { setStatus("error", `MQTT rc=${body[1]}`); return; }
-        setStatus("live", "MQTT Live");
-        // ── START PERIODIC UI AND STORAGE BATCHING LOOP ────────────────
-        initPwaPerformanceTimers();
-        // ───────────────────────────────────────────────────────────────
-        mqttRetry = 2000; // unused but harmless
-        if (!subscribed) {
-          subscribed = true;
-          const now = Date.now();
-          for (const d of devices) {
-            mqttWs.send(mqttSub(pid++, `/open/${clientId}/${d.sn}/quota`, 1));
-            mqttWs.send(mqttSub(pid++, `/open/${clientId}/${d.sn}/status`, 1));
-          }
-          for (const d of devices) {
-            if (!state[d.sn]) {
-              // First time ever — start as waiting
-              state[d.sn] = { name:d.deviceName, status:"waiting", data:{}, lastSeen:null,
-                              firstSubscribedAt: Date.now() };
-            }
-            // DO NOT reset status on reconnect — keep live/offline/waiting as-is
-            // Only set firstSubscribedAt once
-            if (!state[d.sn].firstSubscribedAt) state[d.sn].firstSubscribedAt = Date.now();
-          }
-          renderDevices();
-        }
-        pingTimer = setInterval(() => {
-          if (mqttWs?.readyState === 1) {
-            mqttWs.send(mqttPingReq());
-            // If no pong within 15s, force reconnect
-            clearTimeout(pongTimer);
-            pongTimer = setTimeout(() => {
-              console.warn("No PINGRESP — forcing reconnect");
-              mqttWs?.close();
-            }, 15000);
-          }
-        }, 20000);
-      }
-      else if (type === 3) { // PUBLISH
-        const qos = (fb>>1)&3;
-        let p = 0;
-        const tl = (body[p]<<8)|body[p+1]; p+=2;
-        const topic = new TextDecoder().decode(body.slice(p, p+tl)); p+=tl;
-        if (qos > 0) p += 2;
-        const payload = new TextDecoder().decode(body.slice(p));
-        handleMqtt(topic, payload, devices, clientId);
-      }
-      else if (type === 9) {} // SUBACK
-      else if (type === 12) mqttWs.send(mqttPingResp()); // PINGREQ from broker
-      else if (type === 13) { clearTimeout(pongTimer); pongTimer = null; } // PINGRESP
-    }
-    mqttBuf = mqttBuf.slice(off);
-  };
-
-  mqttWs.onclose = () => {
-    clearInterval(pingTimer); pingTimer = null;
-    clearTimeout(pongTimer);  pongTimer = null;
-    
-    // ── CLEAR LOOP INTERVALS UPON DISCONNECT ───────────────────────────
-    //clearInterval(uiRenderIntervalId); uiRenderIntervalId = null;
-    //clearInterval(pwaSaveIntervalId);  pwaSaveIntervalId = null;
-    // ───────────────────────────────────────────────────────────────────
-
-    // Clean up routines on onclose
-    function clearPwaPerformanceTimers() {
-      clearInterval(uiRenderIntervalId); uiRenderIntervalId = null;
-      clearInterval(pwaSaveIntervalId);  pwaSaveIntervalId = null;
-      clearTimeout(idleTimeoutId);       idleTimeoutId = null;
-      
-      window.removeEventListener("mousemove", resetIdleTimer);
-      window.removeEventListener("touchstart", resetIdleTimer);
-      window.removeEventListener("keydown", resetIdleTimer);
-    }
-    
-    setStatus("error", "Reconnecting…");
-    setTimeout(() => connectMqtt(creds, devices), RECONNECT_MS);
-  };
-  mqttWs.onerror = () => mqttWs.close();
-}*/
 
 // ── Each tab/device connects to MQTT independently without pipeline collision ──
 function connectMqtt(creds, devices) {
@@ -651,88 +538,6 @@ function colorFor(sn) {
   }
   return snColorMap[sn];
 }
-
-// ── PERSIST WH TO LOCALSTORAGE (OPTIMIZED) ───────────────────────────────────
-/*
-  function saveWh() {
-  try {
-    // 1. Daily values — Merge memory and disk structures
-    const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
-    for (const [sn, days] of Object.entries(dailyWh)) {
-      if (!stored[sn]) stored[sn] = {};
-      for (const [day, wh] of Object.entries(days)) {
-        if (!(day in stored[sn]) || wh > stored[sn][day]) {
-          stored[sn][day] = wh;
-        }
-      }
-    }
-    for (const [sn, days] of Object.entries(stored)) {
-      if (!dailyWh[sn]) dailyWh[sn] = {};
-      for (const [day, wh] of Object.entries(days)) dailyWh[sn][day] = wh;
-    }
-    localStorage.setItem(WH_KEY, JSON.stringify(stored));
-
-    // 2. Hourly values — Aggregate and clean old records
-    const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
-    for (const [sn, hours] of Object.entries(hourlyWh)) {
-      if (!storedH[sn]) storedH[sn] = {};
-      for (const [hr, wh] of Object.entries(hours)) {
-        if (!(hr in storedH[sn]) || wh > storedH[sn][hr]) {
-          storedH[sn][hr] = wh;
-        }
-      }
-    }
-
-    // Set rolling 48-hour cutoff timestamp
-    const cutOffDate = new Date();
-    cutOffDate.setHours(cutOffDate.getHours() - 48);
-    
-    // Generate a lexicographically sortable string: "YYYY-MM-DD HH"
-    const pad = (n) => String(n).padStart(2, '0');
-    const cutOffStr = `${cutOffDate.getFullYear()}-${pad(cutOffDate.getMonth() + 1)}-${pad(cutOffDate.getDate())} ${pad(cutOffDate.getHours())}`;
-
-    // Perform ultra-fast pruning using a simple string comparison (avoids expensive Date parsing)
-    for (const sn in storedH) {
-      const cleanedHours = {};
-      for (const [hr, wh] of Object.entries(storedH[sn])) {
-        // String format allows direct comparison ("2026-03-30 14" >= "2026-03-28 14")
-        if (hr >= cutOffStr) {
-          cleanedHours[hr] = wh;
-        }
-      }
-      storedH[sn] = cleanedHours;
-      hourlyWh[sn] = cleanedHours; // Sync runtime memory cache
-    }
-
-    localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
-  } catch (e) {
-    console.error("PWA storage optimization failed:", e);
-  }
-}
-
-function loadWh() {
-  try {
-    // 1. Daily data — Load full history without any visual 30-day cutoff
-    const saved = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
-    for (const [sn, days] of Object.entries(saved)) {
-      dailyWh[sn] = {};
-      for (const [day, wh] of Object.entries(days)) {
-        dailyWh[sn][day] = wh; // Keeps every historical day intact
-      }
-    }
-
-    // 2. Hourly data — Load full history without any 7-day pruning logic
-    const savedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
-    for (const [sn, hours] of Object.entries(savedH)) {
-      hourlyWh[sn] = {};
-      for (const [hr, wh] of Object.entries(hours)) {
-        hourlyWh[sn][hr] = wh; // Keeps all hours intact for smooth processing
-      }
-    }
-  } catch (e) {
-    console.error("Error loading Wh data from localStorage:", e);
-  }
-}*/
   
 function saveWh() {
   try {
@@ -806,49 +611,7 @@ function loadWh() {
     console.error("Error loading Wh data from localStorage:", e);
   }
 }
-  
-// ── Offline Watcher ───────────────────────────────────────────────────────────
-// PRIMARY: /status MQTT topic → instant online/offline detection
-// FALLBACK: If no /status message AND no data arrives for 2 minutes → offline
-// NOTE: No "waiting" loop — once subscribed, only incoming data or /status topics change the state
-/*setInterval(() => {
-  let changed = false;
-  let needsReconnect = false;
-  const now = Date.now();
 
-  for (const [sn, s] of Object.entries(state)) {
-    // 2 minutes (120,000 ms) without data or status message → assume connection stalled
-    if (s.status === "live" && s.lastSeen && (now - s.lastSeen) > 120000) {
-      s.status = "offline"; 
-      changed = true;
-      needsReconnect = true; // Flag that the data stream has completely stalled
-    }
-    // "waiting" status → flip to offline if stuck for 2 minutes
-    if (s.status === "waiting" && s.firstSubscribedAt && (now - s.firstSubscribedAt) > 120000) {
-      s.status = "offline"; 
-      changed = true;
-      needsReconnect = true;
-    }
-  }
-  // Re-render UI if any device state changed
-  if (changed) { 
-    renderDevices(); 
-    renderLog(); 
-  } 
-  // Force a clean MQTT reconnect if the data stream stalled
-  if (needsReconnect) {
-    console.warn("Data stream stalled for 2 minutes. Resetting MQTT connection wrapper...");  
-    // Ensure the WebSocket instance exists before attempting to close it
-    if (typeof mqttWs !== 'undefined' && mqttWs !== null) {
-      // If the socket isn't already closed, close it.
-      // This automatically triggers the mqttWs.onclose handler to rebuild the connection cleanly.
-      if (mqttWs.readyState !== WebSocket.CLOSED) {
-        mqttWs.close(); 
-      }
-    }
-  }
-}, 30000); // Execute check every 30 seconds
-*/
 // ── Offline Watcher ───────────────────────────────────────────────────────────
 // PRIMARY: /status MQTT topic → instant online/offline detection
 // FALLBACK: If no /status message AND no data arrives for 2 minutes → offline
@@ -992,226 +755,6 @@ function accumulateWh(sn, watts) {
   lastSnap[sn] = { ts: now, watts };
   //saveWh();
 }
-
-// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
-/*let uiRenderIntervalId = null;
-let pwaSaveIntervalId = null;
-let idleTimeoutId = null;
-let currentRenderSpeed = 5000;
-
-// Central render function pulling from live background memory
-function runUiRender() {
-  if (typeof renderDevices === "function") renderDevices();
-  if (typeof renderPowerChart === "function") renderPowerChart();
-  if (typeof renderWhChart === "function") renderWhChart();
-  if (typeof renderLog === "function") renderLog();
-}
-
-// Safely update intervals without dropping states
-function setUiRenderSpeed(ms) {
-  if (currentRenderSpeed === ms && uiRenderIntervalId) return;
-  currentRenderSpeed = ms;
-  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
-  uiRenderIntervalId = setInterval(runUiRender, ms);
-}
-
-// Triggered on any screen touch, click, or movement
-function resetIdleTimer() {
-  // Switch back to high performance 1s intervals when actively viewed
-  setUiRenderSpeed(1000); 
-
-  clearTimeout(idleTimeoutId);
-  // After 20 sec (20000ms) of no user activity, drop to battery saving mode
-  idleTimeoutId = setTimeout(() => {
-    console.log("🔋 Phone is unattended. Dropping UI refresh to 10s to preserve battery.");
-    setUiRenderSpeed(10000); // 10-second updates for background logging
-  }, 20000);
-}
-
-function initPwaPerformanceTimers() {
-  // Start with default rendering speed
-  setUiRenderSpeed(1000);
-  resetIdleTimer();
-
-  // Setup batch database savings to localStorage twice per minute
-  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
-  // Change 60000 to 30000 for a 30-second background save cycle
-  pwaSaveIntervalId = setInterval(saveWh, 30000);
-
-  // Monitor basic interaction metrics across mobile and desktop environments
-  window.addEventListener("mousemove", resetIdleTimer, { passive: true });
-  window.addEventListener("touchstart", resetIdleTimer, { passive: true });
-  window.addEventListener("keydown", resetIdleTimer, { passive: true });
-} 
-
-// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
-let uiRenderIntervalId = null;
-let pwaSaveIntervalId = null;
-let idleTimeoutId = null;
-let currentRenderSpeed = 5000;
-
-// Track rendering phases in RAM to prevent main-thread blocking
-let renderTickCount = 0;
-
-// Central render function pulling from live background memory
-function runUiRender() {
-  // PHASE 1: Fast GUI and log elements are rendered on every interval tick
-  if (typeof renderDevices === "function") renderDevices();
-  if (typeof renderLog === "function") renderLog();
-
-  // PHASE 2: Heavy charts are time-sliced to distribute CPU load evenly
-  if (currentRenderSpeed === 1000) {
-    // Alternating chart updates every 2 seconds during active high-perf mode
-    if (renderTickCount % 2 === 0) {
-      if (typeof renderPowerChart === "function") renderPowerChart();
-    } else {
-      if (typeof renderWhChart === "function") renderWhChart();
-    }
-    renderTickCount++;
-  } else {
-    // In background/idle mode, render everything at once since time permits
-    if (typeof renderPowerChart === "function") renderPowerChart();
-    if (typeof renderWhChart === "function") renderWhChart();
-  }
-}
-
-// Safely update intervals without dropping states
-function setUiRenderSpeed(ms) {
-  if (currentRenderSpeed === ms && uiRenderIntervalId) return;
-  currentRenderSpeed = ms;
-  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
-  uiRenderIntervalId = setInterval(runUiRender, ms);
-}
-
-// Triggered on any screen touch, click, or movement
-function resetIdleTimer() {
-  // Switch back to high performance 1s intervals when actively viewed
-  setUiRenderSpeed(1000); 
-
-  clearTimeout(idleTimeoutId);
-  // After 20 sec (20000ms) of no user activity, drop to battery saving mode
-  idleTimeoutId = setTimeout(() => {
-    console.log("🔋 Phone is unattended. Dropping UI refresh to 10s to preserve battery.");
-    setUiRenderSpeed(10000); // 10-second updates for background logging
-  }, 20000);
-}
-
-// Initialize performance timers and orchestrate non-blocking UI/DB threads
-function initPwaPerformanceTimers() {
-  // Start with default high-performance rendering speed
-  setUiRenderSpeed(1000);
-  resetIdleTimer();
-
-  // Clear existing save loop before re-instantiating
-  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
-  
-  // Setup batch database savings to localStorage twice per minute
-  pwaSaveIntervalId = setInterval(() => {
-    // Defer heavy disk-write operations until the main thread is completely idle
-    requestAnimationFrame(() => {
-      if (typeof saveWh === "function") {
-        saveWh();
-        console.log("💾 RAM database asynchronously persisted to localStorage.");
-      }
-    });
-  }, 30000);
-
-  // Monitor basic interaction metrics using high-performance passive event listeners
-  window.addEventListener("mousemove", resetIdleTimer, { passive: true });
-  window.addEventListener("touchstart", resetIdleTimer, { passive: true });
-  window.addEventListener("keydown", resetIdleTimer, { passive: true });
-}
-
-// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
-let uiRenderIntervalId = null;
-let pwaSaveIntervalId = null;
-let idleTimeoutId = null;
-let currentRenderSpeed = 5000;
-
-// Track rendering phases in RAM to prevent main-thread blocking
-let renderTickCount = 0;
-
-// Central render function pulling from live background memory
-function runUiRender() {
-  // PHASE 1: Fast GUI and log elements are rendered on every interval tick
-  if (typeof renderDevices === "function") renderDevices();
-  if (typeof renderLog === "function") renderLog();
-
-  // PHASE 2: Heavy charts are time-sliced to distribute CPU load evenly
-  if (currentRenderSpeed === 1000) {
-    // Alternating chart updates every 2 seconds during active high-perf mode
-    if (renderTickCount % 2 === 0) {
-      if (typeof renderPowerChart === "function") renderPowerChart();
-    } else {
-      if (typeof renderWhChart === "function") renderWhChart();
-    }
-    renderTickCount++;
-  } else {
-    // In background/idle mode, render everything at once since time permits
-    if (typeof renderPowerChart === "function") renderPowerChart();
-    if (typeof renderWhChart === "function") renderWhChart();
-  }
-}
-
-// Safely update intervals without dropping states
-function setUiRenderSpeed(ms) {
-  if (currentRenderSpeed === ms && uiRenderIntervalId) return;
-  currentRenderSpeed = ms;
-  if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
-  uiRenderIntervalId = setInterval(runUiRender, ms);
-}
-
-// Triggered on any screen touch, click, or movement
-function resetIdleTimer(e) {
-  // OPTIMIZATION: If triggered by mousemove, only reset if we are actually in power-saving mode (>= 5000ms).
-  // This prevents micro-mouse movements on laptops/Chromebooks from keeping the CPU permanently awake.
-  if (e && e.type === "mousemove" && currentRenderSpeed < 5000) {
-    return; // Ignore mouse chatter if the UI is already in high-performance mode
-  }
-
-  // Switch back to high performance 1s intervals when actively viewed
-  setUiRenderSpeed(1000); 
-
-  clearTimeout(idleTimeoutId);
-  // After 20 sec (20000ms) of no user activity, drop to battery saving mode
-  idleTimeoutId = setTimeout(() => {
-    console.log("🔋 Phone/Chromebook is unattended. Dropping UI refresh to 10s to preserve battery.");
-    setUiRenderSpeed(10000); // 10-second updates for background logging
-  }, 20000);
-}
-
-// Initialize performance timers and orchestrate non-blocking UI/DB threads
-function initPwaPerformanceTimers() {
-  // Start with default high-performance rendering speed
-  setUiRenderSpeed(1000);
-  
-  // Initialize the first background shutdown timer safely
-  clearTimeout(idleTimeoutId);
-  idleTimeoutId = setTimeout(() => {
-    console.log("🔋 Phone/Chromebook is unattended. Dropping UI refresh to 10s to preserve battery.");
-    setUiRenderSpeed(10000);
-  }, 20000);
-
-  // Clear existing save loop before re-instantiating
-  if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
-  
-  // Setup batch database savings to localStorage twice per minute
-  pwaSaveIntervalId = setInterval(() => {
-    // Defer heavy disk-write operations until the main thread is completely idle
-    requestAnimationFrame(() => {
-      if (typeof saveWh === "function") {
-        saveWh();
-        console.log("💾 RAM database asynchronously persisted to localStorage.");
-      }
-    });
-  }, 30000);
-
-  // Monitor basic interaction metrics using high-performance passive event listeners
-  // Note: We now pass the event object 'e' automatically to the handler
-  window.addEventListener("mousemove", resetIdleTimer, { passive: true });
-  window.addEventListener("touchstart", resetIdleTimer, { passive: true });
-  window.addEventListener("keydown", resetIdleTimer, { passive: true });
-}*/
 
 // ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
 let uiRenderIntervalId = null;
@@ -1405,38 +948,6 @@ function toggleMetrics(sn, element) {
   }
 }
 
-/*
-function renderDevices() {
-  const grid = document.getElementById("devicesGrid");
-  const sns  = Object.keys(state);
-  if (!sns.length) return;
-
-  // Remove placeholder
-  const placeholder = grid.querySelector("[data-placeholder]");
-  if (placeholder) placeholder.remove();
-
-  sns.forEach(sn => {
-    const s = state[sn];
-    const id = `dc-${sn}`;
-    const [cls, inner] = cardHtml(sn, s);
-    let el = document.getElementById(id);
-    if (!el) {
-      el = document.createElement("div");
-      el.id = id;
-      grid.appendChild(el);
-    }
-    // Key = status + lastSeen + key live values — only redraw when something changed
-    const key = s.status + (s.lastSeen||0) +
-      (s.data?.powGetPv??0).toFixed(0) + (s.data?.gridConnectionPower??0).toFixed(0);
-    if (el.dataset.key !== key) {
-      el.className = cls;
-      el.innerHTML = inner;
-      el.dataset.key = key;
-    }
-  });
-}
-*/
-
 function renderDevices() {
   const grid = document.getElementById("devicesGrid");
   const sns  = Object.keys(state);
@@ -1477,114 +988,6 @@ function renderDevices() {
   // Flush all new device cards to the DOM at once
   if (hasNewElements) grid.appendChild(fragment);
 }  
-
-/*function renderPowerChart() {
-  const container = document.getElementById("chartsContainer");
-  const sns = Object.keys(hist);
-  if (!sns.length) return;
-
-  // One shared chart wrap
-  let wrap = document.getElementById("cw-combined");
-  if (!wrap) {
-    wrap = document.createElement("div");
-    wrap.id = "cw-combined";
-    wrap.className = "chart-wrap";
-    wrap.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-legend" id="power-legend"></div>
-        <span id="power-time" style="font-family:var(--mono);font-size:.65rem;color:var(--muted)"></span>
-      </div>
-      <canvas id="cc-combined" height="140"></canvas>`;
-    container.appendChild(wrap);
-  }
-
-  // Legend — sorted by API order for consistency
-  const sortedSns = sns.sort((a,b) => Object.keys(snColorMap).indexOf(a) - Object.keys(snColorMap).indexOf(b));
-  document.getElementById("power-legend").innerHTML = sortedSns.map(sn => `
-    <div class="legend-item">
-      <div class="legend-dot" style="background:${colorFor(sn)}"></div>
-      <span style="color:${colorFor(sn)}">${esc(deviceName(sn, state[sn]?.name ?? sn))}</span>
-    </div>`).join("");
-    
-  const canvas = document.getElementById("cc-combined");
-  if (!canvas) return;
-  const dpr = devicePixelRatio || 1, W = canvas.offsetWidth || 600, H = 140;
-  canvas.width = W*dpr; canvas.height = H*dpr;
-  const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr);
-
-  const PL = 42, PR = 10, PT = 10, PB = 8;
-  const cW = W - PL - PR, cH = H - PT - PB;
-
-  ctx.fillStyle = "#060c1a"; ctx.fillRect(0, 0, W, H);
-
-  const allWatts = sortedSns.flatMap(sn => (hist[sn]||[]).map(p => p.watts));
-  const maxW = Math.max(...allWatts, 50);
-
-  ctx.strokeStyle = "rgba(30,58,95,.55)"; ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = PT + cH * i / 4;
-    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
-  }
-
-  // ── OPTIMIZATION: Compile gradients ONCE right before drawing lines
-  const gradientCache = {};
-  sortedSns.forEach(sn => {
-    const color = colorFor(sn);
-    const grad = ctx.createLinearGradient(0, PT, 0, PT + cH);
-    grad.addColorStop(0, color + "40");
-    grad.addColorStop(1, "transparent");
-    gradientCache[sn] = grad;
-  });
-
-  sortedSns.forEach(sn => {
-    const pts   = hist[sn];
-    if (!pts || pts.length < 2) return;
-    const color = colorFor(sn);
-
-    // Line
-    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = "round";
-    pts.forEach((p, i) => {
-      const x = PL + cW * i / (MAX_H - 1);
-      const y = PT + cH * (1 - p.watts / maxW);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    // Fill under (Now using the pre-compiled layout cache lookup)
-    ctx.beginPath(); 
-    ctx.fillStyle = gradientCache[sn];
-    pts.forEach((p, i) => {
-      const x = PL + cW * i / (MAX_H - 1);
-      const y = PT + cH * (1 - p.watts / maxW);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.lineTo(PL + cW * (pts.length - 1) / (MAX_H - 1), PT + cH);
-    ctx.lineTo(PL, PT + cH); ctx.closePath(); ctx.fill();
-
-    // Latest value dot
-    const lat = pts.at(-1);
-    if (lat) {
-      const x = PL + cW * (pts.length - 1) / (MAX_H - 1);
-      const y = PT + cH * (1 - lat.watts / maxW);
-      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = color; ctx.fill();
-    }
-  });
-
-  // Y axis labels
-  ctx.fillStyle = "rgba(107,138,170,.9)"; ctx.font = "9px monospace"; ctx.textAlign = "right";
-  for (let i = 0; i <= 4; i++)
-    ctx.fillText(Math.round(maxW * (1 - i / 4)) + "W", PL - 4, PT + cH * i / 4 + 3);
-
-  // Latest time + values
-  const latestTs = Math.max(...sns.map(sn => hist[sn].at(-1)?.ts ?? 0));
-  const vals = sns.map((sn, i) => {
-    const w = hist[sn].at(-1)?.watts ?? 0;
-    return `<span style="color:${COLORS[i%4]}">${w.toFixed(0)}W</span>`;
-  }).join(" · ");
-  document.getElementById("power-time").innerHTML =
-    latestTs ? `${vals} &nbsp;${fmtTime(new Date(latestTs))}` : "";
-}*/
 
 function renderPowerChart() {
   const container = document.getElementById("chartsContainer");
@@ -1736,140 +1139,6 @@ function renderPowerChart() {
     ctx.fillText(Math.round(maxW * (1 - i / 4)) + "W", PL - 4, PT + cH * i / 4 + 3);
   }
 }
-
-
-/*function renderWhChart() {
-  const buckets  = aggregateWh(currentPeriod);
-  const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
-  if (!sns.length) return;
-  
-  let allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn])))].sort();
-  if (!allLabels.length) return;
-
-  // Use LOCAL time throughout — fixes 2h timezone offset
-  const now      = new Date();
-  const pad      = n => String(n).padStart(2,"0");
-  const today    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  const nowHour  = `${today} ${pad(now.getHours())}`;
-
-  const monthShort = now.toLocaleString('en', { month: 'short' });
-  const thisYear   = now.getFullYear();
-  
-
-  // ── CUTOFF FILTER: Keep only the last 30 days when on the "day" tab ──
-  if (currentPeriod === "day") {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    thirtyDaysAgo.setHours(0, 0, 0, 0);
-    const cutoffStr = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
-    
-    // Only keep chart bars that are equal to or newer than 30 days ago
-    allLabels = allLabels.filter(label => label >= cutoffStr);
-  }
-  
-  if (!allLabels.length) return; // Safeguard if no data fits the window
-  document.getElementById("whSection").style.display = "";
-
-  const thisKey  = currentPeriod==="hour"   ? nowHour
-                 : currentPeriod==="month" ? today.slice(0,7)
-                 : currentPeriod==="year"  ? today.slice(0,4)
-                 : today;
-
-  const periodWh = sns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
-  const periodLabel = currentPeriod==="hour"  ? "Now" // This hour
-                    : currentPeriod==="day"   ? "Today" // Today
-                    : currentPeriod==="month" ? monthShort //"TM" // This month
-                    : thisYear; //"TY"; // This year
-  document.getElementById("whTotal").textContent =
-    `${periodLabel}: ${periodWh>=1000?(periodWh/1000).toFixed(2)+" kWh":periodWh.toFixed(0)+" Wh"}`;
-
-  // Legend — use same order for all tabs so colors are consistent
-  const allSns = Object.keys(state); // stable order from API
-  const orderedSns = sns.sort((a,b) => allSns.indexOf(a) - allSns.indexOf(b));
-
-  document.getElementById("whLegend").innerHTML = orderedSns.map((sn,i)=>
-    `<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i%4]}"></div>
-     <span style="color:${COLORS[i%4]}">${esc(deviceName(sn, state[sn]?.name??sn))}</span></div>`
-  ).join("");
-  const exportBtns = document.getElementById("exportBtns");
-  if (exportBtns) exportBtns.innerHTML =
-    orderedSns.map((sn,i)=>`<button class="btn" style="color:${COLORS[i%4]};border-color:${COLORS[i%4]}40"
-    onclick="downloadHistory('${sn}')">↓ ${esc(deviceName(sn, state[sn]?.name??sn))}</button>`).join("") + 
-    `<button class="btn" onclick="downloadHistory('all')" style="color:#ffb830;border-color:rgba(255,184,48,.3)">↓ All Devices</button>`;
-
-  const canvas=document.getElementById("whChart");
-  const dpr=devicePixelRatio||1, W=canvas.offsetWidth||600, H=160;
-  canvas.width=W*dpr; canvas.height=H*dpr;
-  const ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
-  const PL=56,PR=10,PT=14,PB=28, cW=W-PL-PR, cH=H-PT-PB;
-  ctx.fillStyle="#060c1a"; ctx.fillRect(0,0,W,H);
-  
-  const maxWh=Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn][l]??0)),100);
-  ctx.strokeStyle="rgba(30,58,95,.6)"; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){const y=PT+cH*i/4;ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(W-PR,y);ctx.stroke();}
-  const gW=cW/allLabels.length, bW=Math.max(3,Math.min(28,gW/(orderedSns.length+1))), gP=(gW-bW*orderedSns.length)/2;
-
-  // ── OPTIMIZATION: Compile standard and fallback gradients once per frame
-  const standardGradients = [];
-  const historicGradients = [];
-  orderedSns.forEach((sn, si) => {
-    const c = COLORS[si%4];
-    
-    // Gradient style for current active tracking unit bar
-    const gStd = ctx.createLinearGradient(0, PT, 0, PT + cH);
-    gStd.addColorStop(0, c);
-    gStd.addColorStop(1, c + "88");
-    standardGradients[si] = gStd;
-
-    // Gradient style for older historical unit data bars
-    const gHist = ctx.createLinearGradient(0, PT, 0, PT + cH);
-    gHist.addColorStop(0, c + "bb");
-    gHist.addColorStop(1, c + "33");
-    historicGradients[si] = gHist;
-  });
-
-  allLabels.forEach((label,di)=>{
-    const gx=PL+di*gW, isCurrent=label===thisKey;
-    orderedSns.forEach((sn,si)=>{
-      const wh=buckets[sn][label]??0, bH=wh>0?Math.max(2,cH*wh/maxWh):0;
-      const x=gx+gP+si*bW, y=PT+cH-bH;
-      
-      if (bH > 0) {
-        ctx.fillStyle = isCurrent ? standardGradients[si] : historicGradients[si];
-        ctx.beginPath();
-        if(ctx.roundRect) ctx.roundRect(x,y,bW-1,bH,[2,2,0,0]); else ctx.rect(x,y,bW-1,bH);
-        ctx.fill();
-        
-        if(bH>16&&bW>10){
-          ctx.fillStyle=isCurrent?"#fff":"rgba(200,220,240,.8)";
-          ctx.font=`${isCurrent?"bold ":""}8px monospace`; ctx.textAlign="center";
-          ctx.fillText(wh>=1000?(wh/1000).toFixed(1)+"k":wh.toFixed(0), x+bW/2-.5, y-3);
-        }
-      }
-    });
-
-    // X-axis label — short, readable, local time
-    ctx.fillStyle=isCurrent?"#e0f0ff":"rgba(107,138,170,.85)";
-    ctx.font=`${isCurrent?"bold ":""}9px monospace`; ctx.textAlign="center";
-    let disp;
-    if (currentPeriod==="hour") {
-      const h = parseInt(label.slice(11), 10);
-      disp = label===nowHour ? "Now" : `${h}h`;
-    } else if (currentPeriod==="day") {
-      disp = label===today ? "Today" : label.slice(8); // DD only
-    } else if (currentPeriod==="month") {
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      disp = months[parseInt(label.slice(5),10)-1] ?? label.slice(5);
-    } else {
-      disp = label; // YYYY
-    }
-    ctx.fillText(disp, gx+gW/2, H-PB+14);
-  });
-
-  ctx.fillStyle="rgba(107,138,170,.9)"; ctx.font="9px monospace"; ctx.textAlign="right";
-  for(let i=0;i<=4;i++){const v=maxWh*(1-i/4);
-    ctx.fillText(v>=1000?(v/1000).toFixed(1)+"kWh":v.toFixed(0)+"Wh", PL-4, PT+cH*i/4+3);}
-}*/
 
 function renderWhChart() {
   const buckets  = aggregateWh(currentPeriod);
@@ -2084,31 +1353,6 @@ function editName(sn) {
   renderWhChart(); // update legend/export with new name
 }
 
-/*
-function renderLog() {
-  const anyLive = Object.values(state).some(s => s.status === "live");
-  document.getElementById("logSection").style.display   = anyLive ? "" : "none";
-  document.getElementById("powerSection").style.display = anyLive ? "" : "none";
-  const body = document.getElementById("logBody");
-  // Build device→index map for row coloring
-  const snList = Object.keys(state);
-  body.innerHTML = logRows.slice(0,30).map(r => {
-    const snIdx = snList.indexOf(r.sn) % 2;
-    const d = r.data;
-    const pv1=d.powGetPv??0, pv2=d.powGetPv2??0, inv=d.gridConnectionPower??0;
-    const freq=d.gridConnectionFreq??null;
-    const name = deviceName(r.sn, r.name);
-    return `<tr class="log-row-${snIdx}">
-      <td class="col-time">${fmtTime(r.ts)}</td>
-      <td style="color:${snIdx===0?"#22e8ff":"#ffb830"};max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</td>
-      <td style="color:#ffcc44">${(pv1+pv2).toFixed(0)}W</td>
-      <td style="color:#22e8ff">${inv.toFixed(0)}W</td>
-      <td style="color:${(d.batSoc??100)>20?"var(--bat)":"var(--bat-low)"}">${d.batSoc!=null?d.batSoc+"%":"—"}</td>
-      <td style="color:var(--muted)">${freq!=null?freq.toFixed(1):"—"}</td>
-    </tr>`;
-  }).join("");
-}
-*/
 function renderLog() {
   const anyLive = Object.values(state).some(s => s.status === "live");
   const targetDisplay = anyLive ? "" : "none";
@@ -2264,12 +1508,12 @@ async function fetchWeather() {
 
     // 6. Build and inject HTML output
     //const windArrow = `<span style="display:inline-block;transform:rotate(${dir + 180}deg);line-height:1">↑</span>`;
-    // SVG-for mobile view
+    // SVG-for better mobile view
     const windArrow = `
-    <svg style="transform:rotate(${dir + 180}deg); width:14px; height:14px; display:inline-block; vertical-align:middle;margin-right:4px" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="6" y1="11" x2="6" y2="1"></line>
-      <polyline points="2.5 5 6 1 9.5 5"></polyline>
-    </svg>`;
+      <svg style="transform:rotate(${dir + 180}deg); width:14px; height:14px; display:inline-block; vertical-align:middle;margin-right:4px" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="6" y1="11" x2="6" y2="1"></line>
+        <polyline points="2.5 5 6 1 9.5 5"></polyline>
+      </svg>`;
 
     const inlineEl  = document.getElementById("weatherInline");
     
@@ -2426,7 +1670,6 @@ async function init() {
   }
 }
 
-//window.addEventListener("resize", () => { renderPowerChart(); renderWhChart(); });
 // Optimized resize listener: clears performance caches first, then re-renders charts instantly
 window.addEventListener("resize", () => {
   ["cw-combined", "whChart"].forEach(id => {
@@ -2444,7 +1687,6 @@ window.addEventListener("resize", () => {
   if (typeof renderWhChart === "function") renderWhChart();
 }, { passive: true });
 
-  
 // ── PWA — service worker for installability ─────────────────────────────────
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const sw = 'self.addEventListener("install",()=>self.skipWaiting());' +
@@ -2544,7 +1786,7 @@ document.addEventListener("visibilitychange", () => {
     }
   }
 });
-  
+
 requestWakeLock();
 loadConfig();
 loadNames();
