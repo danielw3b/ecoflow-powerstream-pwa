@@ -492,9 +492,9 @@
             <h2 style="color: var(--accent);">💰 Financial & ROI Report</h2>
             <table>
                 <tr><th>Metric</th><th>Value</th><th>Context</th></tr>
-                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td>Since ${globalConfig.tariffStart}</td></tr>
-                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td>Total output from this unit</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Based on ${selfConsumptionRate}% self-consumption</td></tr>
+                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td>Since current tariff start (${globalConfig.tariffStart})</td></tr>
+                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td>Output generated under THIS tariff period</td></tr>
+                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Saved since ${globalConfig.tariffStart}</td></tr>
                 <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
                 <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td>Cash saved by this inverter</td></tr>
                 <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${cur}${globalConfig.investmentCost} investment</td></tr>
