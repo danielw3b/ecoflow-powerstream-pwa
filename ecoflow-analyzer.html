@@ -346,20 +346,26 @@
             // 3. True Physical Efficiency (Expected range: 12% - 22%)
             let efficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
     
-            // 4. WEATHER ADJUSTED TARGET: What your specific Wp setup should produce under these conditions
-            const expectedSollWh = totalRadKwhM2 * totalWp * tempLossFactor;
+            // 4. REALISTIC WEATHER TARGET: Using a fixed 80% industrial standard performance ratio
+            const standardSystemEfficiency = 0.80; 
+            let calculatedSollWh = totalRadKwhM2 * totalWp * standardSystemEfficiency * tempLossFactor;
+    
+            // 5. AUTOMATIC INVERTER CLIPPING CAP: Estimated by multiplying totalWp with 7 peak hours
+            const maxPhysicalDailyCapWh = totalWp * 7; 
+            const expectedSollWh = Math.min(calculatedSollWh, maxPhysicalDailyCapWh);
     
             if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) tariffDaysCounter++; 
     
             let diagnosis = "";
             let cssClass = "";
             
-            // 5. DYNAMIC THRESHOLD: Standard is 14%, but drops slightly when panels run hot (>25°C)
+            // 6. ADAPTED THRESHOLDS: Balanced against your real-world 14% efficiency baseline
             const dynamicThreshold = 14.0 * tempLossFactor;
     
             const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
             const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
             const isLowYield = totalSolarEnergyWh > 10000 && efficiency < dynamicThreshold;
+
     
             if (isWlanHang) { 
                 diagnosis = "⚠️ Suspected Data Loss"; cssClass = "warn"; 
