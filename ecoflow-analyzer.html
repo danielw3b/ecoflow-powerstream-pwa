@@ -414,7 +414,7 @@
             globalCsvRows.push(["Date", "Real (kWh)", "Performance Ratio (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
     
             for (const target of anomalies) {
-                const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
                 const hResp = await fetch(hUrl);
                 if (!hResp.ok) continue;
                 const hData = await hResp.json();
