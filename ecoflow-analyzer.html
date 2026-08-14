@@ -272,85 +272,89 @@
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
         const deviceDaily = dailyStorage[selectedSn] || {};
     
-        // ERWEITERT: Abfrage von Direktstrahlung, Diffusstrahlung UND der maximalen Tagestemperatur
-        const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=direct_radiation_sum,diffuse_radiation_sum,temperature_2m_max&timezone=auto`;
+        // STABLE URL: Using native shortwave_radiation_sum and temperature_2m_max daily endpoints
+        const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum,temperature_2m_max&timezone=auto`;
         
         try {
             const dailyResponse = await fetch(dailyUrl);
             if (!dailyResponse.ok) throw new Error(`Open-Meteo API Error: ${dailyResponse.status}`);
             const dailyData = await dailyResponse.json();
   
-            // VALIDIERUNG: Prüfen, ob alle drei wissenschaftlichen Datenreihen vorhanden sind
-            if (!dailyData.daily || 
-                !dailyData.daily.direct_radiation_sum || 
-                !dailyData.daily.diffuse_radiation_sum || 
-                !dailyData.daily.temperature_2m_max) {
-              throw new Error("Missing scientific weather variables in API response.");
+            // Validate daily archive parameters
+            if (!dailyData.daily || !dailyData.daily.shortwave_radiation_sum || !dailyData.daily.temperature_2m_max) {
+              throw new Error("Missing required weather parameters in API response.");
             }
   
             const dates = dailyData.daily.time;
-  
-            // Extrahieren der Arrays für die mathematische Auswertung
-            const directRadRaw = dailyData.daily.direct_radiation_sum;
-            const diffuseRadRaw = dailyData.daily.diffuse_radiation_sum;
+            const radSumRaw = dailyData.daily.shortwave_radiation_sum;
             const maxTempRaw = dailyData.daily.temperature_2m_max;
   
-            // Übergabe der getrennten Strahlungswerte sowie der Temperaturdaten an die Analyse
-            await analyzeDevice(selectedSn, dates, directRadRaw, diffuseRadRaw, maxTempRaw, deviceDaily);
+            // Execute device analysis using the global radiation array
+            await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
   
             renderFinancialReport();
             document.getElementById('csvBtn').style.display = 'block';
-  
-          } catch (error) {
+        
+        } catch (error) {
             console.error(error);
             resultsDiv.innerHTML += `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
           }
-  
+        
         document.getElementById('loading').style.display = 'none';
         document.getElementById('runBtn').disabled = false;
     }
 
-
-    // Process daily data with scientific radiation splits and temperature correction
-    async function analyzeDevice(sn, dates, directRadRaw, diffuseRadRaw, maxTempRaw, deviceDaily) {
+    // Process daily data with mathematical solar split estimations and temperature correction
+    async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
         const resultsDiv = document.getElementById('results');
         let html = `<div class="card"><h2>📡 Inverter / Circuit: ${sn}</h2>`;
-        html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation (Dir/Diff)</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Performance Ratio</th><th>Diagnosis</th></tr>`;
+        html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Performance Ratio</th><th>Diagnosis</th></tr>`;
         
         globalCsvRows.push([`DEVICE: ${sn}`]);
-        globalCsvRows.push(["Date", "Direct Rad (kWh/m2)", "Diffuse Rad (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Performance Ratio (%)", "Diagnosis"]);
+        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Performance Ratio (%)", "Diagnosis"]);
     
         const anomalies = [];
         let tariffDaysCounter = 0;
     
-        // Scientific PV constants using real nominal power
-        const totalWp = globalConfig.totalWp || 800; // Pulls entered Wp from config
-        const diffuseFactor = 0.45;                  // Diffuse light delivers approx 45% of direct efficiency
-        const tempCoefficient = -0.004;              // Power loss of -0.4% per degree Celsius above 25°C
+        // Scientific PV parameters using entered total Watt Peak (Wp)
+        const totalWp = globalConfig.totalWp || 860; 
+        const tempCoefficient = -0.004; // Efficiency degradation of -0.4% per °C over 25°C
     
         for (let i = 0; i < dates.length; i++) {
             const dateStr = dates[i];
-            if (directRadRaw[i] === null || diffuseRadRaw[i] === null) continue;
+            if (radSumRaw[i] === null) continue;
     
-            // Correct Open-Meteo units (Convert MJ/m² to kWh/m² if necessary)
-            let dirKwhM2 = directRadRaw[i] > 100 ? directRadRaw[i] / 3.6 : directRadRaw[i];
-            let diffKwhM2 = diffuseRadRaw[i] > 100 ? diffuseRadRaw[i] / 3.6 : diffuseRadRaw[i];
+            // Normalize Open-Meteo radiation payload (Convert MJ/m² to kWh/m² if required)
+            let totalRadKwhM2 = radSumRaw[i] > 100 ? radSumRaw[i] / 3.6 : radSumRaw[i];
     
-            // 1. Calculate temperature correction factor
+            // 1. Estimate direct vs diffuse components using the standard Liu-Jordan PV model
+            let diffuseShare = 0.30; // Default clear/mixed baseline
+            if (totalRadKwhM2 < 1.5) {
+                diffuseShare = 0.85; // Heavy cloud cover, mostly diffuse light
+            } else if (totalRadKwhM2 < 3.5) {
+                diffuseShare = 0.50; // Variable or scattered cloud cover
+            } else if (totalRadKwhM2 > 5.5) {
+                diffuseShare = 0.18; // Very bright, direct sunlight
+            }
+    
+            let dirKwhM2 = totalRadKwhM2 * (1 - diffuseShare);
+            let diffKwhM2 = totalRadKwhM2 * diffuseShare;
+    
+            // 2. Compute heat-loss multiplier
             const dayTemp = maxTempRaw[i] || 25;
             let tempLossFactor = 1.0;
             if (dayTemp > 25) {
                 tempLossFactor = 1.0 + ((dayTemp - 25) * tempCoefficient);
             }
     
-            // 2. Scientific expectation calculation directly via Wp (Area cancels out physically)
+            // 3. Mathematical expected yield using Wp input (Area cancels out)
             const expectedDirectWh = dirKwhM2 * totalWp * tempLossFactor;
-            const expectedDiffuseWh = diffKwhM2 * totalWp * diffuseFactor * tempLossFactor;
-            const expectedSollWh = expectedDirectWh = expectedDirectWh + expectedDiffuseWh;
+            const expectedDiffuseWh = diffKwhM2 * totalWp * 0.45 * tempLossFactor; // Diffuse runs at ~45% nominal efficiency
+            const expectedSollWh = expectedDirectWh + expectedDiffuseWh;
     
             const realYieldWh = deviceDaily[dateStr] || 0;
     
-            // 3. Performance Ratio calculation
+            // 4. Performance Ratio calculation
             let performanceRatio = expectedSollWh > 100 ? (realYieldWh / expectedSollWh) * 100 : 0;
     
             if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) tariffDaysCounter++;
@@ -382,7 +386,7 @@
     
             html += `<tr>
                 <td>${dateStr}</td>
-                <td>${dirKwhM2.toFixed(2)} / ${diffKwhM2.toFixed(2)} kWh/m²</td>
+                <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
                 <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
                 <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
                 <td class="${cssClass}">${performanceRatio.toFixed(1)}%</td>
@@ -391,8 +395,7 @@
     
             globalCsvRows.push([
                 dateStr, 
-                dirKwhM2.toFixed(2).replace('.',','), 
-                diffKwhM2.toFixed(2).replace('.',','), 
+                totalRadKwhM2.toFixed(2).replace('.',','), 
                 dayTemp.toFixed(1).replace('.',','),
                 (expectedSollWh/1000).toFixed(2).replace('.',','), 
                 (realYieldWh/1000).toFixed(2).replace('.',','), 
@@ -403,6 +406,7 @@
         html += `</table>`;
         globalCsvRows.push([]);
     
+        // Hourly anomaly drilldown (This still natively utilizes hourly shortwave arrays safely)
         if (anomalies.length > 0) {
             html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context (<70% Performance Ratio)</h3>`;
             html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Perf. Ratio</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
@@ -452,8 +456,6 @@
         resultsDiv.innerHTML += html;
         window.tariffDaysCounter = tariffDaysCounter;
     }
-
-
     
     // Generate dynamic ROI and financial summary based on individual inverter yield
     function renderFinancialReport() {
