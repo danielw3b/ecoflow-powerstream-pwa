@@ -321,72 +321,63 @@
         const anomalies = [];
         let tariffDaysCounter = 0;
     
-        // Scientific PV parameters using entered total Watt Peak (Wp)
-        const totalWp = globalConfig.totalWp || 860; 
-        const tempCoefficient = -0.004; // Efficiency degradation of -0.4% per °C over 25°C
-        
+        // Scientific PV constants using entered total Watt Peak (Wp)
+        const totalWp = globalConfig.totalWp || 900; 
+        const tempCoefficient = -0.004; // -0.4% efficiency drop per °C above 25°C
+    
         for (let i = 0; i < dates.length; i++) {
             const dateStr = dates[i];
             if (radSumRaw[i] === null) continue;
     
-            // FIXED: Open-Meteo delivers MJ/m² daily. We strictly divide by 3.6 to get true kWh/m².
+            // Open-Meteo strictly divided by 3.6 to get true kWh/m²
             let totalRadKwhM2 = radSumRaw[i] / 3.6;
     
-            // 1. Estimate direct vs diffuse components using the standard Liu-Jordan PV model
-            let diffuseShare = 0.30; 
-            if (totalRadKwhM2 < 1.5) {
-                diffuseShare = 0.85; 
-            } else if (totalRadKwhM2 < 3.5) {
-                diffuseShare = 0.50; 
-            } else if (totalRadKwhM2 > 5.5) {
-                diffuseShare = 0.18; 
-            }
-    
-            let dirKwhM2 = totalRadKwhM2 * (1 - diffuseShare);
-            let diffKwhM2 = totalRadKwhM2 * diffuseShare;
-    
-            // 2. Compute heat-loss multiplier
+            // 1. Calculate temperature correction factor
             const dayTemp = maxTempRaw[i] || 25;
             let tempLossFactor = 1.0;
             if (dayTemp > 25) {
                 tempLossFactor = 1.0 + ((dayTemp - 25) * tempCoefficient);
             }
     
-            // 3. Mathematical expected yield using Wp input (Area cancels out)
-            const expectedDirectWh = dirKwhM2 * totalWp * tempLossFactor;
-            const expectedDiffuseWh = diffKwhM2 * totalWp * 0.45 * tempLossFactor; // Diffuse runs at ~45% nominal efficiency
-            const expectedSollWh = expectedDirectWh + expectedDiffuseWh;
+            // 2. PHYSICAL EFFICIENCY: Total raw solar energy hitting the module area
+            const totalSolarEnergyWh = totalRadKwhM2 * 1000 * globalConfig.moduleArea; 
+            const realYieldWh = deviceDaily[dateStr] || 0; 
     
-            const realYieldWh = deviceDaily[dateStr] || 0;
+            // 3. True Physical Efficiency (Expected range: 12% - 22%)
+            let efficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
     
-            // 4. Performance Ratio calculation
-            let performanceRatio = expectedSollWh > 100 ? (realYieldWh / expectedSollWh) * 100 : 0;
+            // 4. WEATHER ADJUSTED TARGET: What your specific Wp setup should produce under these conditions
+            const expectedSollWh = totalRadKwhM2 * totalWp * tempLossFactor;
     
-            if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) tariffDaysCounter++;
+            if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) tariffDaysCounter++; 
     
             let diagnosis = "";
             let cssClass = "";
             
-            const isWlanHang = expectedSollWh > 2000 && realYieldWh < 150;
-            const isCriticalFail = expectedSollWh > 1500 && realYieldWh === 0;
-            const isLowYield = expectedSollWh > 2000 && performanceRatio < 70;
+            // 5. DYNAMIC THRESHOLD: Standard is 14%, but drops slightly when panels run hot (>25°C)
+            const dynamicThreshold = 14.0 * tempLossFactor;
+    
+            const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
+            const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
+            const isLowYield = totalSolarEnergyWh > 10000 && efficiency < dynamicThreshold;
     
             if (isWlanHang) { 
                 diagnosis = "⚠️ Suspected Data Loss"; cssClass = "warn"; 
             } else if (isCriticalFail) { 
                 diagnosis = "❌ Critical: No Data"; cssClass = "bad"; 
-            } else if (performanceRatio >= 85) { 
+            } else if (efficiency >= 17.5) { 
                 diagnosis = `✅ Optimal Yield`; cssClass = "good"; 
-            } else if (performanceRatio >= 70) {
+            } else if (efficiency >= dynamicThreshold) { 
                 diagnosis = `✅ Normal Yield`; cssClass = "good";
-            } else if (expectedSollWh < 800) { 
-                diagnosis = "☁️ Insufficient Solar Light"; cssClass = "text-dim"; 
+            } else if (totalSolarEnergyWh < 4000) { 
+                diagnosis = "☁️ Bad Weather"; cssClass = "text-dim"; 
             } else { 
                 diagnosis = `📉 Low Performance`; cssClass = "warn"; 
             }
     
-            if ((isWlanHang || isCriticalFail || isLowYield) && dateStr !== globalConfig.startDate) {
-                anomalies.push({ date: dateStr, maxTheoryWh: expectedSollWh, realYieldWh, efficiency: performanceRatio, reason: diagnosis });
+            // Filter anomalies back to your known criteria using the dynamic heat-adjusted threshold
+            if ((isWlanHang || isCriticalFail || isLowYield) && dateStr !== globalConfig.startDate) { 
+                anomalies.push({ date: dateStr, maxTheoryWh: totalSolarEnergyWh, realYieldWh, efficiency: efficiency, reason: diagnosis }); 
             }
     
             html += `<tr>
@@ -394,9 +385,10 @@
                 <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
                 <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
                 <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
-                <td class="${cssClass}">${performanceRatio.toFixed(1)}%</td>
+                <td class="${cssClass}">${efficiency.toFixed(1)}%</td>
                 <td class="${cssClass}">${diagnosis}</td>
             </tr>`;
+
     
             globalCsvRows.push([
                 dateStr, 
