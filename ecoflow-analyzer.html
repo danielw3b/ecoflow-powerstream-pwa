@@ -326,7 +326,7 @@
             } else if (isCriticalFail) { 
                 diagnosis = "❌ Critical: No Data"; cssClass = "bad"; 
             } else if (efficiency > 12) { 
-                diagnosis = `✅ Good / Bifacial`; cssClass = "good"; 
+                diagnosis = `✅ Good Yield`; cssClass = "good"; 
             } else if (maxTheoryWh < 10000) { 
                 diagnosis = "☁️ Bad Weather"; cssClass = "text-dim"; 
             } else { 
@@ -352,7 +352,7 @@
         globalCsvRows.push([]);
 
         if (anomalies.length > 0) {
-            html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context</h3>`;
+            html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context (<14% Efficiency)</h3>`;
             html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
