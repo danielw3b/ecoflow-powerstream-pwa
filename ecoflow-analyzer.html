@@ -316,7 +316,7 @@
         html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Performance Ratio</th><th>Diagnosis</th></tr>`;
         
         globalCsvRows.push([`DEVICE: ${sn}`]);
-        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Performance Ratio (%)", "Diagnosis"]);
+        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
     
         const anomalies = [];
         let tariffDaysCounter = 0;
@@ -413,7 +413,7 @@
         // Hourly anomaly drilldown (This still natively utilizes hourly shortwave arrays safely)
         if (anomalies.length > 0) {
             html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context (Efficiency Deviation)</h3>`;
-            html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Perf. Ratio</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
+            html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
     
