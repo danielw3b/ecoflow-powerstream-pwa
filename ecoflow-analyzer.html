@@ -95,11 +95,11 @@
                 </div>
                 <div class="form-group">
                     <label for="cfg_totalWp">Total Panel Power (Wp)</label>
-                    <input type="number" id="cfg_totalWp" value="900" required placeholder="e.g. 860">
+                    <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
                 </div>
                 <div class="form-group">
                     <label for="cfg_selfConsumptionRate">Self-Consumption Rate (%)</label>
-                    <input type="number" id="cfg_selfConsumptionRate" value="75" min="0" max="100" required placeholder="e.g. 75">
+                    <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75">
                 </div>
             </div>
 
@@ -313,7 +313,7 @@
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
         const resultsDiv = document.getElementById('results');
         let html = `<div class="card"><h2>📡 Inverter / Circuit: ${sn}</h2>`;
-        html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Performance Ratio</th><th>Diagnosis</th></tr>`;
+        html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>`;
         
         globalCsvRows.push([`DEVICE: ${sn}`]);
         globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
