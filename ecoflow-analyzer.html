@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoFlow Solar & Weather Analyzer</title>
+    <style>
+        :root {
+            --bg: #060c1a;
+            --panel: #0d182b;
+            --text: #e0f0ff;
+            --text-dim: #8b9eb3;
+            --accent: #2ecc71;
+            --accent-hover: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --border: rgba(107, 138, 170, 0.2);
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+        h1, h2, h3 { color: #fff; margin-top: 0; }
+        h3 { border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-top: 20px; color: var(--text-dim); font-size: 1rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 5px; }
+        input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 4px; font-family: monospace; }
+        input:focus { outline: 1px solid var(--accent); }
+        
+        button {
+            background: var(--accent); color: white; border: none; padding: 12px 20px;
+            font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s;
+        }
+        button:hover { background: var(--accent-hover); }
+        button:disabled { background: var(--text-dim); cursor: not-allowed; }
+        .btn-secondary { background: #3498db; }
+        .btn-secondary:hover { background: #2980b9; }
+        .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-dim); font-weight: normal; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        
+        .good { color: var(--accent); }
+        .bad { color: var(--danger); }
+        .warn { color: var(--warning); }
+        
+        #results { margin-top: 30px; }
+        .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌤️ Solar & Weather Analyzer</h1>
+    <p style="color: var(--text-dim)">Locally analyzes your EcoFlow PWA energy history and cross-references it with Open-Meteo weather data.</p>
+
+    <div class="card">
+        <h2>⚙️ Configuration</h2>
+        <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
+            
+            <h3>📍 Location & Hardware</h3>
+            <div class="grid">
+                <div class="form-group">
+                    <label>Latitude (LAT)</label>
+                    <input type="number" step="any" id="cfg_lat" required placeholder="e.g. 50.815">
+                </div>
+                <div class="form-group">
+                    <label>Longitude (LON)</label>
+                    <input type="number" step="any" id="cfg_lon" required placeholder="e.g. 7.0378">
+                </div>
+                <div class="form-group">
+                    <label>Total Module Area (m²)</label>
+                    <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
+                </div>
+                <div class="form-group" style="justify-content: flex-end;">
+                    <button type="button" class="btn-secondary" onclick="detectLocation()">📍 Auto-Detect GPS</button>
+                </div>
+            </div>
+
+            <h3>💶 Tariff & Investment</h3>
+            <div class="grid">
+                <div class="form-group">
+                    <label>Currency Symbol</label>
+                    <input type="text" id="cfg_currency" required placeholder="e.g. €, $, £" value="€">
+                </div>
+                <div class="form-group">
+                    <label>Investment Cost</label>
+                    <input type="number" step="0.01" id="cfg_investmentCost" required placeholder="e.g. 295.00">
+                </div>
+                <div class="form-group">
+                    <label>Energy Price (e.g. Cents/Pence)</label>
+                    <input type="number" step="0.01" id="cfg_energyPriceCt" required placeholder="e.g. 29.89">
+                </div>
+                <div class="form-group">
+                    <label>Base Fee / Month</label>
+                    <input type="number" step="0.01" id="cfg_baseFee" required placeholder="e.g. 14.25">
+                </div>
+            </div>
+
+            <h3>📊 Meter & Timeline</h3>
+            <div class="grid">
+                <div class="form-group">
+                    <label>Consumption w/o Solar (kWh/Day)</label>
+                    <input type="number" step="0.01" id="cfg_dailyConsumption" required placeholder="e.g. 5.50">
+                </div>
+                <div class="form-group">
+                    <label>Meter at Tariff Start (kWh)</label>
+                    <input type="number" step="1" id="cfg_meterStart" required placeholder="e.g. 46406">
+                </div>
+                <div class="form-group">
+                    <label>Meter Current (kWh)</label>
+                    <input type="number" step="1" id="cfg_meterCurrent" required placeholder="e.g. 46469">
+                </div>
+                <div class="form-group">
+                    <label>Tariff Start Date</label>
+                    <input type="date" id="cfg_tariffStart" required>
+                </div>
+            </div>
+            
+            <div class="grid">
+                <div class="form-group">
+                    <label>Analysis Start Date</label>
+                    <input type="date" id="cfg_startDate" required>
+                </div>
+            </div>
+
+            <button type="submit" id="runBtn" class="btn-full">💾 Save & Run Analysis</button>
+        </form>
+        
+        <button id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-full" style="display:none;">📥 Export CSV Report</button>
+        <div id="loading" class="loader">⏳ Fetching weather data and processing history...</div>
+    </div>
+
+    <div id="results"></div>
+</div>
+
+<script>
+    // Configuration key for localStorage persistence
+    const CONFIG_KEY = 'ecoflow_analyzer_config';
+    let globalCsvRows = [];
+    let globalConfig = {};
+
+    // Load saved configuration into the form on startup
+    function loadUserConfig() {
+        const saved = localStorage.getItem(CONFIG_KEY);
+        if (saved) {
+            try {
+                const cfg = JSON.parse(saved);
+                for (const [key, value] of Object.entries(cfg)) {
+                    const el = document.getElementById(`cfg_${key}`);
+                    if (el && value !== undefined) el.value = value;
+                }
+            } catch (e) {
+                console.error("Error parsing saved configuration:", e);
+            }
+        } else {
+            // Set default dates if no config exists
+            document.getElementById('cfg_startDate').value = "2024-05-01";
+            document.getElementById('cfg_tariffStart').value = "2024-05-01";
+        }
+    }
+
+    // Extract values from form, save to localStorage, and return as object
+    function getUserConfig() {
+        const config = {
+            lat: parseFloat(document.getElementById('cfg_lat').value),
+            lon: parseFloat(document.getElementById('cfg_lon').value),
+            moduleArea: parseFloat(document.getElementById('cfg_moduleArea').value),
+            currency: document.getElementById('cfg_currency').value || '€',
+            investmentCost: parseFloat(document.getElementById('cfg_investmentCost').value),
+            energyPriceCt: parseFloat(document.getElementById('cfg_energyPriceCt').value),
+            baseFee: parseFloat(document.getElementById('cfg_baseFee').value),
+            dailyConsumption: parseFloat(document.getElementById('cfg_dailyConsumption').value),
+            meterStart: parseFloat(document.getElementById('cfg_meterStart').value),
+            meterCurrent: parseFloat(document.getElementById('cfg_meterCurrent').value),
+            tariffStart: document.getElementById('cfg_tariffStart').value,
+            startDate: document.getElementById('cfg_startDate').value
+        };
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+        return config;
+    }
+
+    // Auto-detect GPS coordinates via browser API
+    function detectLocation() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                document.getElementById('cfg_lat').value = pos.coords.latitude.toFixed(4);
+                document.getElementById('cfg_lon').value = pos.coords.longitude.toFixed(4);
+            }, err => {
+                alert("Location access denied or unavailable: " + err.message);
+            });
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+    }
+
+    // Main analysis workflow
+    async function runAnalysis() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('runBtn').disabled = true;
+        document.getElementById('csvBtn').style.display = 'none';
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
+        globalCsvRows = [];
+
+        globalConfig = getUserConfig();
+
+        // Calculate end date (yesterday)
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const endDate = yesterday.toISOString().split('T')[0];
+
+        // Retrieve stored energy data from PWA
+        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+        const serials = Object.keys(dailyStorage);
+
+        if (serials.length === 0) {
+            resultsDiv.innerHTML = '<p class="bad">❌ No energy data found in localStorage (ecoflow_wh).</p>';
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('runBtn').disabled = false;
+            return;
+        }
+
+        const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum&timezone=auto`;
+        
+        try {
+            const dailyResponse = await fetch(dailyUrl);
+            if (!dailyResponse.ok) throw new Error(`Open-Meteo API Error: ${dailyResponse.status}`);
+            const dailyData = await dailyResponse.json();
+            
+            if (!dailyData.daily || !dailyData.daily.shortwave_radiation_sum) {
+                throw new Error("Missing radiation data in API response.");
+            }
+
+            const dates = dailyData.daily.time;
+            const radSumRaw = dailyData.daily.shortwave_radiation_sum;
+
+            for (const sn of serials) {
+                await analyzeDevice(sn, dates, radSumRaw, dailyStorage[sn] || {});
+            }
+
+            renderFinancialReport();
+            document.getElementById('csvBtn').style.display = 'block';
+
+        } catch (error) {
+            console.error(error);
+            resultsDiv.innerHTML += `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
+        }
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('runBtn').disabled = false;
+    }
+
+    // Process daily data and fetch hourly data for anomalies
+    async function analyzeDevice(sn, dates, radSumRaw, deviceDaily) {
+        const resultsDiv = document.getElementById('results');
+        let html = `<div class="card"><h2>📡 Device: ${sn}</h2>`;
+        html += `<h3>Daily Efficiency Tracker</h3><table><tr><th>Date</th><th>Radiation</th><th>Max Theory</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>`;
+        
+        globalCsvRows.push([`DEVICE: ${sn}`]);
+        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Theory (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
+
+        const anomalies = [];
+        let tariffDaysCounter = 0;
+
+        for (let i = 0; i < dates.length; i++) {
+            const dateStr = dates[i];
+            if (radSumRaw[i] === null) continue;
+
+            // Convert MJ to Wh if needed (Open-Meteo unit check)
+            let radiationWhM2 = radSumRaw[i] < 100 ? radSumRaw[i] * 277.778 : radSumRaw[i];
+            const maxTheoryWh = radiationWhM2 * globalConfig.moduleArea;
+            const realYieldWh = deviceDaily[dateStr] || 0;
+            let efficiency = maxTheoryWh > 100 ? (realYieldWh / maxTheoryWh) * 100 : 0;
+
+            if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) tariffDaysCounter++;
+
+            let diagnosis = "";
+            let cssClass = "";
+            
+            // Plausibility checks
+            const isWlanHang = maxTheoryWh > 15000 && realYieldWh < 300;
+            const isCriticalFail = maxTheoryWh > 8000 && realYieldWh === 0;
+            const isLowYield = maxTheoryWh > 10000 && efficiency < 14;
+
+            if (isWlanHang) { 
+                diagnosis = "⚠️ Suspected Data Loss"; cssClass = "warn"; 
+            } else if (isCriticalFail) { 
+                diagnosis = "❌ Critical: No Data"; cssClass = "bad"; 
+            } else if (efficiency > 12) { 
+                diagnosis = `✅ Good / Bifacial`; cssClass = "good"; 
+            } else if (maxTheoryWh < 10000) { 
+                diagnosis = "☁️ Bad Weather"; cssClass = "text-dim"; 
+            } else { 
+                diagnosis = `📉 Low Yield`; cssClass = "warn"; 
+            }
+
+            // Flag days for hourly deep-dive (excluding startup days for buffer)
+            if ((isWlanHang || isCriticalFail || isLowYield) && dateStr !== globalConfig.startDate) {
+                anomalies.push({ date: dateStr, maxTheoryWh, realYieldWh, efficiency, reason: diagnosis });
+            }
+
+            html += `<tr>
+                <td>${dateStr}</td>
+                <td>${(radiationWhM2/1000).toFixed(2)} kWh/m²</td>
+                <td>${(maxTheoryWh/1000).toFixed(2)} kWh</td>
+                <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
+                <td class="${cssClass}">${efficiency.toFixed(1)}%</td>
+                <td class="${cssClass}">${diagnosis}</td>
+            </tr>`;
+
+            globalCsvRows.push([dateStr, (radiationWhM2/1000).toFixed(2).replace('.',','), (maxTheoryWh/1000).toFixed(2).replace('.',','), (realYieldWh/1000).toFixed(2).replace('.',','), efficiency.toFixed(1).replace('.',','), diagnosis]);
+        }
+        html += `</table>`;
+        globalCsvRows.push([]);
+
+        // Perform hourly deep-dive for flagged anomalies
+        if (anomalies.length > 0) {
+            html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Hourly Anomaly Deep-Dive</h3>`;
+            html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
+            globalCsvRows.push(["ANOMALY DEEP-DIVE"]);
+            globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
+
+            for (const target of anomalies) {
+                const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                const hResp = await fetch(hUrl);
+                if (!hResp.ok) continue;
+                const hData = await hResp.json();
+                
+                let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
+                for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
+                    // Only count daylight hours (roughly 6:00 to 20:00)
+                    if (j >= 6 && j <= 20) {
+                        cloudSum += hData.hourly.cloud_cover[j];
+                        daylightHours++;
+                    }
+                    sunSeconds += hData.hourly.sunshine_duration[j];
+                    if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
+                }
+                
+                const avgClouds = Math.round(cloudSum / daylightHours);
+                const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
+                
+                let explanation = "Mixed Weather";
+                if (avgClouds > 75 && sunHours < 3) explanation = "Heavy cloud cover.";
+                else if (avgClouds <= 35 && maxPeak > 600 && target.efficiency < 10) explanation = "Sunny, but yield dropped (Shadows/Heat?).";
+                else if (avgClouds > 40 && sunHours >= 4) explanation = "Variable clouds impaired yield.";
+
+                html += `<tr>
+                    <td>${target.date}</td>
+                    <td>${(target.realYieldWh/1000).toFixed(2)}</td>
+                    <td class="bad">${target.efficiency.toFixed(1)}%</td>
+                    <td>${avgClouds}%</td>
+                    <td>${sunHours} h</td>
+                    <td>${maxPeak}</td>
+                    <td>${explanation}</td>
+                </tr>`;
+                globalCsvRows.push([target.date, (target.realYieldWh/1000).toFixed(2).replace('.',','), target.efficiency.toFixed(1).replace('.',','), avgClouds, sunHours.toString().replace('.',','), maxPeak, explanation]);
+            }
+            html += `</table>`;
+            globalCsvRows.push([]);
+        }
+
+        html += `</div>`;
+        resultsDiv.innerHTML += html;
+        window.tariffDaysCounter = tariffDaysCounter; // Store for financial report
+    }
+
+    // Generate ROI and financial summary
+    function renderFinancialReport() {
+        const realGridUse = globalConfig.meterCurrent - globalConfig.meterStart;
+        const theoryDemand = window.tariffDaysCounter * globalConfig.dailyConsumption;
+        const savedKwh = theoryDemand - realGridUse;
+        
+        const costWithoutSolar = theoryDemand * (globalConfig.energyPriceCt / 100);
+        const costReal = realGridUse * (globalConfig.energyPriceCt / 100);
+        const savingsNet = costWithoutSolar - costReal;
+        
+        const autarkyRate = (savedKwh / theoryDemand) * 100;
+        const roiPercent = (savingsNet / globalConfig.investmentCost) * 100;
+        const cur = globalConfig.currency;
+
+        let html = `<div class="card" style="border-color: var(--accent);">
+            <h2 style="color: var(--accent);">💰 Financial & ROI Report</h2>
+            <table>
+                <tr><th>Metric</th><th>Value</th><th>Context</th></tr>
+                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td>Since ${globalConfig.tariffStart}</td></tr>
+                <tr><td>Est. Demand w/o Solar</td><td>${theoryDemand.toFixed(2)} kWh</td><td>Based on ${globalConfig.dailyConsumption} kWh/day</td></tr>
+                <tr><td>Solar Energy Used directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Saved from grid</td></tr>
+                <tr><td>Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Self-sufficiency</td></tr>
+                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td>Cash saved</td></tr>
+                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${cur}${globalConfig.investmentCost} investment</td></tr>
+            </table>
+        </div>`;
+        
+        document.getElementById('results').innerHTML += html;
+        
+        globalCsvRows.push(["FINANCIAL REPORT"]);
+        globalCsvRows.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
+        globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
+        globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
+    }
+
+    // Export generated data to CSV
+    function downloadCSV() {
+        const csvContent = "\uFEFF" + globalCsvRows.map(e => e.join(";")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Solar_Analysis_${globalConfig.startDate}.csv`;
+        link.click();
+    }
+
+    // Initialize application
+    window.addEventListener('DOMContentLoaded', loadUserConfig);
+</script>
+</body>
+</html>
