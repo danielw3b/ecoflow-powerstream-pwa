@@ -80,9 +80,8 @@
                     <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
                     <label for="cfg_totalWp">Total Panel Power (Wp):</label>
                     <input type="number" id="cfg_totalWp" value="900" required placeholder="e.g. 860">
-                  <label for="cfg_selfConsumptionRate">Self-Consumption Rate (%):</label>
-                  <input type="number" id="cfg_selfConsumptionRate" value="75" min="0" max="100" required placeholder="e.g. 75">
-
+                    <label for="cfg_selfConsumptionRate">Self-Consumption Rate (%):</label>
+                    <input type="number" id="cfg_selfConsumptionRate" value="75" min="0" max="100" required placeholder="e.g. 75">
                 </div>
                 <div class="form-group">
                     <label>Latitude (LAT)</label>
@@ -347,7 +346,7 @@
             // 2. Scientific expectation calculation directly via Wp (Area cancels out physically)
             const expectedDirectWh = dirKwhM2 * totalWp * tempLossFactor;
             const expectedDiffuseWh = diffKwhM2 * totalWp * diffuseFactor * tempLossFactor;
-            const expectedSollWh = expectedDirectDirectWh = expectedDirectWh + expectedDiffuseWh;
+            const expectedSollWh = expectedDirectWh = expectedDirectWh + expectedDiffuseWh;
     
             const realYieldWh = deviceDaily[dateStr] || 0;
     
