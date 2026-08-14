@@ -352,9 +352,9 @@
         globalCsvRows.push([]);
 
         if (anomalies.length > 0) {
-            html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Hourly Anomaly Deep-Dive</h3>`;
+            html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context</h3>`;
             html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
-            globalCsvRows.push(["ANOMALY DEEP-DIVE"]);
+            globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
 
             for (const target of anomalies) {
