@@ -306,53 +306,40 @@
         }
     }
 
-            
-    // Initialize and populate inverters dropdown list with flexible custom user name lookups
-    function initInverters() {
-        const select = document.getElementById('cfg_inverter');
-        if (!select) return;
-    
-        // Clear old placeholder entries
-        select.innerHTML = '<option value="">-- Load from localStorage --</option>';
-    
-        // Fetch core data arrays and common global name objects from browser cache
-        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-        const globalCustomNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
-        
-        const serials = Object.keys(dailyStorage);
-    
-        if (serials.length === 0) {
-            select.innerHTML = '<option value="">-- No Inverters Found in Database --</option>';
-            return;
-        }
-    
-        // Dynamic Option Mapping Loop
-        serials.forEach(sn => {
-            const opt = document.createElement('option');
-            opt.value = sn; // Hidden tracking token remains the stable hardware serial string
-    
-            // FLEXIBLE LOOKUP PATHS: 
-            // 1. Try global dictionary object item first
-            // 2. Try standalone individual PWA name key formats as a secondary fallback
-            // 3. Try standalone individual PWA alias key formats as a third fallback
-            // 4. Default to standard shortened SN format if no text string match is found
-            const fallbackName = localStorage.getItem(`name_${sn}`) || 
-                                 localStorage.getItem(`alias_${sn}`) || 
-                                 `Inverter (${sn.substring(0, 6)}...)`;
-                                 
-            const friendlyName = globalCustomNames[sn] || fallbackName;
-    
-            opt.textContent = friendlyName;
-            select.appendChild(opt);
-        });
-    
-        // Auto-load the first available inverter configuration profile at application startup
-        if (serials.length > 0) {
-            select.value = serials[0]; 
-            loadInverterConfig();      
+    // Load configuration for the selected inverter and resolve friendly custom names
+    function loadInverterConfig() {
+        const key = getStorageKey();
+        const saved = localStorage.getItem(key);
+
+        // 1. Fetch custom name dictionaries to map real identities to the screen
+        const selectedSn = document.getElementById('cfg_inverter')?.value;
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
+        const friendlyName = customNames[selectedSn] || selectedSn;
+
+        if (saved) {
+            try {
+                const cfg = JSON.parse(saved);
+                for (const [key, value] of Object.entries(cfg)) {
+                    const el = document.getElementById(`cfg_${key}`);
+                    if (el && value !== undefined) el.value = value;
+                }
+
+                // OPTIONAL: If you have a title header or label on the page showing the active device,
+                // you can update its text natively with the clean name here!
+                const titleEl = document.getElementById('active_inverter_title');
+                if (titleEl && selectedSn) titleEl.textContent = `Active System: ${friendlyName}`;
+
+            } catch (e) {
+                console.error("Error parsing saved configuration:", e);
+            }
+        } else {
+            // Set default values if no configuration exists for this inverter
+            document.getElementById('cfg_startDate').value = "2026-05-07"; //
+            document.getElementById('cfg_tariffStart').value = "2026-06-26"; //
+            if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "900"; //
+            if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial"; //
         }
     }
-
     
     // Dynamically build dropdown menu options using clean custom names instead of raw serial numbers
     function populateInverterDropdown() {
