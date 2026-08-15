@@ -541,9 +541,6 @@ console.log("🧹 Target data cleanup complete!");
         
         let tableRowsHtml = "";
         
-        // UNIVERSAL FIX: Tells text applications exactly which column divider character to use
-        globalCsvRows.push(["sep=;"]); 
-        
         globalCsvRows.push([`DEVICE: ${sn}`]);
         globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
   
@@ -636,11 +633,17 @@ console.log("🧹 Target data cleanup complete!");
                 <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
             </tr>`;
     
+            // UNIVERSAL STANDARD: Pure comma-separated format with double-quoted metrics
             globalCsvRows.push([
-                dateStr, totalRadKwhM2.toFixed(2).replace('.', ','), dayTemp.toFixed(1).replace('.', ','),
-                (expectedSollWh/1000).toFixed(2).replace('.', ','), (realYieldWh/1000).toFixed(2).replace('.', ','), 
-                efficiency.toFixed(1).replace('.', ','), diagnosis
+                `"${dateStr}"`, 
+                `"${totalRadKwhM2.toFixed(2)}"`, 
+                `"${dayTemp.toFixed(1)}"`,
+                `"${(expectedSollWh/1000).toFixed(2)}"`, 
+                `"${(realYieldWh/1000).toFixed(2)}"`, 
+                `"${efficiency.toFixed(1)}"`, 
+                `"${diagnosis}"`
             ]);
+
         }
     
             // 2. Build the main layout HTML container string with the calculation ratio restored
@@ -741,17 +744,17 @@ console.log("🧹 Target data cleanup complete!");
                         <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
                     </tr>`;
                     
-                    // FIXED: Replaces old target.diagnosis reference with the final verified "explanation" string variable
-                    // UNIVERSAL FORMATTING: Force complete numeric-string alignment for spreadsheet calculation engines
+                    // UNIVERSAL STANDARD: Pure comma-separated format with double-quoted metrics
                     globalCsvRows.push([
-                        target.date, 
-                        (target.realYieldWh/1000).toFixed(2).replace('.', ','), 
-                        target.efficiency.toFixed(1).replace('.', ','), 
-                        avgClouds.toString().replace('.', ','), // Safe comma casting
-                        sunHours.toString().replace('.', ','), 
-                        maxPeak.toString().replace('.', ','),   // Safe comma casting
-                        explanation // Captures the exact weather icon text row-by-row
+                        `"${target.date}"`, 
+                        `"${(target.realYieldWh/1000).toFixed(2)}"`, 
+                        `"${target.efficiency.toFixed(1)}"`, 
+                        `"${avgClouds}"`, 
+                        `"${sunHours.toString()}"`, 
+                        `"${maxPeak}"`, 
+                        `"${explanation}"`
                     ]);
+
 
                 } catch (err) {
                     console.error("Error fetching hourly context:", err);
