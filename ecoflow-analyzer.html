@@ -138,6 +138,7 @@
     
             <h3>📍 Location & GPS</h3>
             <div class="grid">
+                <!-- These elements lock perfectly into 2-per-line side-by-side columns matching the hardware input row spacing -->
                 <div class="form-group">
                     <label for="cfg_lat">Latitude (LAT)</label>
                     <input type="number" step="any" id="cfg_lat" required placeholder="e.g. 50.819">
@@ -146,8 +147,10 @@
                     <label for="cfg_lon">Longitude (LON)</label>
                     <input type="number" step="any" id="cfg_lon" required placeholder="e.g. 7.0341">
                 </div>
-                <div class="form-group" style="margin-top: auto;">
-                    <button type="button" class="btn-secondary" onclick="detectLocation()">📍 Auto-Detect GPS</button>
+                
+                <!-- This container spans entirely across the next line, making it exactly twice as wide as an individual input card -->
+                <div class="form-group full-width-row" style="margin-top: 5px;">
+                    <button type="button" class="btn-secondary" onclick="detectLocation()" style="padding: 10px 20px; width: 100%;">📍 Auto-Detect GPS</button>
                 </div>
             </div>
         
@@ -405,6 +408,10 @@
     // Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
         const resultsDiv = document.getElementById('results');
+        
+        // NEW: Resolve the friendly custom name at the absolute beginning of the function
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
+        const friendlyName = customNames[sn] || sn;
         
         // Core counting indexes for active metrics reporting
         let totalDaysAnalyzed = 0;
