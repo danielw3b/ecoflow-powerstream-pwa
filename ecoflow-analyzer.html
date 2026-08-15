@@ -100,25 +100,30 @@
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         } 
-        /* Pinned headers at absolute top position during card scrolling */
+        /* FIXED: Pinned headers top alignment bounded strictly to our scroll frame wrapper */
+        .table-scroll-frame {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-top: 15px;
+            position: relative; /* Crucial anchor layout boundary context for sticky children */
+        }
+        
         table { 
             width: 100%; 
-            border-collapse: separate; /* FIXED: Use separate to keep sticky th bounded correctly */
+            border-collapse: separate; /* Required over collapse to maintain clean sticky boundaries */
             border-spacing: 0;
             font-size: 0.9rem; 
         }
         
-        th, td { 
-            padding: 10px; 
-            text-align: left; 
-            border-bottom: 1px solid var(--border); 
-        }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
         
         th { 
             color: var(--text-dim); 
             font-weight: normal; 
             position: sticky; 
-            top: 0; /* Sticks flawlessly at the absolute top of the frame container */
+            top: 0; /* Snaps and stays locked at the absolute 0px top line of the scrolling frame container */
             background-color: var(--panel); 
             z-index: 10; 
             box-shadow: inset 0 -1px 0 var(--border); 
@@ -285,21 +290,22 @@
             select.innerHTML = '<option value="">-- No Inverters Found in Database --</option>';
             return;
         }
-    
+        
         // Dynamic Option Mapping Loop
         serials.forEach(sn => {
             const opt = document.createElement('option');
-            opt.value = sn; // Backend math routines continue tracking the stable raw serial number
-            
-            // VISUAL presentación: Maps custom names instantly, or falls back to short serial string snippets
+            opt.value = sn;
             opt.textContent = customNames[sn] || `Inverter (${sn.substring(0, 6)}...)`;
-            
             select.appendChild(opt);
         });
     
-        // OPTIONAL: If your old initInverters function had extra logic at the bottom 
-        // (like auto-loading the last selected index), keep those lines right here!
+        // FIXED: Auto-load the first available inverter configuration at startup
+        if (serials.length > 0) {
+            select.value = serials[0]; // Select the first serial number item automatically
+            loadInverterConfig();      // Populates all fields like Wp, Area, Tariff dates immediately
+        }
     }
+
         
     // Load configuration for the selected inverter and resolve friendly custom names
     function loadInverterConfig() {
