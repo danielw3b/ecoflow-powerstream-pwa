@@ -286,7 +286,7 @@
 
     // Get storage key for specific inverter
     function getStorageKey() {
-        const sn = document.getElementById('cfg_inverter').value;
+        const sn = document.getElementById('cfg_inverter')?.value;
         return sn ? `ecoflow_analyzer_config_${sn}` : 'ecoflow_analyzer_config_default';
     }
         
@@ -318,8 +318,8 @@
         });
 
         if (serials.length > 0) {
-            select.value = serials[0]; // Greift korrekt auf die erste Seriennummer zu
-            loadInverterConfig();      // Befüllt alle Felder wie Wp, Area, Daten sofort
+            select.value = serials[0]; // Safely load the first index string reference
+            loadInverterConfig();      // Populates all fields like Wp, Area, Tariff dates immediately
         }
     }
     
@@ -341,8 +341,6 @@
                     if (el && value !== undefined) el.value = value;
                 }
     
-                // OPTIONAL: If you have a title header or label on the page showing the active device,
-                // you can update its text natively with the clean name here!
                 const titleEl = document.getElementById('active_inverter_title');
                 if (titleEl && selectedSn) titleEl.textContent = `Active System: ${friendlyName}`;
     
@@ -351,31 +349,34 @@
             }
         } else {
             // Set default values if no configuration exists for this inverter
-            document.getElementById('cfg_startDate').value = "2026-05-07"; //
-            document.getElementById('cfg_tariffStart').value = "2026-06-26"; //
-            if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "900"; //
-            if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial"; //
+            document.getElementById('cfg_currency').value = "€";
+            document.getElementById('cfg_investment').value = "0";
+            document.getElementById('cfg_energyPrice').value = "29.89";
+            document.getElementById('cfg_baseFee').value = "14.25";
+            document.getElementById('cfg_startDate').value = "2026-05-07";
+            document.getElementById('cfg_tariffStart').value = "2026-06-26";
+            if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "900";
+            if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial";
         }
     }
 
-
     // Extract values from form safely with fallbacks to avoid null pointer reference errors
     function getUserConfig() {
+        // FIXED: All keys now perfectly align with the explicit physical HTML input element IDs
         const config = {
             inverter: document.getElementById('cfg_inverter')?.value || '',
             lat: parseFloat(document.getElementById('cfg_lat')?.value) || 0,
             lon: parseFloat(document.getElementById('cfg_lon')?.value) || 0,
-            moduleArea: parseFloat(document.getElementById('cfg_moduleArea')?.value) || 0,
-            totalWp: parseFloat(document.getElementById('cfg_totalWp')?.value) || 900,
-            // FIXED: Added safe nav element fallback string check to protect execution bounds
             panelType: document.getElementById('cfg_panelType')?.value || 'bifacial', 
             selfConsumptionRate: parseFloat(document.getElementById('cfg_selfConsumptionRate')?.value) || 75,
+            moduleArea: parseFloat(document.getElementById('cfg_moduleArea')?.value) || 0,
+            totalWp: parseFloat(document.getElementById('cfg_totalWp')?.value) || 900,
             currency: document.getElementById('cfg_currency')?.value || '€',
-            investmentCost: parseFloat(document.getElementById('cfg_investmentCost')?.value) || 0,
-            energyPriceCt: parseFloat(document.getElementById('cfg_energyPriceCt')?.value) || 0,
+            investment: parseFloat(document.getElementById('cfg_investment')?.value) || 0,
+            energyPrice: parseFloat(document.getElementById('cfg_energyPrice')?.value) || 0,
             baseFee: parseFloat(document.getElementById('cfg_baseFee')?.value) || 0,
-            dailyConsumption: parseFloat(document.getElementById('cfg_dailyConsumption')?.value) || 0,
-            meterStart: parseFloat(document.getElementById('cfg_meterStart')?.value) || 0,
+            consumption: parseFloat(document.getElementById('cfg_consumption')?.value) || 0,
+            meterTariffStart: parseFloat(document.getElementById('cfg_meterTariffStart')?.value) || 0,
             meterCurrent: parseFloat(document.getElementById('cfg_meterCurrent')?.value) || 0,
             tariffStart: document.getElementById('cfg_tariffStart')?.value || '',
             startDate: document.getElementById('cfg_startDate')?.value || ''
@@ -383,7 +384,6 @@
         localStorage.setItem(getStorageKey(), JSON.stringify(config));
         return config;
     }
-
 
     // Auto-detect GPS coordinates via browser API
     function detectLocation() {
@@ -461,36 +461,31 @@
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
         const resultsDiv = document.getElementById('results');
         
-        // NEW: Resolve the friendly custom name at the absolute beginning of the function
-        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
+        // Resolve the friendly custom name from ecoflow_names
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const friendlyName = customNames[sn] || sn;
         
-        // Core counting indexes for active metrics reporting
         let totalDaysAnalyzed = 0;
         const anomalies = [];
         let tariffDaysCounter = 0;
     
-        // Scientific PV constants and hardware type splits
         const totalWp = globalConfig.totalWp || 900; 
-        const tempCoefficient = -0.004; // Efficiency degradation of -0.4% per °C over 25°C
-        
-        // Dynamic hardware profiling: Bifacial assumes an 80% real system ratio. Standard Mono drops to 72%.
+        const tempCoefficient = -0.004; 
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.72; 
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 12.2;
     
-        // First run loop to calculate tracking strings and evaluate metrics
         let tableRowsHtml = "";
         globalCsvRows.push([`DEVICE: ${sn}`]);
         globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
     
+        // 1. Loop through all historical daily records
         for (let i = 0; i < dates.length; i++) {
             const dateStr = dates[i];
             if (radSumRaw[i] === null) continue;
     
             totalDaysAnalyzed++;
-            let totalRadKwhM2 = radSumRaw[i] / 3.6; // Convert Open-Meteo MJ/m² to absolute kWh/m²
+            let totalRadKwhM2 = radSumRaw[i] / 3.6; 
     
-            // 1. Estimate direct vs diffuse components using the classic Liu-Jordan model
             let diffuseShare = 0.30; 
             if (totalRadKwhM2 < 1.5) diffuseShare = 0.85; 
             else if (totalRadKwhM2 < 3.5) diffuseShare = 0.50; 
@@ -499,67 +494,53 @@
             let dirKwhM2 = totalRadKwhM2 * (1 - diffuseShare);
             let diffKwhM2 = totalRadKwhM2 * diffuseShare;
         
-            // 2. Compute solar panel heat-loss penalty factor
             const dayTemp = maxTempRaw[i] || 25;
             let tempLossFactor = 1.0;
             if (dayTemp > 25) {
                 tempLossFactor = 1.0 + ((dayTemp - 25) * tempCoefficient);
             }
     
-            // 3. Mathematical expected generation baseline (Advanced Liu-Jordan Split)
             const expectedDirectWh = dirKwhM2 * totalWp * tempLossFactor;
             const expectedDiffuseWh = diffKwhM2 * totalWp * 0.45 * tempLossFactor; 
             let calculatedSollWh = (expectedDirectWh + expectedDiffuseWh) * standardSystemEfficiency;
     
-            // 4. Inverter Clipping Cap: Limits expected daily target to maximum realistic generation envelope
             const maxPhysicalDailyCapWh = totalWp * 7; 
             const expectedSollWh = Math.min(calculatedSollWh, maxPhysicalDailyCapWh);
-    
             const realYieldWh = deviceDaily[dateStr] || 0;
             
-            // FIXED: Explicitly declare totalSolarEnergyWh to prevent ReferenceErrors below
             const totalSolarEnergyWh = totalRadKwhM2 * 1000 * globalConfig.moduleArea;
             let efficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
     
-            if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) tariffDaysCounter++; 
-
-            let diagnosis = "";
-            let cssClass = "";
-            let fullTextExplanation = ""; // NEW: Variable to hold the hover text string
+            if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
+                tariffDaysCounter++; 
+            }
+    
+            let diagnosis = "⭐⭐";
+            let cssClass = "good";
+            let fullTextExplanation = "Normal Yield"; 
             const dynamicThreshold = baseEfficiencyThreshold * tempLossFactor;
     
-            // Condition triggers for network state vs hardware failure bounds
             const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
             const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
-            const isLowYield = totalSolarEnergyWh > 10000 && efficiency < dynamicThreshold;
     
-            // Apply compact icons and preserve the full descriptive text for tooltips
             if (isWlanHang) { 
-                diagnosis = "⚠️ 📶"; cssClass = "warn"; 
-                fullTextExplanation = "Suspected Data Loss: High potential solar input but near-zero real generation.";
+                diagnosis = "⚠️ 📶"; cssClass = "warn"; fullTextExplanation = "Suspected Data Loss";
             } else if (isCriticalFail) { 
-                diagnosis = "❌ 🛑"; cssClass = "bad"; 
-                fullTextExplanation = "Critical Failure: Substantial sunlight detected but absolute zero output tracked.";
+                diagnosis = "❌ 🛑"; cssClass = "bad"; fullTextExplanation = "Critical Failure";
             } else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
-                diagnosis = "⭐⭐⭐"; cssClass = "good"; 
-                fullTextExplanation = "Optimal Yield: System operating at peak performance capacity bounds.";
-            } else if (efficiency >= dynamicThreshold) { 
-                diagnosis = "⭐⭐"; cssClass = "good";
-                fullTextExplanation = "Normal Yield: Performance tracking solidly within standard clear-sky parameters.";
-            } else if (totalSolarEnergyWh < 4000) { 
-                diagnosis = "☁️ 🌊"; cssClass = "text-dim"; 
-                fullTextExplanation = "Bad Weather: Overcast diffuse conditions. Generation low but normal for climate states.";
-            } else { 
-                diagnosis = "⭐📉"; cssClass = "warn"; 
-                fullTextExplanation = "Low Performance: Real generation falling below temperature-corrected expectations.";
+                diagnosis = "⭐⭐⭐"; cssClass = "good"; fullTextExplanation = "Optimal Peak Yield";
+            } else if (efficiency < dynamicThreshold) {
+                if (totalSolarEnergyWh < 4000) {
+                    diagnosis = "☁️ 🌊"; cssClass = "text-dim"; fullTextExplanation = "Bad Weather/Overcast";
+                } else {
+                    diagnosis = "⭐📉"; cssClass = "warn"; fullTextExplanation = "Low Performance Deviation";
+                }
             }
     
-            if ((isWlanHang || isCriticalFail || isLowYield) && dateStr !== globalConfig.startDate) {
-                // Keep full text or icon snippet inside the anomalies queue tracking array
-                anomalies.push({ date: dateStr, maxTheoryWh: expectedSollWh, realYieldWh, efficiency: efficiency, reason: fullTextExplanation });
+            if ((isWlanHang || isCriticalFail || (efficiency < dynamicThreshold && totalSolarEnergyWh >= 4000)) && dateStr !== globalConfig.startDate) {
+                anomalies.push({ date: dateStr, realYieldWh, efficiency, reason: fullTextExplanation });
             }
     
-            // UPDATED: Injected the full text string description cleanly into title tooltip attribute
             tableRowsHtml += `<tr>
                 <td>${dateStr}</td>
                 <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
@@ -570,21 +551,16 @@
             </tr>`;
     
             globalCsvRows.push([
-                dateStr, 
-                totalRadKwhM2.toFixed(2).replace('.', ','), 
-                dayTemp.toFixed(1).replace('.', ','),
-                (expectedSollWh/1000).toFixed(2).replace('.', ','), 
-                (realYieldWh/1000).toFixed(2).replace('.', ','), 
-                efficiency.toFixed(1).replace('.', ','), 
-                diagnosis
+                dateStr, totalRadKwhM2.toFixed(2).replace('.', ','), dayTemp.toFixed(1).replace('.', ','),
+                (expectedSollWh/1000).toFixed(2).replace('.', ','), (realYieldWh/1000).toFixed(2).replace('.', ','), 
+                efficiency.toFixed(1).replace('.', ','), diagnosis
             ]);
         }
-
-        // Wrap the dynamic table generation string with our dedicated scroll frame wrapper
+    
+        // 2. Build the main layout HTML container string
         let html = `<div class="card">
             <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
-            <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${(anomalies.length / totalDaysAnalyzed * 100).toFixed(0)}%)</span></h3>
-            
+            <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Anomalies: ${anomalies.length}/${totalDaysAnalyzed} Days</span></h3>
             <div class="table-scroll-frame">
                 <table>
                     <tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>
@@ -593,90 +569,75 @@
             </div>`;
             
         globalCsvRows.push([]);
-    // 6. Hourly drilling sub-flow for weather context resolution
-    if (anomalies.length > 0) {
-        // UPDATED: Added a right-aligned indicator to display the exact anomaly day metrics count!
-        html += `
-        <h3 style="margin-top:30px; color:var(--warning);">
-            🔍 Daily Anomaly & Weather Context (Efficiency Deviation)
-            <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Logged: ${anomalies.length} Anomaly Days</span>
-        </h3>
-        <div class="table-scroll-frame">
-            <table>
-                <tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
-        
-        globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
-        globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
-
-        for (const target of anomalies) {
-            const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
-            const hResp = await fetch(hUrl);
-            if (!hResp.ok) continue;
-            const hData = await hResp.json();
-            
-            let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
-            for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
-                if (j >= 6 && j <= 20) {
-                    cloudSum += hData.hourly.cloud_cover[j];
-                    daylightHours++;
-                }
-                sunSeconds += hData.hourly.sunshine_duration[j];
-                if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
-            }
-            
-            const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
-            const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-
-            // Compact weather iconography mapping with verbose string hooks
-            let explanation = "❓";
-            let weatherTooltip = "Unknown tracking metrics configuration variance.";
-            
-            if (avgClouds > 75 && sunHours < 3) {
-                explanation = "☁️ Max";
-                weatherTooltip = "Heavy dense cloud fields heavily reduced baseline solar input expectations.";
-            } else if (avgClouds <= 35 && maxPeak > 600) {
-                explanation = "☀️🔥 Clipping / Shadow";
-                weatherTooltip = "Clear sky but generation loss logged. Check for high-temp thermal clipping or layout shadows.";
-            } else if (avgClouds > 40 && sunHours >= 4) {
-                explanation = "⛅🌤️ Cloud Shift";
-                weatherTooltip = "Fast moving cloud clusters disrupted continuous generation tracks.";
-            }
-
-            // UPDATED: Added title tooltip attribute with cursor guidance tracking
-            html += `<tr>
-                <td>${target.date}</td>
-                <td>${(target.realYieldWh/1000).toFixed(2)}</td>
-                <td class="bad">${target.efficiency.toFixed(1)}%</td>
-                <td>${avgClouds}%</td>
-                <td>${sunHours} h</td>
-                <td>${maxPeak}</td>
-                <td title="${weatherTooltip}" style="cursor: help;">${explanation}</td>
-            </tr>`;
-            
-            globalCsvRows.push([target.date, (target.realYieldWh/1000).toFixed(2).replace('.', ','), target.efficiency.toFixed(1).replace('.', ','), avgClouds, sunHours.toString().replace('.', ','), maxPeak, explanation]);
-        }
-        html += `</table></div>`; // Safely closes the scroll frame wrapper
-        globalCsvRows.push([]);
-    }
     
-        // 7. Inject standard UI user dictionary legend box matching CSS style declarations
+        // 3. Process anomaly sub-rows synchronously via secure inner loop execution
+        if (anomalies.length > 0) {
+            html += `
+            <h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context</h3>
+            <div class="table-scroll-frame">
+                <table>
+                    <tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>`;
+            
+            globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
+            globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
+    
+            for (const target of anomalies) {
+                try {
+                    const hUrl = `https://open-meteo.com{globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                    const hResp = await fetch(hUrl);
+                    if (!hResp.ok) continue;
+                    const hData = await hResp.json();
+                    
+                    let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
+                    for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
+                        if (j >= 6 && j <= 20) {
+                            cloudSum += hData.hourly.cloud_cover[j];
+                            daylightHours++;
+                        }
+                        sunSeconds += hData.hourly.sunshine_duration[j];
+                        if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
+                    }
+                    
+                    const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
+                    const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
+                    let explanation = "⛅ Cloud Shift";
+    
+                    if (avgClouds > 75 && sunHours < 3) explanation = "☁️ Max Overcast";
+                    else if (avgClouds <= 35 && maxPeak > 600) explanation = "☀️🔥 Shadow/Temp";
+    
+                    html += `<tr>
+                        <td>${target.date}</td>
+                        <td>${(target.realYieldWh/1000).toFixed(2)}</td>
+                        <td class="bad">${target.efficiency.toFixed(1)}%</td>
+                        <td>${avgClouds}%</td>
+                        <td>${sunHours} h</td>
+                        <td>${maxPeak}</td>
+                        <td>${explanation}</td>
+                    </tr>`;
+                    
+                    globalCsvRows.push([target.date, (target.realYieldWh/1000).toFixed(2).replace('.', ','), target.efficiency.toFixed(1).replace('.', ','), avgClouds, sunHours.toString().replace('.', ','), maxPeak, explanation]);
+                } catch (err) {
+                    console.error("Error fetching hourly context:", err);
+                }
+            }
+            html += `</table></div>`;
+            globalCsvRows.push([]);
+        }
+        
+        // 4. Inject standard UI legend box and push full content block to DOM
         html += `
         <div class="legend-box">
-            <strong>📋 System Indicators:</strong> 
-            ⭐⭐ Milchstraße (Optimal Yield) | ⭐⭐ Normal Operation | ⭐📉 Performance Cap / Loss | ⚠️ 📶 WLAN Buffer Lag | ❌ 🛑 Critical Data Break | ☁️ 🌊 Clear Diffuse Scattering (Bad Weather)<br>
-            <strong>🌤️ Weather Micro-Context:</strong> 
-            ☁️ Max (Dense Overcast Layer) | ☀️🔥 High Irradiation (Inverter Clipping or Local Array Shadows) | ⛅🌤️ Cloud Shift (Fast moving dynamic cloud masses)
-        </div>`;
-    
-        html += `</div>`;
-        resultsDiv.innerHTML += html;
+            <strong>📋 Indicators:</strong> ⭐⭐⭐ Optimal | ⭐⭐ Operation | ⭐📉 Loss | ⚠️ 📶 WLAN | ❌ 🛑 Fail | ☁️ 🌊 Overcast
+        </div></div>`;
+        
+        // Write directly into DOM and instantly bind the global count context
+        resultsDiv.innerHTML = html;
         window.tariffDaysCounter = tariffDaysCounter;
     }
     
     // Generate dynamic ROI and financial summary based on individual inverter yield
     function renderFinancialReport() {
         // 1. Calculate total real generation for this specific inverter during the active tariff period
-        // To ensure exact matching, we pull directly from the active device storage
         const selectedSn = document.getElementById('cfg_inverter').value;
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
         const deviceDaily = dailyStorage[selectedSn] || {};
@@ -693,14 +654,19 @@
         const selfConsumptionRate = globalConfig.selfConsumptionRate !== undefined ? globalConfig.selfConsumptionRate : 100;
         const savedKwh = totalGeneratedKwh * (selfConsumptionRate / 100);
         
-        // 3. Financial calculations based on isolated solar performance
-        const savingsNet = savedKwh * (globalConfig.energyPriceCt / 100);
-        const theoryDemand = window.tariffDaysCounter * globalConfig.dailyConsumption;
-        const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
-        const roiPercent = globalConfig.investmentCost > 0 ? (savingsNet / globalConfig.investmentCost) * 100 : 0;
-        const cur = globalConfig.currency;
+        // FIXED: Maps to the new updated explicit config schema keys to prevent NaN errors
+        const energyPrice = globalConfig.energyPrice || 0;
+        const investment = globalConfig.investment || 0;
+        const consumption = globalConfig.consumption || 0;
+        const cur = globalConfig.currency || '€';
     
-        let html = `<div class="card" style="border-color: var(--accent);">
+        // 3. Financial calculations adjusted to use the corrected layout variable signatures
+        const savingsNet = savedKwh * (energyPrice / 100);
+        const theoryDemand = window.tariffDaysCounter * consumption;
+        const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
+        const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
+    
+        let html = `<div class="card" style="border-color: var(--accent); margin-top: 20px;">
             <h2 style="color: var(--accent);">💰 Financial & ROI Report</h2>
             <table>
                 <tr><th>Metric</th><th>Value</th><th>Context</th></tr>
@@ -709,7 +675,7 @@
                 <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Saved since ${globalConfig.tariffStart}</td></tr>
                 <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
                 <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td>Cash saved by this inverter</td></tr>
-                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${cur}${globalConfig.investmentCost} investment</td></tr>
+                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${cur}${investment} investment</td></tr>
             </table>
         </div>`;
         
@@ -724,13 +690,22 @@
 
     // Export generated data to CSV
     function downloadCSV() {
+        // FEFF Byte-Order Mark ensures Excel loads UTF-8 character encoding signatures cleanly
         const csvContent = "\uFEFF" + globalCsvRows.map(e => e.join(";")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `Solar_Analysis_${globalConfig.inverter}_${globalConfig.startDate}.csv`;
+        
+        // FIXED: Added safe template fallback values to protect filename integrity if config is blank
+        const inverterName = globalConfig.inverter || "Unknown_Device";
+        const startDateStr = globalConfig.startDate || "All_Time";
+        
+        link.download = `Solar_Analysis_${inverterName}_${startDateStr}.csv`;
         link.click();
+        
+        // Clean up the temporary object URL to free browser execution memory footprints
+        URL.revokeObjectURL(url);
     }
 
     // Initialize application on load
