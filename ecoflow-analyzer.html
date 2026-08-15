@@ -606,23 +606,31 @@ console.log("🧹 Target data cleanup complete!");
             ]);
         }
     
-        // 2. Build the main layout HTML container string
-        let html = `<div class="card">
-            <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
-            <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Anomalies: ${anomalies.length}/${totalDaysAnalyzed} Days</span></h3>
-            <div class="table-scroll-frame">
-                <table>
-                    <tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>
-                    ${tableRowsHtml}
-                </table>
-            </div>`;
+            // 2. Build the main layout HTML container string with the calculation ratio restored
+            // FIXED: Correctly compute and display the dynamic anomaly ratio percentage right next to the sub-header
+            const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
+        
+            let html = `<div class="card">
+                <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
+                <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)</span></h3>
+                <div class="table-scroll-frame">
+                    <table>
+                        <tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>
+                        ${tableRowsHtml}
+                    </table>
+                </div>`;
+
             
         globalCsvRows.push([]);
-    
+        
         // 3. Process anomaly sub-rows synchronously via secure inner loop execution
         if (anomalies.length > 0) {
+            // RESTORED: Fully re-implemented the right-aligned metric counter indicator layout snippet
             html += `
-            <h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context</h3>
+            <h3 style="margin-top:30px; color:var(--warning);">
+                🔍 Daily Anomaly & Weather Context
+                <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Logged: ${anomalies.length} Anomaly Days</span>
+            </h3>
             <div class="table-scroll-frame">
                 <table>
                     <tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>`;
