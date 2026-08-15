@@ -757,7 +757,15 @@ console.log("🧹 Target data cleanup complete!");
                 </table>
             </div>`;
 
-            globalCsvRows.push([]);
+            // 📊 INSERTED SUMMARY ROWS FOR CSV EXPORT
+            globalCsvRows.push([]); // Blank spacer line
+            globalCsvRows.push(["OVERALL ANALYSIS SUMMARY"]);
+            globalCsvRows.push([
+                `Efficiency Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`,
+                `Critical Issues: ${criticalCount}`,
+                `Weather Context: ${weatherCount}`
+            ]);
+            globalCsvRows.push([]); // Blank spacer line
         }
         
         // 4. Inject standard UI legend box and push full content block to DOM
