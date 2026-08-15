@@ -719,12 +719,12 @@ console.log("🧹 Target data cleanup complete!");
                         cssClass = "bad"; 
                         criticalCount++; 
                     }
-                    // 4. Fallback default for edge case mixed weather deviations
+                    // 4. Fallback default for bright, highly overcast or mixed cloud profiles
                     else {
-                        explanation = "⛅☁️⛅";
-                        weatherTooltip = "Unexplained Variance: Performance deviation under changing sky conditions.";
+                        explanation = "⛅☁️☁️"; // Updated icon sequence
+                        weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
                         cssClass = "warn";
-                        criticalCount++;
+                        criticalCount++; 
                     }
 
                     subTableRowsHtml += `<tr>
