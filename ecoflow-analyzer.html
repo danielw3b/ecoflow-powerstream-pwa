@@ -538,11 +538,15 @@ console.log("🧹 Target data cleanup complete!");
         // Efficiency threshold adjusted so your old Garden panels register as healthy (Normal Operation)
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 9.5;
 
-    
+        
         let tableRowsHtml = "";
+        
+        // UNIVERSAL FIX: Tells text applications exactly which column divider character to use
+        globalCsvRows.push(["sep=;"]); 
+        
         globalCsvRows.push([`DEVICE: ${sn}`]);
-        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
-    
+        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%), "Diagnosis"]);
+  
         // 1. Loop through all historical daily records
         for (let i = 0; i < dates.length; i++) {
             const dateStr = dates[i];
@@ -738,15 +742,17 @@ console.log("🧹 Target data cleanup complete!");
                     </tr>`;
                     
                     // FIXED: Replaces old target.diagnosis reference with the final verified "explanation" string variable
+                    // UNIVERSAL FORMATTING: Force complete numeric-string alignment for spreadsheet calculation engines
                     globalCsvRows.push([
                         target.date, 
                         (target.realYieldWh/1000).toFixed(2).replace('.', ','), 
                         target.efficiency.toFixed(1).replace('.', ','), 
-                        avgClouds, 
+                        avgClouds.toString().replace('.', ','), // Safe comma casting
                         sunHours.toString().replace('.', ','), 
-                        maxPeak, 
+                        maxPeak.toString().replace('.', ','),   // Safe comma casting
                         explanation // Captures the exact weather icon text row-by-row
                     ]);
+
                 } catch (err) {
                     console.error("Error fetching hourly context:", err);
                 }
