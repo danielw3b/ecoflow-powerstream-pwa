@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoFlow Solar & Weather Analyzer</title>
-<style>
+    <style>
         :root {
             --bg: #060c1a;
             --panel: #0d182b;
@@ -28,7 +28,6 @@
         h3 { border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-top: 20px; color: var(--text-dim); font-size: 1rem; }
         .container { max-width: 1200px; margin: 0 auto; }
         
-        /* Base cards expand naturally without creating internal scrolling loops */
         .card { 
             background: var(--panel); 
             border: 1px solid var(--border); 
@@ -37,7 +36,6 @@
             margin-bottom: 20px; 
         }
         
-        /* Option B configuration: Allows full vertical layout expansion for sticky elements */
         .table-scroll-frame {
             border: 1px solid var(--border);
             border-radius: 6px;
@@ -45,7 +43,6 @@
             position: visible; 
         }
         
-        /* Enforces 2 equal elements horizontally across legacy layout blocks */
         .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
@@ -53,7 +50,6 @@
             margin-bottom: 15px; 
         }
         
-        /* Tablet and Desktop upscale profile for legacy grid components */
         @media (min-width: 600px) {
             .grid { 
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
@@ -75,11 +71,12 @@
             background: var(--bg); 
             border: 1px solid var(--border); 
             color: var(--text); 
-            padding: 10px; 
+            padding: 6px 10px; 
             border-radius: 4px; 
             font-family: monospace; 
             width: 100%; 
             box-sizing: border-box; 
+            height: 34px; 
         }
         input:focus, select:focus { outline: 1px solid var(--accent); }
         
@@ -93,42 +90,42 @@
         .btn-secondary:hover { background: #2980b9; }
         .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
 
-        /* Custom utility for half-width horizontal input pairing fields */
         .gps-input-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
-        /* Hover effect style rule for the streamlined location picker tool button */
         .btn-icon:hover {
             background: rgba(107, 138, 170, 0.25) !important;
             border-color: var(--accent) !important;
             cursor: pointer;
         }
 
-        /* Responsive configuration row layout for primary input forms */
         .config-row {
             display: grid;
-            grid-template-columns: 1fr 1fr; /* 2 columns on mobile viewports */
-            gap: 15px;
-            margin-bottom: 15px;
+            grid-template-columns: 1fr; 
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
-        /* Desktop upscale layout: maps 4 columns cleanly in a single horizontal line */
+        @media (min-width: 480px) {
+            .config-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         @media (min-width: 850px) {
             .config-row {
                 grid-template-columns: repeat(4, 1fr); 
             }
         }
 
-        /* Main table global configuration parameters */
         table { 
             width: 100%; 
             border-collapse: separate; 
             border-spacing: 0;
         }
         
-        /* FIXED: Base cell definition optimized specifically for small screens like LG K52 */
         th, td { 
             padding: 10px 4px; 
             text-align: left; 
@@ -137,7 +134,6 @@
             word-break: break-word; 
         }
         
-        /* Locks headers directly onto the viewport top edge when scrolling down */
         th { 
             color: var(--text-dim); 
             font-weight: normal; 
@@ -154,7 +150,6 @@
             text-align: center;
         }
 
-        /* Upscale layout profile tailored for larger tablet and desktop screens */
         @media (min-width: 600px) {
             th, td {
                 padding: 10px; 
@@ -185,7 +180,7 @@
         .legend-box strong { color: #fff; }
         #results { margin-top: 30px; }
         .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
-</style>
+    </style>
 </head>
 <body>
 
@@ -196,7 +191,6 @@
         <h2>⚙️ Configuration</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
             
-            <!-- SECTION 1: System Selection & Location -->
             <h3>🔌 System Selection & Location</h3>
             <div class="config-row">
                 <div class="form-group" style="grid-column: span 2;">
@@ -205,19 +199,16 @@
                         <option value="">-- Load from localStorage --</option>
                     </select>
                 </div>
-                <!-- Pinned directly next to the selection on desktop for a compact footprint -->
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Coordinates (LAT / LON)</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center;">
                         <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
                         <input type="number" step="any" id="cfg_lon" required placeholder="LON">
-                        <!-- Ultra-compact icon button design that scales perfectly across devices -->
-                        <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS" style="padding: 10px; height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; background: rgba(107, 138, 170, 0.1); border: 1px solid var(--border); color: var(--text);">📍</button>
+                        <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS" style="padding: 0; height: 34px; width: 34px; display: flex; align-items: center; justify-content: center; background: rgba(107, 138, 170, 0.1); border: 1px solid var(--border); color: var(--text);">📍</button>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION 2: Hardware Profile -->
             <h3>🛠️ Hardware Parameters</h3>
             <div class="config-row">
                 <div class="form-group">
@@ -241,7 +232,6 @@
                 </div>
             </div>
 
-            <!-- SECTION 3: Tariff & Investment -->
             <h3>💶 Tariff & Investment</h3>
             <div class="config-row">
                 <div class="form-group">
@@ -262,7 +252,6 @@
                 </div>
             </div>
 
-            <!-- SECTION 4: Meter & Timeline -->
             <h3>📊 Meter & Timeline</h3>
             <div class="config-row">
                 <div class="form-group">
@@ -292,13 +281,11 @@
                 <div class="form-group"></div>
             </div>
 
-            <!-- Primary Execute Action Area with clean breathing space padding -->
             <div style="margin-top: 30px;">
                 <button type="submit" id="runBtn" class="btn-full" style="background: var(--accent);">💾 Save & Run Analysis</button>
             </div>
         </form>
         
-        <!-- Secondary report download triggers are visually decoupled to reduce color clutter -->
         <div style="margin-top: 12px;">
             <button id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-full" style="display:none; background: #2980b9;">📥 Export CSV Report</button>
         </div>
