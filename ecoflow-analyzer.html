@@ -271,7 +271,7 @@
         const sn = document.getElementById('cfg_inverter').value;
         return sn ? `ecoflow_analyzer_config_${sn}` : 'ecoflow_analyzer_config_default';
     }
-    
+        
     // Initialize or populate inverters dropdown list with custom user alias names
     function initInverters() {
         const select = document.getElementById('cfg_inverter');
@@ -282,7 +282,6 @@
     
         // Fetch both your raw PWA historical databases and your custom name dictionaries
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-        // KORREKTUR: 'ecoflow_names' statt 'ecoflow_custom_names'
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         
         const serials = Object.keys(dailyStorage);
@@ -299,11 +298,10 @@
             opt.textContent = customNames[sn] || `Inverter (${sn.substring(0, 6)}...)`;
             select.appendChild(opt);
         });
-    
-        // FIXED: Auto-load the first available inverter configuration at startup
+
         if (serials.length > 0) {
-            select.value = serials[0]; // Select the first serial number item automatically
-            loadInverterConfig();      // Populates all fields like Wp, Area, Tariff dates immediately
+            select.value = serials[0]; // Greift korrekt auf die erste Seriennummer zu
+            loadInverterConfig();      // Befüllt alle Felder wie Wp, Area, Daten sofort
         }
     }
     
