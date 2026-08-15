@@ -540,42 +540,51 @@
             let efficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
     
             if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) tariffDaysCounter++; 
-    
+
             let diagnosis = "";
             let cssClass = "";
+            let fullTextExplanation = ""; // NEW: Variable to hold the hover text string
             const dynamicThreshold = baseEfficiencyThreshold * tempLossFactor;
     
-            // FIXED: Cleaned up condition triggers using our safe declared variable
+            // Condition triggers for network state vs hardware failure bounds
             const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
             const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
             const isLowYield = totalSolarEnergyWh > 10000 && efficiency < dynamicThreshold;
     
-            // 5. COMPACT DESIGN: Applying icon rules and star maps instead of long string rows
+            // Apply compact icons and preserve the full descriptive text for tooltips
             if (isWlanHang) { 
                 diagnosis = "⚠️ 📶"; cssClass = "warn"; 
+                fullTextExplanation = "Suspected Data Loss: High potential solar input but near-zero real generation.";
             } else if (isCriticalFail) { 
                 diagnosis = "❌ 🛑"; cssClass = "bad"; 
+                fullTextExplanation = "Critical Failure: Substantial sunlight detected but absolute zero output tracked.";
             } else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
                 diagnosis = "⭐⭐⭐"; cssClass = "good"; 
+                fullTextExplanation = "Optimal Yield: System operating at peak performance capacity bounds.";
             } else if (efficiency >= dynamicThreshold) { 
                 diagnosis = "⭐⭐"; cssClass = "good";
-            } else if ((totalRadKwhM2 * 1000 * globalConfig.moduleArea) < 4000) { 
+                fullTextExplanation = "Normal Yield: Performance tracking solidly within standard clear-sky parameters.";
+            } else if (totalSolarEnergyWh < 4000) { 
                 diagnosis = "☁️ 🌊"; cssClass = "text-dim"; 
+                fullTextExplanation = "Bad Weather: Overcast diffuse conditions. Generation low but normal for climate states.";
             } else { 
                 diagnosis = "⭐📉"; cssClass = "warn"; 
+                fullTextExplanation = "Low Performance: Real generation falling below temperature-corrected expectations.";
             }
     
             if ((isWlanHang || isCriticalFail || isLowYield) && dateStr !== globalConfig.startDate) {
-                anomalies.push({ date: dateStr, maxTheoryWh: expectedSollWh, realYieldWh, efficiency: efficiency, reason: diagnosis });
+                // Keep full text or icon snippet inside the anomalies queue tracking array
+                anomalies.push({ date: dateStr, maxTheoryWh: expectedSollWh, realYieldWh, efficiency: efficiency, reason: fullTextExplanation });
             }
     
+            // UPDATED: Injected the full text string description cleanly into title tooltip attribute
             tableRowsHtml += `<tr>
                 <td>${dateStr}</td>
                 <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
                 <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
                 <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
                 <td class="${cssClass}">${efficiency.toFixed(1)}%</td>
-                <td class="${cssClass}">${diagnosis}</td>
+                <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
             </tr>`;
     
             globalCsvRows.push([
@@ -635,13 +644,23 @@
             
             const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
             const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-            
-            // Compact weather iconography mapping
-            let explanation = "❓";
-            if (avgClouds > 75 && sunHours < 3) explanation = "☁️ Max";
-            else if (avgClouds <= 35 && maxPeak > 600) explanation = "☀️🔥 Clipping / Shadow";
-            else if (avgClouds > 40 && sunHours >= 4) explanation = "⛅🌤️ Cloud Shift";
 
+            // Compact weather iconography mapping with verbose string hooks
+            let explanation = "❓";
+            let weatherTooltip = "Unknown tracking metrics configuration variance.";
+            
+            if (avgClouds > 75 && sunHours < 3) {
+                explanation = "☁️ Max";
+                weatherTooltip = "Heavy dense cloud fields heavily reduced baseline solar input expectations.";
+            } else if (avgClouds <= 35 && maxPeak > 600) {
+                explanation = "☀️🔥 Clipping / Shadow";
+                weatherTooltip = "Clear sky but generation loss logged. Check for high-temp thermal clipping or layout shadows.";
+            } else if (avgClouds > 40 && sunHours >= 4) {
+                explanation = "⛅🌤️ Cloud Shift";
+                weatherTooltip = "Fast moving cloud clusters disrupted continuous generation tracks.";
+            }
+
+            // UPDATED: Added title tooltip attribute with cursor guidance tracking
             html += `<tr>
                 <td>${target.date}</td>
                 <td>${(target.realYieldWh/1000).toFixed(2)}</td>
@@ -649,7 +668,7 @@
                 <td>${avgClouds}%</td>
                 <td>${sunHours} h</td>
                 <td>${maxPeak}</td>
-                <td>${explanation}</td>
+                <td title="${weatherTooltip}" style="cursor: help;">${explanation}</td>
             </tr>`;
             
             globalCsvRows.push([target.date, (target.realYieldWh/1000).toFixed(2).replace('.', ','), target.efficiency.toFixed(1).replace('.', ','), avgClouds, sunHours.toString().replace('.', ','), maxPeak, explanation]);
