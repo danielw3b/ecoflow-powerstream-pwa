@@ -445,10 +445,15 @@ console.log("🧹 Target data cleanup complete!");
     
         globalConfig = getUserConfig();
     
-        // Calculate end date (yesterday)
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const endDate = yesterday.toISOString().split('T')[0];
+        // FIXED: Enforce local time shift to align midnight execution bounds perfectly with local timezone profiles
+        const localNow = new Date();
+        // Shift time by the exact local minutes offset to move away from forced UTC midnight boundaries
+        const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
+        const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);
+        
+        // Subtract 1 day to lock into local yesterday target accurately
+        localTargetTime.setDate(localTargetTime.getDate() - 1);
+        const endDate = localTargetTime.toISOString().split('T')[0];
     
         // Retrieve stored energy data from PWA
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
@@ -467,10 +472,18 @@ console.log("🧹 Target data cleanup complete!");
               throw new Error("Missing required weather parameters in API response.");
             }
   
-            const dates = dailyData.daily.time;
-            const radSumRaw = dailyData.daily.shortwave_radiation_sum;
-            const maxTempRaw = dailyData.daily.temperature_2m_max;
+            let dates = dailyData.daily.time;
+            let radSumRaw = dailyData.daily.shortwave_radiation_sum;
+            let maxTempRaw = dailyData.daily.temperature_2m_max;
   
+            // FALLBACK PROTECTION: If yesterday's values are fetched as null right after midnight, safely drop the unfinished last day index entry
+            if (dates.length > 0 && radSumRaw[radSumRaw.length - 1] === null) {
+                console.warn("Yesterday's weather metrics are still null at archive API source. Sliding data window back by 1 day.");
+                dates.pop();
+                radSumRaw.pop();
+                maxTempRaw.pop();
+            }
+
             // Execute device analysis using the global radiation array
             await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
   
