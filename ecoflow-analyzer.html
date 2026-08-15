@@ -640,20 +640,14 @@ console.log("🧹 Target data cleanup complete!");
         
         // 3. Process anomaly sub-rows synchronously via secure inner loop execution
         if (anomalies.length > 0) {
-            // RESTORED: Fully re-implemented the right-aligned metric counter indicator layout snippet
-            html += `
-            <h3 style="margin-top:30px; color:var(--warning);">
-                🔍 Daily Anomaly & Weather Context
-                <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Logged: ${anomalies.length} Anomaly Days</span>
-            </h3>
-            <div class="table-scroll-frame">
-                <table>
-                    <tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>`;
+            let criticalCount = 0;
+            let weatherCount = 0;
+            let subTableRowsHtml = ""; 
             
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
 
-            // --- Inside the anomaly processing loop of analyzeDevice ---
+            // Loop through anomalies first to compute metrics and assemble rows dynamically
             for (const target of anomalies) {
                 try {
                     const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
@@ -674,27 +668,33 @@ console.log("🧹 Target data cleanup complete!");
                     const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                     const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
                     
-                    // NEW: Default to pure icon-triplet chains for compact horizontal space mapping
                     let explanation = "⛅☁️⛅";
-                    let weatherTooltip = "Cloud Shift: Fast moving cloud clusters or dynamic front changes observed.";
-    
+                    let weatherTooltip = "Cloud Shift: Fast moving cloud clusters observed.";
+                    let cssClass = "warn"; 
+
                     if (avgClouds > 75 && sunHours < 3) {
                         explanation = "☁️☁️☁️";
-                        weatherTooltip = "Max Overcast: Dense continuous cloud layers heavily blocked direct sunlight tracks.";
-                    } else if (avgClouds <= 35 && maxPeak > 600) {
-                        // NEW: Combined icons representing high sun, shadow/shading, and thermal heating risk profiles
-                        explanation = "☀️🕶️🔥";
-                        weatherTooltip = "Shadow / Thermal Clipping: Clear sky but lower yield. Check for array shadows or high inverter temperatures.";
+                        weatherTooltip = "Max Overcast: Dense continuous cloud layers blocked solar inputs.";
+                        cssClass = "text-dim"; 
+                        weatherCount++; // Increment weather-related cloudy bucket
+                    } else {
+                        criticalCount++; // Increment true system anomaly bucket
                     }
     
-                    html += `<tr>
+                    if (avgClouds <= 35 && maxPeak > 600) {
+                        explanation = "☀️🕶️🔥";
+                        weatherTooltip = "Shadow / Thermal Clipping: Clear sky variance. Check array shadows.";
+                        cssClass = "bad"; 
+                    }
+    
+                    subTableRowsHtml += `<tr>
                         <td>${target.date}</td>
                         <td>${(target.realYieldWh/1000).toFixed(2)}</td>
                         <td class="bad">${target.efficiency.toFixed(1)}%</td>
                         <td>${avgClouds}%</td>
                         <td>${sunHours} h</td>
                         <td>${maxPeak}</td>
-                        <td title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
+                        <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
                     </tr>`;
                     
                     globalCsvRows.push([target.date, (target.realYieldWh/1000).toFixed(2).replace('.', ','), target.efficiency.toFixed(1).replace('.', ','), avgClouds, sunHours.toString().replace('.', ','), maxPeak, explanation]);
@@ -703,7 +703,21 @@ console.log("🧹 Target data cleanup complete!");
                 }
             }
 
-            html += `</table></div>`;
+            // Construct the final HTML chunk using the computed metrics
+            html += `
+            <h3 style="margin-top:30px; color:var(--warning);">
+                🔍 Daily Anomaly & Weather Context
+                <span style="float:right; font-size:0.85rem; color:var(--text-dim);">
+                    Issues: <span class="bad" style="font-weight:bold;">${criticalCount}</span> / <span style="color:var(--text-dim);">${weatherCount} Weather</span>
+                </span>
+            </h3>
+            <div class="table-scroll-frame">
+                <table>
+                    <tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>
+                    ${subTableRowsHtml}
+                </table>
+            </div>`;
+
             globalCsvRows.push([]);
         }
         
