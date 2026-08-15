@@ -37,7 +37,7 @@
             margin-bottom: 20px; 
         }
         
-        /* UPDATED FOR OPTION B: Wrapper allows full vertical expansion so headers stick to the browser window */
+        /* Option B configuration: Allows full vertical layout expansion for sticky elements */
         .table-scroll-frame {
             border: 1px solid var(--border);
             border-radius: 6px;
@@ -45,7 +45,7 @@
             position: visible; 
         }
         
-        /* Enforces 2 equal elements horizontally across all layouts by default */
+        /* Enforces 2 equal elements horizontally across legacy layout blocks */
         .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
@@ -53,7 +53,7 @@
             margin-bottom: 15px; 
         }
         
-        /* Tablet and Desktop upscale profile */
+        /* Tablet and Desktop upscale profile for legacy grid components */
         @media (min-width: 600px) {
             .grid { 
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
@@ -106,10 +106,10 @@
             cursor: pointer;
         }
 
-        /* Responsive configuration row layout */
+        /* Responsive configuration row layout for primary input forms */
         .config-row {
             display: grid;
-            grid-template-columns: 1fr 1fr; /* 2 columns on mobile screens */
+            grid-template-columns: 1fr 1fr; /* 2 columns on mobile viewports */
             gap: 15px;
             margin-bottom: 15px;
         }
@@ -117,21 +117,27 @@
         /* Desktop upscale layout: maps 4 columns cleanly in a single horizontal line */
         @media (min-width: 850px) {
             .config-row {
-                grid-template-columns: repeat(4, 1fr); /* 4 columns on desktop */
+                grid-template-columns: repeat(4, 1fr); 
             }
         }
 
-
+        /* Main table global configuration parameters */
         table { 
             width: 100%; 
-            border-collapse: separate; /* Required over collapse to maintain clean sticky boundaries */
+            border-collapse: separate; 
             border-spacing: 0;
-            font-size: 0.9rem; 
         }
         
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        /* FIXED: Base cell definition optimized specifically for small screens like LG K52 */
+        th, td { 
+            padding: 10px 4px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--border); 
+            font-size: 0.82rem; 
+            word-break: break-word; 
+        }
         
-        /* UPDATED FOR OPTION B: Locks headers directly onto the viewport top edge when scrolling down */
+        /* Locks headers directly onto the viewport top edge when scrolling down */
         th { 
             color: var(--text-dim); 
             font-weight: normal; 
@@ -144,6 +150,24 @@
 
         tr:hover { background: rgba(255,255,255,0.02); }
         
+        table td:last-child, table th:last-child {
+            text-align: center;
+        }
+
+        /* Upscale layout profile tailored for larger tablet and desktop screens */
+        @media (min-width: 600px) {
+            th, td {
+                padding: 10px; 
+                font-size: 0.9rem; 
+            }
+            table td:first-child, table th:first-child { 
+                white-space: nowrap; 
+            }
+            table td:last-child, table th:last-child { 
+                white-space: nowrap; 
+            }
+        }
+
         .good { color: var(--accent); }
         .bad { color: var(--danger); }
         .warn { color: var(--warning); }
@@ -161,19 +185,6 @@
         .legend-box strong { color: #fff; }
         #results { margin-top: 30px; }
         .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
-
-        /* Forces the date column to stay on a single horizontal line */
-        table td:first-child, table th:first-child {
-            white-space: nowrap;
-        }
-
-        /* Forces the diagnosis icon column to stay tightly on a single line */
-        table td:last-child, table th:last-child {
-            white-space: nowrap;
-            text-align: center; /* Aligns the icon triplet cleanly in the center */
-        }
-
-  
 </style>
 </head>
 <body>
