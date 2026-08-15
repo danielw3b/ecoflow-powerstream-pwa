@@ -153,23 +153,6 @@
     <div class="card">
         <h2>⚙️ Configuration</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
-    
-            <h3>📍 Location & GPS</h3>
-            <div class="grid">
-                <!-- Column slot 1: Holds both coordinates in a tidy half-row frame layout -->
-                <div class="form-group">
-                    <label>Coordinates (LAT / LON)</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
-                        <input type="number" step="any" id="cfg_lon" required placeholder="LON">
-                    </div>
-                </div>
-                
-                <!-- Column slot 2: Perfectly aligns the secondary action button on the same horizontal row baseline -->
-                <div class="form-group" style="margin-top: auto;">
-                    <button type="button" class="btn-secondary" onclick="detectLocation()" style="padding: 10px 20px; width: 100%;">📍 Auto-Detect GPS</button>
-                </div>
-            </div>
 
             <h3>🔌 System Selection & Hardware</h3>
             <div class="grid">
@@ -200,6 +183,22 @@
                 </div>
             </div>
 
+            <h3>📍 Location & GPS</h3>
+            <div class="grid">
+                <!-- Column slot 1: Holds both coordinates in a tidy half-row frame layout -->
+                <div class="form-group">
+                    <label>Coordinates (LAT / LON)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
+                        <input type="number" step="any" id="cfg_lon" required placeholder="LON">
+                    </div>
+                </div>
+                
+                <!-- Column slot 2: Perfectly aligns the secondary action button on the same horizontal row baseline -->
+                <div class="form-group" style="margin-top: auto;">
+                    <button type="button" class="btn-secondary" onclick="detectLocation()" style="padding: 10px 20px; width: 100%;">📍 Auto-Detect GPS</button>
+                </div>
+            </div>
 
             <h3>💶 Tariff & Investment</h3>
             <div class="grid">
