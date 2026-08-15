@@ -271,7 +271,7 @@
         const sn = document.getElementById('cfg_inverter').value;
         return sn ? `ecoflow_analyzer_config_${sn}` : 'ecoflow_analyzer_config_default';
     }
-
+    
     // Initialize or populate inverters dropdown list with custom user alias names
     function initInverters() {
         const select = document.getElementById('cfg_inverter');
@@ -282,7 +282,8 @@
     
         // Fetch both your raw PWA historical databases and your custom name dictionaries
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
+        // KORREKTUR: 'ecoflow_names' statt 'ecoflow_custom_names'
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         
         const serials = Object.keys(dailyStorage);
     
@@ -305,17 +306,17 @@
             loadInverterConfig();      // Populates all fields like Wp, Area, Tariff dates immediately
         }
     }
-
+    
     // Load configuration for the selected inverter and resolve friendly custom names
     function loadInverterConfig() {
         const key = getStorageKey();
         const saved = localStorage.getItem(key);
-
+    
         // 1. Fetch custom name dictionaries to map real identities to the screen
         const selectedSn = document.getElementById('cfg_inverter')?.value;
-        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const friendlyName = customNames[selectedSn] || selectedSn;
-
+    
         if (saved) {
             try {
                 const cfg = JSON.parse(saved);
@@ -323,12 +324,12 @@
                     const el = document.getElementById(`cfg_${key}`);
                     if (el && value !== undefined) el.value = value;
                 }
-
+    
                 // OPTIONAL: If you have a title header or label on the page showing the active device,
                 // you can update its text natively with the clean name here!
                 const titleEl = document.getElementById('active_inverter_title');
                 if (titleEl && selectedSn) titleEl.textContent = `Active System: ${friendlyName}`;
-
+    
             } catch (e) {
                 console.error("Error parsing saved configuration:", e);
             }
@@ -340,45 +341,7 @@
             if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial"; //
         }
     }
-    
-    // Dynamically build dropdown menu options using clean custom names instead of raw serial numbers
-    function populateInverterDropdown() {
-        const select = document.getElementById('cfg_inverter');
-        if (!select) return;
-    
-        // Preserve the current user selection if they are toggling elements
-        const currentSelection = select.value;
-        
-        select.innerHTML = '<option value="">-- Select Inverter System --</option>';
-    
-        // Pull real generation keys (SNs) and user-assigned alias strings directly from storage
-        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
-    
-        const serials = Object.keys(dailyStorage);
-    
-        if (serials.length === 0) {
-            // Fallback option if local storage holds no inverter historical data keys yet
-            select.innerHTML = '<option value="">-- No Data Stored in LocalPWA --</option>';
-            return;
-        }
-    
-        // Generate dropdown option mappings dynamically
-        serials.forEach(sn => {
-            const opt = document.createElement('option');
-            opt.value = sn; // The hidden token value keeps using the real serial number for backend storage keys
-            
-            // Display the friendly alias name if it exists, otherwise fall back to a short serial snippet
-            opt.textContent = customNames[sn] || `Inverter (${sn.substring(0, 6)}...)`;
-            
-            select.appendChild(opt);
-        });
-    
-        // Restore selection state value if it matches an existing entry
-        if (currentSelection) {
-            select.value = currentSelection;
-        }
-    }
+
 
     // Extract values from form safely with fallbacks to avoid null pointer reference errors
     function getUserConfig() {
