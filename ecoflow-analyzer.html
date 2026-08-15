@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoFlow Solar & Weather Analyzer</title>
-    <style>
+<style>
         :root {
             --bg: #060c1a;
             --panel: #0d182b;
@@ -28,18 +28,25 @@
         h3 { border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-top: 20px; color: var(--text-dim); font-size: 1rem; }
         .container { max-width: 1200px; margin: 0 auto; }
         
-        /* UPDATED: Added max-height and scrolling frame to data blocks */
+        /* FIXED: Base cards now expand naturally without creating internal scrolling loops */
         .card { 
             background: var(--panel); 
             border: 1px solid var(--border); 
             border-radius: 8px; 
             padding: 20px; 
             margin-bottom: 20px; 
-            max-height: 550px; 
-            overflow-y: auto; 
         }
         
-        /* UPDATED: Forces exactly 2 items per line on mobile, switches to fluid columns on desktop */
+        /* NEW: Added a dedicated container style class for the heavy tracking data tables */
+        .table-scroll-frame {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        
+        /* UPDATED: Enforces 2 equal elements horizontally across all layouts by default */
         .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
@@ -47,7 +54,7 @@
             margin-bottom: 15px; 
         }
         
-        /* Responsive upscale for standard tablet and desktop monitor screens */
+        /* Tablet and Desktop upscale profile */
         @media (min-width: 600px) {
             .grid { 
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
@@ -55,13 +62,8 @@
         }
         
         .form-group { display: flex; flex-direction: column; }
+        .full-width-row { grid-column: span 2; }
         
-        /* NEW: Modifier utility to let specified elements (like the Inverter Select) stretch full-width */
-        .full-width-row {
-            grid-column: span 2;
-        }
-        
-        /* UPDATED: Added text ellipsis properties to safeguard labels on ultra-narrow mobile screens */
         label { 
             font-size: 0.85rem; 
             color: var(--text-dim); 
@@ -70,8 +72,6 @@
             overflow: hidden; 
             text-overflow: ellipsis; 
         }
-        
-        /* UPDATED: Forced standard controls to expand perfectly into their half-row mobile slots */
         input, select { 
             background: var(--bg); 
             border: 1px solid var(--border); 
@@ -83,7 +83,6 @@
             box-sizing: border-box; 
         }
         input:focus, select:focus { outline: 1px solid var(--accent); }
-
         
         button {
             background: var(--accent); color: white; border: none; padding: 12px 20px;
@@ -95,10 +94,9 @@
         .btn-secondary:hover { background: #2980b9; }
         .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
         
-        /* UPDATED: Pinned headers at absolute top position during card scrolling */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; position: relative; }
+        /* FIXED: Pinned headers top alignment rule modified to bond with our new scrolling frame */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
-        
         th { 
             color: var(--text-dim); 
             font-weight: normal; 
@@ -108,14 +106,12 @@
             z-index: 10; 
             box-shadow: inset 0 -1px 0 var(--border); 
         }
-        
         tr:hover { background: rgba(255,255,255,0.02); }
         
         .good { color: var(--accent); }
         .bad { color: var(--danger); }
         .warn { color: var(--warning); }
         
-        /* NEW: Added a clean theme-matching frame style for the icon indicator legends */
         .legend-box {
             margin-top: 20px;
             padding: 12px;
@@ -126,10 +122,7 @@
             color: var(--text-dim);
             line-height: 1.6;
         }
-        .legend-box strong {
-            color: #fff;
-        }
-        
+        .legend-box strong { color: #fff; }
         #results { margin-top: 30px; }
         .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
     </style>
@@ -518,66 +511,75 @@
                 diagnosis
             ]);
         }
-    
-        // Build header with reactive metrics array length evaluation
+
+        // Wrap the dynamic table generation string with our dedicated scroll frame wrapper
         let html = `<div class="card">
-            <h2>📡 Inverter / Circuit: ${sn}</h2>
-            <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Analyzed: ${totalDaysAnalyzed} Days | Anomaly Ratio: ${(anomalies.length / totalDaysAnalyzed * 100).toFixed(0)}% (${anomalies.length} Days)</span></h3>
-            <table>
-                <tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>
-                ${tableRowsHtml}
-            </table>`;
+            <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
+            <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${(anomalies.length / totalDaysAnalyzed * 100).toFixed(0)}%)</span></h3>
+            
+            <div class="table-scroll-frame">
+                <table>
+                    <tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>
+                    ${tableRowsHtml}
+                </table>
+            </div>`;
             
         globalCsvRows.push([]);
-    
-        // 6. Hourly drilling sub-flow for weather context resolution
-        if (anomalies.length > 0) {
-            html += `<h3 style="margin-top:30px; color:var(--warning);">🔍 Daily Anomaly & Weather Context (Efficiency Deviation)</h3>`;
-            html += `<table><tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
+    // 6. Hourly drilling sub-flow for weather context resolution
+    if (anomalies.length > 0) {
+        // UPDATED: Added a right-aligned indicator to display the exact anomaly day metrics count!
+        html += `
+        <h3 style="margin-top:30px; color:var(--warning);">
+            🔍 Daily Anomaly & Weather Context (Efficiency Deviation)
+            <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Logged: ${anomalies.length} Anomaly Days</span>
+        </h3>
+        <div class="table-scroll-frame">
+            <table>
+                <tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Weather Context</th></tr>`;
+        
+        globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
+        globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
+
+        for (const target of anomalies) {
+            const hUrl = `https://open-meteo.com{globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+            const hResp = await fetch(hUrl);
+            if (!hResp.ok) continue;
+            const hData = await hResp.json();
             
-            globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
-            globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
-    
-            for (const target of anomalies) {
-                const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
-                const hResp = await fetch(hUrl);
-                if (!hResp.ok) continue;
-                const hData = await hResp.json();
-                
-                let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
-                for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
-                    if (j >= 6 && j <= 20) {
-                        cloudSum += hData.hourly.cloud_cover[j];
-                        daylightHours++;
-                    }
-                    sunSeconds += hData.hourly.sunshine_duration[j];
-                    if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
+            let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
+            for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
+                if (j >= 6 && j <= 20) {
+                    cloudSum += hData.hourly.cloud_cover[j];
+                    daylightHours++;
                 }
-                
-                const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
-                const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-                
-                // Compact weather iconography mapping
-                let explanation = "❓";
-                if (avgClouds > 75 && sunHours < 3) explanation = "☁️ Max";
-                else if (avgClouds <= 35 && maxPeak > 600) explanation = "☀️🔥 Clipping / Shadow";
-                else if (avgClouds > 40 && sunHours >= 4) explanation = "⛅🌤️ Cloud Shift";
-    
-                html += `<tr>
-                    <td>${target.date}</td>
-                    <td>${(target.realYieldWh/1000).toFixed(2)}</td>
-                    <td class="bad">${target.efficiency.toFixed(1)}%</td>
-                    <td>${avgClouds}%</td>
-                    <td>${sunHours} h</td>
-                    <td>${maxPeak}</td>
-                    <td>${explanation}</td>
-                </tr>`;
-                
-                globalCsvRows.push([target.date, (target.realYieldWh/1000).toFixed(2).replace('.', ','), target.efficiency.toFixed(1).replace('.', ','), avgClouds, sunHours.toString().replace('.', ','), maxPeak, explanation]);
+                sunSeconds += hData.hourly.sunshine_duration[j];
+                if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
             }
-            html += `</table>`;
-            globalCsvRows.push([]);
+            
+            const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
+            const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
+            
+            // Compact weather iconography mapping
+            let explanation = "❓";
+            if (avgClouds > 75 && sunHours < 3) explanation = "☁️ Max";
+            else if (avgClouds <= 35 && maxPeak > 600) explanation = "☀️🔥 Clipping / Shadow";
+            else if (avgClouds > 40 && sunHours >= 4) explanation = "⛅🌤️ Cloud Shift";
+
+            html += `<tr>
+                <td>${target.date}</td>
+                <td>${(target.realYieldWh/1000).toFixed(2)}</td>
+                <td class="bad">${target.efficiency.toFixed(1)}%</td>
+                <td>${avgClouds}%</td>
+                <td>${sunHours} h</td>
+                <td>${maxPeak}</td>
+                <td>${explanation}</td>
+            </tr>`;
+            
+            globalCsvRows.push([target.date, (target.realYieldWh/1000).toFixed(2).replace('.', ','), target.efficiency.toFixed(1).replace('.', ','), avgClouds, sunHours.toString().replace('.', ','), maxPeak, explanation]);
         }
+        html += `</table></div>`; // Safely closes the scroll frame wrapper
+        globalCsvRows.push([]);
+    }
     
         // 7. Inject standard UI user dictionary legend box matching CSS style declarations
         html += `
