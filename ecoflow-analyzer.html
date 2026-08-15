@@ -156,22 +156,21 @@
     
             <h3>📍 Location & GPS</h3>
             <div class="grid">
-                <!-- Row 1 Left: Captures standard 1 column slot, splits it down into two tight half-width fields -->
+                <!-- Column slot 1: Holds both coordinates in a tidy half-row frame layout -->
                 <div class="form-group">
                     <label>Coordinates (LAT / LON)</label>
-                    <div class="gps-input-row">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
                         <input type="number" step="any" id="cfg_lon" required placeholder="LON">
                     </div>
                 </div>
                 
-                <!-- Row 1 Right: Captures the next 1 column slot, completely filled by the button (making it 2x wide as a single input) -->
+                <!-- Column slot 2: Perfectly aligns the secondary action button on the same horizontal row baseline -->
                 <div class="form-group" style="margin-top: auto;">
                     <button type="button" class="btn-secondary" onclick="detectLocation()" style="padding: 10px 20px; width: 100%;">📍 Auto-Detect GPS</button>
                 </div>
             </div>
 
-        
             <h3>🔌 System Selection & Hardware</h3>
             <div class="grid">
                 <div class="form-group">
@@ -269,24 +268,38 @@
         return sn ? `ecoflow_analyzer_config_${sn}` : 'ecoflow_analyzer_config_default';
     }
 
-    // Initialize inverter dropdown from localStorage data
+    // Initialize or populate inverters dropdown list with custom user alias names
     function initInverters() {
-        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-        const serials = Object.keys(dailyStorage);
         const select = document.getElementById('cfg_inverter');
+        if (!select) return;
+    
+        // Clear old default options
+        select.innerHTML = '<option value="">-- Load from localStorage --</option>';
+    
+        // Fetch both your raw PWA historical databases and your custom name dictionaries
+        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
         
-        select.innerHTML = '<option value="">-- Select Inverter / Circuit --</option>';
+        const serials = Object.keys(dailyStorage);
+    
+        if (serials.length === 0) {
+            select.innerHTML = '<option value="">-- No Inverters Found in Database --</option>';
+            return;
+        }
+    
+        // Dynamic Option Mapping Loop
         serials.forEach(sn => {
             const opt = document.createElement('option');
-            opt.value = sn;
-            opt.textContent = `Inverter / Circuit: ${sn}`;
+            opt.value = sn; // Backend math routines continue tracking the stable raw serial number
+            
+            // VISUAL presentación: Maps custom names instantly, or falls back to short serial string snippets
+            opt.textContent = customNames[sn] || `Inverter (${sn.substring(0, 6)}...)`;
+            
             select.appendChild(opt);
         });
-
-        if (serials.length > 0) {
-            select.value = serials[0];
-            loadInverterConfig();
-        }
+    
+        // OPTIONAL: If your old initInverters function had extra logic at the bottom 
+        // (like auto-loading the last selected index), keep those lines right here!
     }
         
     // Load configuration for the selected inverter and resolve friendly custom names
@@ -325,6 +338,45 @@
     }
 
     
+    // Dynamically build dropdown menu options using clean custom names instead of raw serial numbers
+    /*function populateInverterDropdown() {
+        const select = document.getElementById('cfg_inverter');
+        if (!select) return;
+    
+        // Preserve the current user selection if they are toggling elements
+        const currentSelection = select.value;
+        
+        select.innerHTML = '<option value="">-- Select Inverter System --</option>';
+    
+        // Pull real generation keys (SNs) and user-assigned alias strings directly from storage
+        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
+    
+        const serials = Object.keys(dailyStorage);
+    
+        if (serials.length === 0) {
+            // Fallback option if local storage holds no inverter historical data keys yet
+            select.innerHTML = '<option value="">-- No Data Stored in LocalPWA --</option>';
+            return;
+        }
+    
+        // Generate dropdown option mappings dynamically
+        serials.forEach(sn => {
+            const opt = document.createElement('option');
+            opt.value = sn; // The hidden token value keeps using the real serial number for backend storage keys
+            
+            // Display the friendly alias name if it exists, otherwise fall back to a short serial snippet
+            opt.textContent = customNames[sn] || `Inverter (${sn.substring(0, 6)}...)`;
+            
+            select.appendChild(opt);
+        });
+    
+        // Restore selection state value if it matches an existing entry
+        if (currentSelection) {
+            select.value = currentSelection;
+        }
+    }*/
+
     // Extract values from form safely with fallbacks to avoid null pointer reference errors
     function getUserConfig() {
         const config = {
