@@ -93,19 +93,37 @@
         .btn-secondary { background: #3498db; }
         .btn-secondary:hover { background: #2980b9; }
         .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
+
+         /* Custom utility for half-width horizontal input pairing fields */
+        .gps-input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        } 
+        /* Pinned headers at absolute top position during card scrolling */
+        table { 
+            width: 100%; 
+            border-collapse: separate; /* FIXED: Use separate to keep sticky th bounded correctly */
+            border-spacing: 0;
+            font-size: 0.9rem; 
+        }
         
-        /* FIXED: Pinned headers top alignment rule modified to bond with our new scrolling frame */
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th, td { 
+            padding: 10px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--border); 
+        }
+        
         th { 
             color: var(--text-dim); 
             font-weight: normal; 
             position: sticky; 
-            top: 0; 
+            top: 0; /* Sticks flawlessly at the absolute top of the frame container */
             background-color: var(--panel); 
             z-index: 10; 
             box-shadow: inset 0 -1px 0 var(--border); 
         }
+
         tr:hover { background: rgba(255,255,255,0.02); }
         
         .good { color: var(--accent); }
@@ -138,21 +156,21 @@
     
             <h3>📍 Location & GPS</h3>
             <div class="grid">
-                <!-- These elements lock perfectly into 2-per-line side-by-side columns matching the hardware input row spacing -->
+                <!-- Row 1 Left: Captures standard 1 column slot, splits it down into two tight half-width fields -->
                 <div class="form-group">
-                    <label for="cfg_lat">Latitude (LAT)</label>
-                    <input type="number" step="any" id="cfg_lat" required placeholder="e.g. 50.819">
-                </div>
-                <div class="form-group">
-                    <label for="cfg_lon">Longitude (LON)</label>
-                    <input type="number" step="any" id="cfg_lon" required placeholder="e.g. 7.0341">
+                    <label>Coordinates (LAT / LON)</label>
+                    <div class="gps-input-row">
+                        <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
+                        <input type="number" step="any" id="cfg_lon" required placeholder="LON">
+                    </div>
                 </div>
                 
-                <!-- This container spans entirely across the next line, making it exactly twice as wide as an individual input card -->
-                <div class="form-group full-width-row" style="margin-top: 5px;">
+                <!-- Row 1 Right: Captures the next 1 column slot, completely filled by the button (making it 2x wide as a single input) -->
+                <div class="form-group" style="margin-top: auto;">
                     <button type="button" class="btn-secondary" onclick="detectLocation()" style="padding: 10px 20px; width: 100%;">📍 Auto-Detect GPS</button>
                 </div>
             </div>
+
         
             <h3>🔌 System Selection & Hardware</h3>
             <div class="grid">
