@@ -292,6 +292,22 @@
         
     // Initialize or populate inverters dropdown list with custom user alias names
     function initInverters() {
+
+
+// Remove legacy names configuration key
+localStorage.removeItem('ecoflow_custom_names');
+
+// Find and sweep away any intermediate config prefixes without touching core data
+for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key.startsWith('ecoflow_cfg_')) {
+        localStorage.removeItem(key);
+    }
+}
+console.log("🧹 Target data cleanup complete!");
+
+
+      
         const select = document.getElementById('cfg_inverter');
         if (!select) return;
     
@@ -514,26 +530,33 @@
             if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
                 tariffDaysCounter++; 
             }
-    
+        
+            // --- Inside the daily loop of analyzeDevice ---
             let diagnosis = "⭐⭐";
             let cssClass = "good";
-            let fullTextExplanation = "Normal Yield"; 
+            let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
             const dynamicThreshold = baseEfficiencyThreshold * tempLossFactor;
     
             const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
             const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
     
             if (isWlanHang) { 
-                diagnosis = "⚠️ 📶"; cssClass = "warn"; fullTextExplanation = "Suspected Data Loss";
+                diagnosis = "⚠️ 📶"; cssClass = "warn"; 
+                fullTextExplanation = "WLAN Buffer Lag: High solar radiation detected but near-zero data transmitted.";
             } else if (isCriticalFail) { 
-                diagnosis = "❌ 🛑"; cssClass = "bad"; fullTextExplanation = "Critical Failure";
+                diagnosis = "❌ 🛑"; cssClass = "bad"; 
+                fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked.";
             } else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
-                diagnosis = "⭐⭐⭐"; cssClass = "good"; fullTextExplanation = "Optimal Peak Yield";
+                diagnosis = "⭐⭐⭐"; cssClass = "good"; 
+                fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
             } else if (efficiency < dynamicThreshold) {
                 if (totalSolarEnergyWh < 4000) {
-                    diagnosis = "☁️ 🌊"; cssClass = "text-dim"; fullTextExplanation = "Bad Weather/Overcast";
+                    diagnosis = "☁️ 🌊"; cssClass = "text-dim"; 
+                    fullTextExplanation = "Bad Weather: Overcast diffuse scattering conditions. Normal for this climate state.";
                 } else {
-                    diagnosis = "⭐📉"; cssClass = "warn"; fullTextExplanation = "Low Performance Deviation";
+                    // FIXED: Dropped one star to make it exactly a 2-icon indicator signature
+                    diagnosis = "⭐📉"; cssClass = "warn"; 
+                    fullTextExplanation = "Performance Loss: Real generation falling below temperature-corrected baselines.";
                 }
             }
     
@@ -580,10 +603,11 @@
             
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
-    
+
+            // --- Inside the anomaly processing loop of analyzeDevice ---
             for (const target of anomalies) {
                 try {
-                    const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                    const hUrl = `https://open-meteo.com{globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
                     const hResp = await fetch(hUrl);
                     if (!hResp.ok) continue;
                     const hData = await hResp.json();
@@ -600,10 +624,19 @@
                     
                     const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                     const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-                    let explanation = "⛅ Cloud Shift";
+                    
+                    // NEW: Default to pure icon-triplet chains for compact horizontal space mapping
+                    let explanation = "⛅☁️⛅";
+                    let weatherTooltip = "Cloud Shift: Fast moving cloud clusters or dynamic front changes observed.";
     
-                    if (avgClouds > 75 && sunHours < 3) explanation = "☁️ Max Overcast";
-                    else if (avgClouds <= 35 && maxPeak > 600) explanation = "☀️🔥 Shadow/Temp";
+                    if (avgClouds > 75 && sunHours < 3) {
+                        explanation = "☁️☁️☁️";
+                        weatherTooltip = "Max Overcast: Dense continuous cloud layers heavily blocked direct sunlight tracks.";
+                    } else if (avgClouds <= 35 && maxPeak > 600) {
+                        // NEW: Combined icons representing high sun, shadow/shading, and thermal heating risk profiles
+                        explanation = "☀️🕶️🔥";
+                        weatherTooltip = "Shadow / Thermal Clipping: Clear sky but lower yield. Check for array shadows or high inverter temperatures.";
+                    }
     
                     html += `<tr>
                         <td>${target.date}</td>
@@ -612,7 +645,7 @@
                         <td>${avgClouds}%</td>
                         <td>${sunHours} h</td>
                         <td>${maxPeak}</td>
-                        <td>${explanation}</td>
+                        <td title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
                     </tr>`;
                     
                     globalCsvRows.push([target.date, (target.realYieldWh/1000).toFixed(2).replace('.', ','), target.efficiency.toFixed(1).replace('.', ','), avgClouds, sunHours.toString().replace('.', ','), maxPeak, explanation]);
@@ -620,6 +653,7 @@
                     console.error("Error fetching hourly context:", err);
                 }
             }
+
             html += `</table></div>`;
             globalCsvRows.push([]);
         }
@@ -627,7 +661,8 @@
         // 4. Inject standard UI legend box and push full content block to DOM
         html += `
         <div class="legend-box">
-            <strong>📋 Indicators:</strong> ⭐⭐⭐ Optimal | ⭐⭐ Operation | ⭐📉 Loss | ⚠️ 📶 WLAN | ❌ 🛑 Fail | ☁️ 🌊 Overcast
+            <strong>📋 System Indicators:</strong> ⭐⭐⭐ Optimal | ⭐⭐ Normal | ⭐📉 Loss | ⚠️ 📶 WLAN | ❌ 🛑 Fail | ☁️ 🌊 Overcast<br>
+            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅☁️⛅ Cloud Shift | ☁️☁️☁️ Max Overcast | ☀️🕶️🔥 Shadow/Temp
         </div></div>`;
         
         // Write directly into DOM and instantly bind the global count context
