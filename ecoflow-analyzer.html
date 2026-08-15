@@ -39,11 +39,51 @@
             overflow-y: auto; 
         }
         
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        /* UPDATED: Forces exactly 2 items per line on mobile, switches to fluid columns on desktop */
+        .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-bottom: 15px; 
+        }
+        
+        /* Responsive upscale for standard tablet and desktop monitor screens */
+        @media (min-width: 600px) {
+            .grid { 
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            }
+        }
+        
         .form-group { display: flex; flex-direction: column; }
-        label { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 5px; }
-        input, select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 4px; font-family: monospace; }
+        
+        /* NEW: Modifier utility to let specified elements (like the Inverter Select) stretch full-width */
+        .full-width-row {
+            grid-column: span 2;
+        }
+        
+        /* UPDATED: Added text ellipsis properties to safeguard labels on ultra-narrow mobile screens */
+        label { 
+            font-size: 0.85rem; 
+            color: var(--text-dim); 
+            margin-bottom: 5px; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        
+        /* UPDATED: Forced standard controls to expand perfectly into their half-row mobile slots */
+        input, select { 
+            background: var(--bg); 
+            border: 1px solid var(--border); 
+            color: var(--text); 
+            padding: 10px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
         input:focus, select:focus { outline: 1px solid var(--accent); }
+
         
         button {
             background: var(--accent); color: white; border: none; padding: 12px 20px;
@@ -120,7 +160,7 @@
         
             <h3>🔌 System Selection & Hardware</h3>
             <div class="grid">
-                <div class="form-group">
+                <div class="form-group full-width-row">
                     <label for="cfg_inverter">Select Inverter / Circuit</label>
                     <select id="cfg_inverter" onchange="loadInverterConfig()" required>
                         <option value="">-- Load from localStorage --</option>
@@ -234,11 +274,17 @@
             loadInverterConfig();
         }
     }
-    
-    // Load configuration for the selected inverter
+        
+    // Load configuration for the selected inverter and resolve friendly custom names
     function loadInverterConfig() {
         const key = getStorageKey();
         const saved = localStorage.getItem(key);
+        
+        // 1. Fetch custom name dictionaries to map real identities to the screen
+        const selectedSn = document.getElementById('cfg_inverter')?.value;
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_custom_names')) || {};
+        const friendlyName = customNames[selectedSn] || selectedSn;
+    
         if (saved) {
             try {
                 const cfg = JSON.parse(saved);
@@ -246,17 +292,24 @@
                     const el = document.getElementById(`cfg_${key}`);
                     if (el && value !== undefined) el.value = value;
                 }
+                
+                // OPTIONAL: If you have a title header or label on the page showing the active device,
+                // you can update its text natively with the clean name here!
+                const titleEl = document.getElementById('active_inverter_title');
+                if (titleEl && selectedSn) titleEl.textContent = `Active System: ${friendlyName}`;
+    
             } catch (e) {
                 console.error("Error parsing saved configuration:", e);
             }
         } else {
             // Set default values if no configuration exists for this inverter
-            document.getElementById('cfg_startDate').value = "2026-05-07";
-            document.getElementById('cfg_tariffStart').value = "2026-06-26";
-            if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "860";
-            if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial";
+            document.getElementById('cfg_startDate').value = "2026-05-07"; //
+            document.getElementById('cfg_tariffStart').value = "2026-06-26"; //
+            if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "900"; //
+            if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial"; //
         }
     }
+
     
     // Extract values from form safely with fallbacks to avoid null pointer reference errors
     function getUserConfig() {
