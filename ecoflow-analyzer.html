@@ -668,24 +668,33 @@ console.log("🧹 Target data cleanup complete!");
                     const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                     const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
                     
+                    // --- FIXED: Linked structural chain matching icons directly to counter buckets ---
                     let explanation = "⛅☁️⛅";
-                    let weatherTooltip = "Cloud Shift: Fast moving cloud clusters observed.";
+                    let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
                     let cssClass = "warn"; 
 
                     if (avgClouds > 75 && sunHours < 3) {
+                        // 1. Heavy overcast weather
                         explanation = "☁️☁️☁️";
-                        weatherTooltip = "Max Overcast: Dense continuous cloud layers blocked solar inputs.";
+                        weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
                         cssClass = "text-dim"; 
-                        weatherCount++; // Increment weather-related cloudy bucket
-                    } else {
-                        criticalCount++; // Increment true system anomaly bucket
-                    }
-    
-                    if (avgClouds <= 35 && maxPeak > 600) {
+                        weatherCount++; 
+                    } 
+                    else if (avgClouds <= 35 && maxPeak > 600) {
+                        // 2. True clear sky anomaly (shadows or thermal clipping)
                         explanation = "☀️🕶️🔥";
                         weatherTooltip = "Shadow / Thermal Clipping: Clear sky variance. Check array shadows.";
                         cssClass = "bad"; 
+                        criticalCount++; 
+                    } 
+                    else {
+                        // 3. Regular mixed weather / cloud shifts are NOT system issues
+                        explanation = "⛅☁️⛅";
+                        weatherTooltip = "Cloud Shift: Normal shifting cloud cover throughout the day.";
+                        cssClass = "text-dim";
+                        weatherCount++; // This puts normal mixed weather into the weather bucket!
                     }
+
     
                     subTableRowsHtml += `<tr>
                         <td>${target.date}</td>
