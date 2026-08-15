@@ -579,7 +579,7 @@ console.log("🧹 Target data cleanup complete!");
             if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
                 tariffDaysCounter++; 
             }
-    
+                
             // --- Inside the daily loop of analyzeDevice ---
             let diagnosis = "⭐⭐";
             let cssClass = "good";
@@ -589,7 +589,7 @@ console.log("🧹 Target data cleanup complete!");
             const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
             const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
     
-            // UPDATE 1: Absolute catch filter for zero/covered panels on sunny days
+            // Catch absolute zero / covered panels on sunny days first
             if (realYieldWh <= 50 && totalSolarEnergyWh >= 4000) { 
                 diagnosis = "❌ 🛑"; cssClass = "bad"; 
                 fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked. Panels may be covered.";
@@ -606,49 +606,21 @@ console.log("🧹 Target data cleanup complete!");
                 diagnosis = "⭐⭐⭐"; cssClass = "good"; 
                 fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
             } 
-            // UPDATE 2: Protect low-light/overcast days from falling into performance warnings
+            // STRICT METRIC CHECK: If efficiency falls below threshold, it is ALWAYS marked as performance loss
             else if (efficiency < dynamicThreshold) {
-                if (totalSolarEnergyWh < 4000 || (expectedSollWh > 0 && (realYieldWh / expectedSollWh) >= 0.75)) {
-                    diagnosis = "☁️ 🌊"; cssClass = "text-dim"; 
-                    fullTextExplanation = "Bad Weather: Overcast diffuse scattering conditions. Normal for this climate state.";
-                } else {
-                    diagnosis = "⭐📉"; cssClass = "warn"; 
-                    fullTextExplanation = "Performance Loss: Real generation falling below temperature-corrected baselines.";
-                }
+                diagnosis = "⭐📉"; cssClass = "warn"; 
+                fullTextExplanation = "Performance Loss: Real generation falling below temperature-corrected baselines.";
             }
-  
-            /*
-            // --- Inside the daily loop of analyzeDevice ---
-            let diagnosis = "⭐⭐";
-            let cssClass = "good";
-            let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
-            const dynamicThreshold = baseEfficiencyThreshold * tempLossFactor;
     
-            const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
-            const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
-    
-            if (isWlanHang) { 
-                diagnosis = "⚠️ 📶"; cssClass = "warn"; 
-                fullTextExplanation = "WLAN Buffer Lag: High solar radiation detected but near-zero data transmitted.";
-            } else if (isCriticalFail) { 
-                diagnosis = "❌ 🛑"; cssClass = "bad"; 
-                fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked.";
-            } else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
-                diagnosis = "⭐⭐⭐"; cssClass = "good"; 
-                fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
-            } else if (efficiency < dynamicThreshold) {
-                if (totalSolarEnergyWh < 4000) {
-                    diagnosis = "☁️ 🌊"; cssClass = "text-dim"; 
-                    fullTextExplanation = "Bad Weather: Overcast diffuse scattering conditions. Normal for this climate state.";
-                } else {
-                    // FIXED: Dropped one star to make it exactly a 2-icon indicator signature
-                    diagnosis = "⭐📉"; cssClass = "warn"; 
-                    fullTextExplanation = "Performance Loss: Real generation falling below temperature-corrected baselines.";
-                }
-            }*/
-    
-            if ((isWlanHang || isCriticalFail || (efficiency < dynamicThreshold && totalSolarEnergyWh >= 4000)) && dateStr !== globalConfig.startDate) {
-                anomalies.push({ date: dateStr, realYieldWh, efficiency, reason: fullTextExplanation });
+            // Push to anomalies array once to pass down to Table 2 Context evaluation
+            if ((isWlanHang || isCriticalFail || efficiency < dynamicThreshold) && dateStr !== globalConfig.startDate) {
+                anomalies.push({ 
+                    date: dateStr, 
+                    realYieldWh, 
+                    expectedYieldWh: expectedSollWh, 
+                    efficiency, 
+                    reason: fullTextExplanation 
+                });
             }
     
             tableRowsHtml += `<tr>
@@ -714,34 +686,46 @@ console.log("🧹 Target data cleanup complete!");
                     const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                     const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
                     
-                    // --- FIXED: Linked structural chain matching icons directly to counter buckets ---
+                    // SCIENTIFIC EVALUATION: Check performance relative to weather target model
+                    const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
+
                     let explanation = "⛅☁️⛅";
                     let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
-                    let cssClass = "warn"; 
+                    let cssClass = "text-dim"; 
 
-                    if (avgClouds > 75 && sunHours < 3) {
-                        // 1. Heavy overcast weather
-                        explanation = "☁️☁️☁️";
-                        weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
-                        cssClass = "text-dim"; 
-                        weatherCount++; 
+                    // 1. Check if hardware dropped entirely / covered panels on sunny day
+                    if (target.realYieldWh <= 50) {
+                        explanation = "❌ 🛑";
+                        weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
+                        cssClass = "bad";
+                        criticalCount++;
+                    }
+                    // 2. If the panels track targets accurately (>=75%), underperformance is pure weather
+                    else if (yieldAccuracyRatio >= 0.75) {
+                        if (avgClouds > 75 && sunHours < 3) {
+                            explanation = "☁️☁️☁️";
+                            weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
+                        } else {
+                            explanation = "⛅☁️⛅";
+                            weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
+                        }
+                        weatherCount++;
                     } 
-                    else if (avgClouds <= 35 && maxPeak > 600) {
-                        // 2. True clear sky anomaly (shadows or thermal clipping)
+                    // 3. Low output despite low clouds or high max radiation peak -> Structural issue
+                    else if (avgClouds <= 35 || maxPeak > 600) {
                         explanation = "☀️🕶️🔥";
                         weatherTooltip = "Shadow / Thermal Clipping: Clear sky variance. Check array shadows.";
                         cssClass = "bad"; 
                         criticalCount++; 
-                    } 
+                    }
+                    // 4. Fallback default for edge case mixed weather deviations
                     else {
-                        // 3. Regular mixed weather / cloud shifts are NOT system issues
                         explanation = "⛅☁️⛅";
-                        weatherTooltip = "Cloud Shift: Normal shifting cloud cover throughout the day.";
-                        cssClass = "text-dim";
-                        weatherCount++; // This puts normal mixed weather into the weather bucket!
+                        weatherTooltip = "Unexplained Variance: Performance deviation under changing sky conditions.";
+                        cssClass = "warn";
+                        criticalCount++;
                     }
 
-    
                     subTableRowsHtml += `<tr>
                         <td>${target.date}</td>
                         <td>${(target.realYieldWh/1000).toFixed(2)}</td>
