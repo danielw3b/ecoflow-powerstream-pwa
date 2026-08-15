@@ -721,10 +721,10 @@ console.log("🧹 Target data cleanup complete!");
                     }
                     // 4. Fallback default for bright, highly overcast or mixed cloud profiles
                     else {
-                        explanation = "⛅☁️☁️"; // Updated icon sequence
+                        explanation = "⛅☁️☁️"; 
                         weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
-                        cssClass = "warn";
-                        criticalCount++; 
+                        cssClass = "text-dim"; // Changes color style from yellow warn to muted weather style
+                        weatherCount++;       // FIXED: Increments weather bucket instead of criticalCount++
                     }
 
                     subTableRowsHtml += `<tr>
