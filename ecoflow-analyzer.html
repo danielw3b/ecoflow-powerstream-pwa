@@ -98,7 +98,13 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-        } 
+        }
+        /* Hover effect style rule for the streamlined location picker tool button */
+        .btn-icon:hover {
+            background: rgba(107, 138, 170, 0.25) !important;
+            border-color: var(--accent) !important;
+            cursor: pointer;
+        }
 
         /* Responsive configuration row layout */
         .config-row {
@@ -178,17 +184,31 @@
     <div class="card">
         <h2>⚙️ Configuration</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
-
-            <!-- SECTION 1: System Selection & Hardware -->
-            <h3>🔌 System Selection & Hardware</h3>
             
+            <!-- SECTION 1: System Selection & Location -->
+            <h3>🔌 System Selection & Location</h3>
             <div class="config-row">
-                <div class="form-group">
+                <div class="form-group" style="grid-column: span 2;">
                     <label for="cfg_inverter">Select Inverter / Circuit</label>
                     <select id="cfg_inverter" onchange="loadInverterConfig()" required>
                         <option value="">-- Load from localStorage --</option>
                     </select>
                 </div>
+                <!-- Pinned directly next to the selection on desktop for a compact footprint -->
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Coordinates (LAT / LON)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center;">
+                        <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
+                        <input type="number" step="any" id="cfg_lon" required placeholder="LON">
+                        <!-- Ultra-compact icon button design that scales perfectly across devices -->
+                        <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS" style="padding: 10px; height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; background: rgba(107, 138, 170, 0.1); border: 1px solid var(--border); color: var(--text);">📍</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: Hardware Profile -->
+            <h3>🛠️ Hardware Parameters</h3>
+            <div class="config-row">
                 <div class="form-group">
                     <label for="cfg_panelType">Panel Technology</label>
                     <select id="cfg_panelType">
@@ -204,20 +224,13 @@
                     <label for="cfg_moduleArea">Total Module Area (m²)</label>
                     <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
                 </div>
-            </div>
-
-            <div class="config-row">
                 <div class="form-group">
                     <label for="cfg_totalWp">Total Panel Power (Wp)</label>
                     <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
                 </div>
-                <!-- Empty slots maintain symmetric alignment structures across wide viewport boundaries -->
-                <div class="form-group"></div>
-                <div class="form-group"></div>
-                <div class="form-group"></div>
             </div>
 
-            <!-- SECTION 2: Tariff & Investment -->
+            <!-- SECTION 3: Tariff & Investment -->
             <h3>💶 Tariff & Investment</h3>
             <div class="config-row">
                 <div class="form-group">
@@ -238,9 +251,9 @@
                 </div>
             </div>
 
-            <!-- SECTION 3: Meter & Timeline -->
+            <!-- SECTION 4: Meter & Timeline -->
             <h3>📊 Meter & Timeline</h3>
-            <div class="config-row" style="margin-bottom: 5px;">
+            <div class="config-row">
                 <div class="form-group">
                     <label for="cfg_consumption">Consumption w/o Solar (kWh/Day)</label>
                     <input type="number" step="0.1" id="cfg_consumption" required placeholder="e.g. 5">
@@ -268,26 +281,17 @@
                 <div class="form-group"></div>
             </div>
 
-            <!-- SECTION 4: Location & GPS -->
-            <h3>📍 Location & GPS</h3>
-            <div class="config-row">
-                <div class="form-group" style="grid-column: span 2;">
-                    <label>Coordinates (LAT / LON)</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
-                        <input type="number" step="any" id="cfg_lon" required placeholder="LON">
-                    </div>
-                </div>
-                <div class="form-group" style="grid-column: span 2; justify-content: flex-end;">
-                    <button type="button" class="btn-secondary" onclick="detectLocation()" style="padding: 10px 20px; width: 100%;">📍 Auto-Detect GPS</button>
-                </div>
+            <!-- Primary Execute Action Area with clean breathing space padding -->
+            <div style="margin-top: 30px;">
+                <button type="submit" id="runBtn" class="btn-full" style="background: var(--accent);">💾 Save & Run Analysis</button>
             </div>
-
-            <button type="submit" id="runBtn" class="btn-full">💾 Save & Run Analysis</button>
         </form>
         
-        <button id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-full" style="display:none;">📥 Export CSV Report</button>
-        <div id="loading" class="loader">⏳ Fetching weather data and processing history...</div>
+        <!-- Secondary report download triggers are visually decoupled to reduce color clutter -->
+        <div style="margin-top: 12px;">
+            <button id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-full" style="display:none; background: #2980b9;">📥 Export CSV Report</button>
+        </div>
+        <div id="loading" class="loader" style="margin-top: 15px;">⏳ Fetching weather data and processing history...</div>
     </div>
 
     <div id="results"></div>
