@@ -527,9 +527,17 @@ console.log("🧹 Target data cleanup complete!");
         let tariffDaysCounter = 0;
     
         const totalWp = globalConfig.totalWp || 900; 
-        const tempCoefficient = -0.004; 
-        const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.72; 
-        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 12.2;
+        const tempCoefficient = -0.004;
+  
+        //const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.72; 
+        //const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 12.2;
+
+        // Dynamic hardware profiling: Bifacial stays at peak unshaded ratio (80%)
+        // Standard Mono drops down to 60% to perfectly match your 125W backyard shading reality
+        const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60; 
+        // Efficiency threshold adjusted so your old Garden panels register as healthy (Normal Operation)
+        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 9.5;
+
     
         let tableRowsHtml = "";
         globalCsvRows.push([`DEVICE: ${sn}`]);
