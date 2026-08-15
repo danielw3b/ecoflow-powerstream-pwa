@@ -127,6 +127,13 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="cfg_panelType">Panel Technology</label>
+                    <select id="cfg_panelType">
+                        <option value="mono">Standard Monocrystalline</option>
+                        <option value="bifacial" selected>Bifacial (Glass-Glass)</option>
+                    </select>
+               </div>
+                <div class="form-group">
                     <label for="cfg_moduleArea">Total Module Area (m²)</label>
                     <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
                 </div>
@@ -251,29 +258,31 @@
         }
     }
     
-    // Extract values from form, save to inverter-specific localStorage, and return as object
+    // Extract values from form safely with fallbacks to avoid null pointer reference errors
     function getUserConfig() {
         const config = {
-            inverter: document.getElementById('cfg_inverter').value,
-            lat: parseFloat(document.getElementById('cfg_lat').value),
-            lon: parseFloat(document.getElementById('cfg_lon').value),
-            moduleArea: parseFloat(document.getElementById('cfg_moduleArea').value),
-            totalWp: parseFloat(document.getElementById('cfg_totalWp').value) || 860,
-            panelType: document.getElementById('cfg_panelType').value || 'mono', // NEW: Read solar panel hardware profile
-            selfConsumptionRate: parseFloat(document.getElementById('cfg_selfConsumptionRate').value) || 100,
-            currency: document.getElementById('cfg_currency').value || '€',
-            investmentCost: parseFloat(document.getElementById('cfg_investmentCost').value),
-            energyPriceCt: parseFloat(document.getElementById('cfg_energyPriceCt').value),
-            baseFee: parseFloat(document.getElementById('cfg_baseFee').value),
-            dailyConsumption: parseFloat(document.getElementById('cfg_dailyConsumption').value),
-            meterStart: parseFloat(document.getElementById('cfg_meterStart').value),
-            meterCurrent: parseFloat(document.getElementById('cfg_meterCurrent').value),
-            tariffStart: document.getElementById('cfg_tariffStart').value,
-            startDate: document.getElementById('cfg_startDate').value
+            inverter: document.getElementById('cfg_inverter')?.value || '',
+            lat: parseFloat(document.getElementById('cfg_lat')?.value) || 0,
+            lon: parseFloat(document.getElementById('cfg_lon')?.value) || 0,
+            moduleArea: parseFloat(document.getElementById('cfg_moduleArea')?.value) || 0,
+            totalWp: parseFloat(document.getElementById('cfg_totalWp')?.value) || 900,
+            // FIXED: Added safe nav element fallback string check to protect execution bounds
+            panelType: document.getElementById('cfg_panelType')?.value || 'bifacial', 
+            selfConsumptionRate: parseFloat(document.getElementById('cfg_selfConsumptionRate')?.value) || 75,
+            currency: document.getElementById('cfg_currency')?.value || '€',
+            investmentCost: parseFloat(document.getElementById('cfg_investmentCost')?.value) || 0,
+            energyPriceCt: parseFloat(document.getElementById('cfg_energyPriceCt')?.value) || 0,
+            baseFee: parseFloat(document.getElementById('cfg_baseFee')?.value) || 0,
+            dailyConsumption: parseFloat(document.getElementById('cfg_dailyConsumption')?.value) || 0,
+            meterStart: parseFloat(document.getElementById('cfg_meterStart')?.value) || 0,
+            meterCurrent: parseFloat(document.getElementById('cfg_meterCurrent')?.value) || 0,
+            tariffStart: document.getElementById('cfg_tariffStart')?.value || '',
+            startDate: document.getElementById('cfg_startDate')?.value || ''
         };
         localStorage.setItem(getStorageKey(), JSON.stringify(config));
         return config;
     }
+
 
     // Auto-detect GPS coordinates via browser API
     function detectLocation() {
@@ -477,7 +486,7 @@
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Weather Context"]);
     
             for (const target of anomalies) {
-                const hUrl = `https://open-meteo.com{globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
                 const hResp = await fetch(hUrl);
                 if (!hResp.ok) continue;
                 const hData = await hResp.json();
