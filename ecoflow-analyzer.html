@@ -711,8 +711,9 @@ console.log("🧹 Target data cleanup complete!");
                         }
                         weatherCount++;
                     } 
-                    // 3. Low output despite low clouds or high max radiation peak -> Structural issue
-                    else if (avgClouds <= 35 || maxPeak > 600) {
+                    // 3. TRUE SHADOW ANOMALY (FIXED: Shifted from OR to AND)
+                    // High output potential under verified clear skies, but absolute efficiency failed.
+                    else if (avgClouds <= 45 && maxPeak > 600) {
                         explanation = "☀️🕶️🔥";
                         weatherTooltip = "Shadow / Thermal Clipping: Clear sky variance. Check array shadows.";
                         cssClass = "bad"; 
