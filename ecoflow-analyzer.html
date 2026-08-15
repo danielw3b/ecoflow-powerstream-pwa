@@ -579,7 +579,45 @@ console.log("🧹 Target data cleanup complete!");
             if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
                 tariffDaysCounter++; 
             }
-        
+    
+            // --- Inside the daily loop of analyzeDevice ---
+            let diagnosis = "⭐⭐";
+            let cssClass = "good";
+            let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
+            const dynamicThreshold = baseEfficiencyThreshold * tempLossFactor;
+    
+            const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
+            const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
+    
+            // UPDATE 1: Absolute catch filter for zero/covered panels on sunny days
+            if (realYieldWh <= 50 && totalSolarEnergyWh >= 4000) { 
+                diagnosis = "❌ 🛑"; cssClass = "bad"; 
+                fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked. Panels may be covered.";
+            } 
+            else if (isWlanHang) { 
+                diagnosis = "⚠️ 📶"; cssClass = "warn"; 
+                fullTextExplanation = "WLAN Buffer Lag: High solar radiation detected but near-zero data transmitted.";
+            } 
+            else if (isCriticalFail) { 
+                diagnosis = "❌ 🛑"; cssClass = "bad"; 
+                fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked.";
+            } 
+            else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
+                diagnosis = "⭐⭐⭐"; cssClass = "good"; 
+                fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
+            } 
+            // UPDATE 2: Protect low-light/overcast days from falling into performance warnings
+            else if (efficiency < dynamicThreshold) {
+                if (totalSolarEnergyWh < 4000 || (expectedSollWh > 0 && (realYieldWh / expectedSollWh) >= 0.75)) {
+                    diagnosis = "☁️ 🌊"; cssClass = "text-dim"; 
+                    fullTextExplanation = "Bad Weather: Overcast diffuse scattering conditions. Normal for this climate state.";
+                } else {
+                    diagnosis = "⭐📉"; cssClass = "warn"; 
+                    fullTextExplanation = "Performance Loss: Real generation falling below temperature-corrected baselines.";
+                }
+            }
+  
+            /*
             // --- Inside the daily loop of analyzeDevice ---
             let diagnosis = "⭐⭐";
             let cssClass = "good";
@@ -607,7 +645,7 @@ console.log("🧹 Target data cleanup complete!");
                     diagnosis = "⭐📉"; cssClass = "warn"; 
                     fullTextExplanation = "Performance Loss: Real generation falling below temperature-corrected baselines.";
                 }
-            }
+            }*/
     
             if ((isWlanHang || isCriticalFail || (efficiency < dynamicThreshold && totalSolarEnergyWh >= 4000)) && dateStr !== globalConfig.startDate) {
                 anomalies.push({ date: dateStr, realYieldWh, efficiency, reason: fullTextExplanation });
