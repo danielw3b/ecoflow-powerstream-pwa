@@ -24,8 +24,22 @@
             padding: 20px;
             line-height: 1.5;
         }
+
         h1, h2, h3 { color: #fff; margin-top: 0; }
-        h3 { border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-top: 20px; color: var(--text-dim); font-size: 1rem; }
+        h3 { border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-top: 20px; color: var(--text-dim); font-size: 1rem;}
+
+        h1 { font-size: 1.5rem; }
+        h2 { font-size: 1.2rem; }
+        h3 { font-size: 0.9rem; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-top: 20px; color: var(--text-dim); }
+        
+        /* Upscale title sizes for larger desktop environments */
+        @media (min-width: 850px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            h3 { font-size: 1rem; }
+        }
+
+      
         .container { max-width: 1200px; margin: 0 auto; }
         
         .card { 
@@ -252,6 +266,7 @@
                 </div>
             </div>
 
+            <!-- SECTION 4: Meter & Timeline -->
             <h3>📊 Meter & Timeline</h3>
             <div class="config-row">
                 <div class="form-group">
@@ -266,20 +281,20 @@
                     <label for="cfg_meterCurrent">Meter Current (kWh)</label>
                     <input type="number" step="0.1" id="cfg_meterCurrent" required placeholder="e.g. 46469">
                 </div>
-                <div class="form-group">
-                    <label for="cfg_tariffStart">Tariff Start Date</label>
-                    <input type="date" id="cfg_tariffStart" required>
+                
+                <!-- Self-contained inline layout block to handle multiple inputs + text headers on one line -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_tariffStart">Tariff Start Date</label>
+                        <input type="date" id="cfg_tariffStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_startDate">Analysis Start Date</label>
+                        <input type="date" id="cfg_startDate" required>
+                    </div>
                 </div>
             </div>
-            <div class="config-row">
-                <div class="form-group">
-                    <label for="cfg_startDate">Analysis Start Date</label>
-                    <input type="date" id="cfg_startDate" required>
-                </div>
-                <div class="form-group"></div>
-                <div class="form-group"></div>
-                <div class="form-group"></div>
-            </div>
+
 
             <div style="margin-top: 30px;">
                 <button type="submit" id="runBtn" class="btn-full" style="background: var(--accent);">💾 Save & Run Analysis</button>
@@ -309,18 +324,9 @@
     function initInverters() {
 
 
-// Remove legacy names configuration key
-localStorage.removeItem('ecoflow_custom_names');
-
-// Find and sweep away any intermediate config prefixes without touching core data
-for (let i = localStorage.length - 1; i >= 0; i--) {
-    const key = localStorage.key(i);
-    if (key.startsWith('ecoflow_cfg_')) {
-        localStorage.removeItem(key);
-    }
-}
-console.log("🧹 Target data cleanup complete!");
-
+// Remove the old un-suffixed single analyzer config key
+localStorage.removeItem('ecoflow_analyzer_config');
+console.log("Target data cleanup complete!");
 
       
         const select = document.getElementById('cfg_inverter');
@@ -524,11 +530,11 @@ console.log("🧹 Target data cleanup complete!");
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60; 
         // Efficiency threshold adjusted so your old Garden panels register as healthy (Normal Operation)
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 9.5;
-
         
         let tableRowsHtml = "";
         
-        globalCsvRows.push([`DEVICE: ${sn}`]);
+        //globalCsvRows.push([`DEVICE: ${sn}`]);
+        globalCsvRows.push([`DEVICE: ${sn} / ${friendlyName}`]);
         globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
   
         // 1. Loop through all historical daily records
