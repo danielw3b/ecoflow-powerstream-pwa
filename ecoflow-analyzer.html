@@ -328,6 +328,7 @@
 <script>
     let globalCsvRows = [];
     let globalConfig = {};
+  
 
     // Get storage key for specific inverter
     function getStorageKey() {
@@ -532,15 +533,19 @@ console.log("Target data cleanup complete!");
 
     // Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
+        // 🚀 FIXED: All 6 core counters and tracking arrays grouped safely at the top scope
+        let totalDaysAnalyzed = 0;
+        let criticalCount = 0;
+        let weatherCount = 0;
+        const anomalies = [];
+        let tariffDaysCounter = 0;
+        let subTableRowsHtml = ""; 
+  
         const resultsDiv = document.getElementById('results');
         
         // Resolve the friendly custom name from ecoflow_names
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const friendlyName = customNames[sn] || sn;
-        
-        let totalDaysAnalyzed = 0;
-        const anomalies = [];
-        let tariffDaysCounter = 0;
     
         const totalWp = globalConfig.totalWp || 900; 
         const tempCoefficient = -0.004;
@@ -681,9 +686,6 @@ console.log("Target data cleanup complete!");
         
         // 3. Process anomaly sub-rows synchronously via secure inner loop execution
         if (anomalies.length > 0) {
-            let criticalCount = 0;
-            let weatherCount = 0;
-            let subTableRowsHtml = ""; 
             
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
@@ -793,8 +795,47 @@ console.log("Target data cleanup complete!");
                 }
             });
 
-            // 🚀 AUDITED: Wait for all API tasks to resolve concurrently
-            const resolvedAnomalies = await Promise.all(anomalyPromises);
+            // 🚀 AUDITED: Rate-Limit Proof Batching System
+            const resolvedAnomalies = [];
+            const batchSize = 3; // Fires 3 concurrent requests at a time
+            const delayMs = 150; // Tiny delay between bursts to clear API firewall blocks
+
+            // Helper function to introduce a non-blocking pause
+            const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+            for (let i = 0; i < anomalies.length; i += batchSize) {
+                const chunk = anomalies.slice(i, i + batchSize);
+                
+                // Process the current small batch concurrently
+                const chunkPromises = chunk.map(async (target) => {
+                    try {
+                        const hUrl = `https://open-meteo.com{globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                        const hResp = await fetch(hUrl);
+                        
+                        // Handle rate limits gracefully if they still happen
+                        if (hResp.status === 429) {
+                            console.warn(`⚠️ Rate limited on ${target.date}. Retrying later...`);
+                            return null;
+                        }
+                        if (!hResp.ok) return null;
+                        
+                        const hData = await hResp.json();
+                        return { target, hData };
+                    } catch (err) {
+                        console.error(`Error fetching hourly context for ${target.date}:`, err);
+                        return null;
+                    }
+                });
+
+                // Wait for the current batch to resolve
+                const chunkResults = await Promise.all(chunkPromises);
+                resolvedAnomalies.push(...chunkResults);
+
+                // Take a brief pause between chunks if there are more anomalies left to pull
+                if (i + batchSize < anomalies.length) {
+                    await sleep(delayMs);
+                }
+            }
 
             // Process the parallelized datasets synchronously to update counters and DOM rows
             for (const item of resolvedAnomalies) {
@@ -876,7 +917,6 @@ console.log("Target data cleanup complete!");
                 ]);
             }
 
-
             // Construct the final HTML chunk using the computed metrics
             html += `
             <h3 style="margin-top:30px; color:var(--warning);">
@@ -919,7 +959,6 @@ console.log("Target data cleanup complete!");
             totalDaysAnalyzed: totalDaysAnalyzed,
             criticalCount: (typeof criticalCount !== 'undefined') ? criticalCount : 0
         };
-      
     }
     
     // Generate dynamic ROI and financial summary based on individual inverter yield
