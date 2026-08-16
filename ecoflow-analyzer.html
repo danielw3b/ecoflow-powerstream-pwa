@@ -779,42 +779,26 @@ console.log("Target data cleanup complete!");
                 }
             }*/
 
-            // 🚀 AUDITED: Map anomalies into parallel promises to prevent network waterfalls
-            const anomalyPromises = anomalies.map(async (target) => {
-                try {
-                    const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
-                    const hResp = await fetch(hUrl);
-                    if (!hResp.ok) return null;
-                    const hData = await hResp.json();
-                    
-                    // Return both the downloaded weather metrics and original targets together
-                    return { target, hData };
-                } catch (err) {
-                    console.error(`Error fetching hourly context for ${target.date}:`, err);
-                    return null;
-                }
-            });
-
-            // 🚀 AUDITED: Rate-Limit Proof Batching System
+            // =================================================================
+            // 🚀 BATCHING SYSTEM: Replaces the old duplicate anomalyPromises block completely
+            // =================================================================
             const resolvedAnomalies = [];
-            const batchSize = 3; // Fires 3 concurrent requests at a time
-            const delayMs = 150; // Tiny delay between bursts to clear API firewall blocks
+            const batchSize = 3; 
+            const delayMs = 150; 
 
-            // Helper function to introduce a non-blocking pause
             const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
             for (let i = 0; i < anomalies.length; i += batchSize) {
                 const chunk = anomalies.slice(i, i + batchSize);
                 
-                // Process the current small batch concurrently
                 const chunkPromises = chunk.map(async (target) => {
                     try {
-                        const hUrl = `https://open-meteo.com{globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                        // FIXED: Re-enforced the stable, correct archive-api URL endpoint string parameters
+                        const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
                         const hResp = await fetch(hUrl);
                         
-                        // Handle rate limits gracefully if they still happen
                         if (hResp.status === 429) {
-                            console.warn(`⚠️ Rate limited on ${target.date}. Retrying later...`);
+                            console.warn(`⚠️ Rate limited on ${target.date}. Retrying...`);
                             return null;
                         }
                         if (!hResp.ok) return null;
@@ -827,15 +811,14 @@ console.log("Target data cleanup complete!");
                     }
                 });
 
-                // Wait for the current batch to resolve
                 const chunkResults = await Promise.all(chunkPromises);
                 resolvedAnomalies.push(...chunkResults);
 
-                // Take a brief pause between chunks if there are more anomalies left to pull
                 if (i + batchSize < anomalies.length) {
                     await sleep(delayMs);
                 }
             }
+            // =================================================================
 
             // Process the parallelized datasets synchronously to update counters and DOM rows
             for (const item of resolvedAnomalies) {
