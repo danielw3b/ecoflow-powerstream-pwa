@@ -223,26 +223,35 @@
                 </div>
             </div>
 
+            <!-- SECTION 2: Hardware Parameters -->
             <h3>🛠️ Hardware Parameters</h3>
             <div class="config-row">
-                <div class="form-group">
-                    <label for="cfg_panelType">Panel Technology</label>
-                    <select id="cfg_panelType">
-                        <option value="mono">Standard Monocrystalline</option>
-                        <option value="bifacial" selected>Bifacial (Glass-Glass)</option>
-                    </select>
+                
+                <!-- Group 1: Technology & Self-Consumption (Side-by-Side) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_panelType">Panel Tech</label>
+                        <select id="cfg_panelType">
+                            <option value="mono">Mono</option>
+                            <option value="bifacial" selected>Bifacial</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_selfConsumptionRate">Self-Use Rate (%)</label>
+                        <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="cfg_selfConsumptionRate">Self-Consumption Rate (%)</label>
-                    <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75">
-                </div>
-                <div class="form-group">
-                    <label for="cfg_moduleArea">Total Module Area (m²)</label>
-                    <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
-                </div>
-                <div class="form-group">
-                    <label for="cfg_totalWp">Total Panel Power (Wp)</label>
-                    <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
+
+                <!-- Group 2: Area & Power Peak (Side-by-Side) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_moduleArea">Module Area (m²)</label>
+                        <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_totalWp">Power Peak (Wp)</label>
+                        <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
+                    </div>
                 </div>
             </div>
 
