@@ -779,12 +779,11 @@ console.log("Target data cleanup complete!");
                 }
             }*/
 
-            // =================================================================
-            // 🚀 BATCHING SYSTEM: Replaces the old duplicate anomalyPromises block completely
-            // =================================================================
+            // 🚀 PERFORMANCE PACK: Optimized for fast parallel loading without 429 blocks
             const resolvedAnomalies = [];
-            const batchSize = 3; 
-            const delayMs = 150; 
+            const batchSize = 9; // Upgraded from 3 to 9 concurrent requests per burst
+            const delayMs = 80;  // Dropped from 150ms to 80ms to clear network threads instantly
+
 
             const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
