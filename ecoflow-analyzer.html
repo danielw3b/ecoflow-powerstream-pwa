@@ -277,29 +277,30 @@
             <!-- SECTION 4: Meter & Timeline -->
             <h3>📊 Meter & Timeline</h3>
             <div class="config-row">
-                <!-- Group 1: Consumption & Meter Start (Side-by-Side) -->
+                
+                <!-- Group 1: Meter Trackers (Side-by-Side Sequence) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_meterTariffStart">Tariff Start Meter(kWh)</label>
+                        <input type="number" step="0.1" id="cfg_meterTariffStart" required placeholder="e.g. 46406">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_meterCurrent">Meter Current(kWh)</label>
+                        <input type="number" step="0.1" id="cfg_meterCurrent" required placeholder="e.g. 46473">
+                    </div>
+                </div>
+
+                <!-- Group 2: Base Consumption (Side-by-Side to maintain perfect vertical grid alignment) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_consumption">Ø kWh w/o Solar/Day</label>
                         <input type="number" step="0.1" id="cfg_consumption" required placeholder="e.g. 5">
                     </div>
-                    <div class="form-group">
-                        <label for="cfg_meterTariffStart">Tariff Start Meter(kWh)</label>
-                        <input type="number" step="0.1" id="cfg_meterTariffStart" required placeholder="e.g. 46406">
-                    </div>
-                </div>
-
-                <!-- Group 2: Current Meter & Empty Filler (Side-by-Side to align perfectly) -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div class="form-group">
-                        <label for="cfg_meterCurrent">Meter Current(kWh)</label>
-                        <input type="number" step="0.1" id="cfg_meterCurrent" required placeholder="e.g. 46473">
-                    </div>
-                    <!-- Empty placeholder div to keep the 50/50 balance matching the date grid below -->
+                    <!-- Empty placeholder div to preserve the 50/50 block width scaling on mobile -->
                     <div class="form-group"></div>
                 </div>
                 
-                <!-- Group 3: Tariff Start Date & Analysis Start Date (Side-by-Side) -->
+                <!-- Group 3: Timeline Dates (Side-by-Side) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_tariffStart">Tariff Start Date</label>
