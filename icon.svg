@@ -1,1 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/><polygon points="300,40 120,260 250,260 212,472 392,252 262,252" fill="#ffb830"/></svg>
+<svg xmlns="http://w3.org" viewBox="0 0 100 100" width="512" height="512">
+  <!-- Central Main Star -->
+  <polygon points="50,12 60,33 83,36 66,52 70,75 50,64 30,75 34,52 17,36 40,33" fill="#ffb830"/>
+  <!-- Top Left Sparkle -->
+  <path d="M22,22 Q22,12 22,22 Q12,22 22,22 Q22,32 22,22 Q32,22 22,22 Z" fill="#ffe29d"/>
+  <!-- Top Right Sparkle -->
+  <path d="M78,22 Q78,12 78,22 Q68,22 78,22 Q78,32 78,22 Q88,22 78,22 Z" fill="#ffe29d"/>
+  <!-- Bottom Left Sparkle -->
+  <path d="M22,74 Q22,64 22,74 Q12,74 22,74 Q22,84 22,74 Q32,74 22,74 Z" fill="#ffe29d"/>
+  <!-- Bottom Right Sparkle -->
+  <path d="M78,74 Q78,64 78,74 Q68,74 78,74 Q78,84 78,74 Q88,74 78,74 Z" fill="#ffe29d"/>
+</svg>
+
+
+<!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/><polygon points="300,40 120,260 250,260 212,472 392,252 262,252" fill="#ffb830"/></svg>-->
