@@ -532,7 +532,7 @@
         let weatherCount = 0;
         const anomalies = [];
         let tariffDaysCounter = 0;
-        let subTableRowsHtml = ""; 
+        let subTableRowsHtml = "";  
   
         const resultsDiv = document.getElementById('results');
         
@@ -558,6 +558,10 @@
         globalCsvRows.push([`DEVICE: ${sn} / ${friendlyName}`]);
         globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
   
+        // RESOLVE HARDWARE DEPLOYMENT BOUNDARIES ONCE PRIOR TO LOOP
+        const validDates = Object.keys(deviceDaily).filter(d => deviceDaily[d] !== undefined);
+        const firstActiveDate = validDates.length > 0 ? validDates.sort()[0] : null;
+
         // 1. Loop through all historical daily records
         for (let i = 0; i < dates.length; i++) {
             const dateStr = dates[i];
@@ -596,6 +600,9 @@
             }
                 
             // --- Inside the daily loop of analyzeDevice ---
+            // FIXED: Dynamically evaluate if the loop date is prior to first hardware deployment
+            const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
+
             let diagnosis = "⭐⭐";
             let cssClass = "good";
             let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
@@ -604,8 +611,14 @@
             const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
             const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
     
+            // FIXED: Intercept days prior to physical hardware tracking to avoid false positives
+            if (isPreInstallation) {
+                diagnosis = "⏳ 🛠️";
+                cssClass = "text-dim";
+                fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
+            }
             // Catch absolute zero / covered panels on sunny days first
-            if (realYieldWh <= 50 && totalSolarEnergyWh >= 4000) { 
+            else if (realYieldWh <= 50 && totalSolarEnergyWh >= 4000) { 
                 diagnosis = "❌ 🛑"; cssClass = "bad"; 
                 fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked. Panels may be covered.";
             } 
@@ -628,8 +641,8 @@
             }
     
             // Push to anomalies array once to pass down to Table 2 Context evaluation
-            // FIXED: Removed start-date restriction to ensure a universal check across all historical entries
-            if (isWlanHang || isCriticalFail || efficiency < dynamicThreshold) {
+            // FIXED: Prevent pre-installation records from filling the anomaly list
+            if ((isWlanHang || isCriticalFail || efficiency < dynamicThreshold) && !isPreInstallation) {
                 anomalies.push({ 
                     date: dateStr, 
                     realYieldWh, 
