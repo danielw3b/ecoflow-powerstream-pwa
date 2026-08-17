@@ -760,7 +760,7 @@
                 
                 const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
 
-                let explanation = "⛅"; 
+                /*let explanation = "⛅"; 
                 let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
                 let cssClass = "text-dim"; 
 
@@ -795,7 +795,70 @@
                     weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
                     cssClass = "text-dim"; 
                     weatherCount++;       
+                }*/
+
+                let explanation = "⛅"; 
+                let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
+                let cssClass = "text-dim"; 
+                
+                // Calculate the accurate ratio of performance against expected targets
+                const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
+
+                // 1. Hardware complete near-zero generation check
+                if (target.realYieldWh <= 50) {
+                    explanation = "❌";
+                    weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
+                    cssClass = "bad";
+                    criticalCount++;
                 }
+                // 2. Technical Interruption Check (e.g., Grid works, fuse toggles, or structural modifications)
+                // Triggered if clouds are minimal and solar peak is high, but the yield is visibly missing a chunk (15%+)
+                else if (avgClouds <= 45 && maxPeak > 600 && sunHours > 12 && yieldAccuracyRatio < 0.85) {
+                    explanation = "🔌"; // FIXED: Uses plug icon to flag structural/manual circuit shutdowns
+                    weatherTooltip = "Circuit Interruption: Clear skies tracked but hardware went offline temporarily (e.g., grid maintenance).";
+                    cssClass = "warn";
+                    // Note: Intentionally left out of criticalCount to avoid triggering false hardware failure metrics
+                }
+                // 3. Bifacial Return Boost Check
+                // Triggered if the active real production out-performs the theoretical vorderseite-only expectation
+                else if (yieldAccuracyRatio > 1.05) {
+                    explanation = "🚀"; // FIXED: Rockets indicate environmental albedo/rear-side solar gain boosting yields
+                    weatherTooltip = "Bifacial Boost: Rear-side reflections outperforming standard sky-radiation expectations.";
+                    cssClass = "good";
+                }
+                // 4. Weather conditions compliance check
+                else if (yieldAccuracyRatio >= 0.75) {
+                    if (avgClouds > 75 && sunHours < 3) {
+                        explanation = "🌧️"; 
+                        weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
+                    } else {
+                        explanation = "⛅"; 
+                        weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
+                    }
+                    weatherCount++;
+                } 
+                // 5. Clear Sky Array Shadows or Thermal Derating Check
+                // Triggered if the sky is clear (low clouds, high peak radiation) but the hardware yields poorly
+                else if (avgClouds <= 45 && maxPeak > 600) {
+                    explanation = "🧱"; // FIXED: Changed from a misleading sun to sunglasses to visually represent "sun is out, but panels are shaded/blocked"
+                    weatherTooltip = "Shadow / Thermal Clipping: Clear sky anomaly detected. Check for array shadows, dirt, or heat-induced performance drops.";
+                    cssClass = "bad"; 
+                    criticalCount++; 
+                }
+                // 6. Overcast / Mixed profiles fallback (Catching partial afternoon deployments)
+                else {
+                    if (target.realYieldWh < 600 && sunHours > 8 && avgClouds < 70) {
+                        explanation = "🛠️"; // FIXED: Flags late activation hours on the day of setting up the circuit
+                        weatherTooltip = "Partial Day Deployment: System was logged but likely paired late in the afternoon.";
+                        cssClass = "text-dim";
+                    } else {
+                        explanation = "☁️"; 
+                        weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
+                        cssClass = "text-dim"; 
+                        weatherCount++;       
+                    }
+                }
+
 
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
@@ -850,7 +913,7 @@
         html += `
         <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px;">
             <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | 📶 WLAN Lag | ❌ Hardware Fail | ⏳ Pre-Install<br>
-            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Mixed Clouds | ☁️ Cloud Shift | 🌧️ Max Overcast | ☀️ Shadow/Temp | ❌ Hardware Drop<br>
+            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Mixed Clouds | ☁️ Cloud Shift | 🌧️ Max Overcast | 🧱 Shadow/Temp | ❌ Hardware Drop<br>
             <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> 
             Bifacial targets higher base performance ratios (14.0%+) due to rear-side light absorption. 
             Monocrystalline targets an adjusted 9.5% efficiency floor to account for real-world environmental shading dynamics.
@@ -869,14 +932,15 @@
     }
     
     // Generate dynamic ROI and financial summary based on individual inverter yield
-    // Audited: Added parameter signatures to receive counts directly from the controller pipeline
+    // FIXED: Synchronized critical counts and analyzed day loops with active tariff start timestamps
     function renderFinancialReport(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}) {
         const selectedSn = document.getElementById('cfg_inverter').value;
         
-        // Audited: Removed redundant localStorage lookup/parse by using passed variable
         let totalGeneratedWh = 0;
+        const tariffStartDate = new Date(globalConfig.tariffStart);
+
         for (const [dateStr, wh] of Object.entries(deviceDaily)) {
-            if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
+            if (new Date(dateStr) >= tariffStartDate) {
                 totalGeneratedWh += wh;
             }
         }
@@ -895,7 +959,7 @@
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
     
-        // Audited: Core Hardware Efficiency calculation block implementation
+        // FIXED: Dynamically bounded hardware profiling ratios to match active tariff timeline metrics
         const hwEfficiency = totalDaysAnalyzed > 0 
             ? (100 - ((criticalCount / totalDaysAnalyzed) * 100)) 
             : 100;
