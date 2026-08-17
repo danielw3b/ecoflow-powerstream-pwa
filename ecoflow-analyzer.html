@@ -544,8 +544,8 @@
         // Standard Mono drops down to 60% to perfectly match your 125W backyard shading reality
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60; 
         
-        // FIXED: Lowered Mono threshold from 9.5 to 7.0 to prevent healthy spring/angle yields from triggering false losses
-        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 7.0;
+        // FIXED: Lowered Mono threshold from 9.5 to 7.5 to prevent healthy spring/angle yields from triggering false losses
+        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 7.5;
 
         
         let tableRowsHtml = "";
@@ -630,7 +630,7 @@
                 fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked.";
             } 
             else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
-                diagnosis = "☀️"; cssClass = "good"; // FIXED: Green checkmark for peak performance
+                diagnosis = "✅"; cssClass = "good"; // FIXED: Green checkmark for peak performance
                 fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
             } 
             // STRICT METRIC CHECK: If efficiency falls below threshold, it is ALWAYS marked as performance loss
@@ -760,43 +760,52 @@
                 // Calculate the accurate ratio of performance against expected targets
                 const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
 
-                let explanation = "⛅"; 
-                let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
-                let cssClass = "text-dim"; 
+            // Calculate the accurate ratio of performance against expected targets
+            const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
 
-                // 1. Hardware complete near-zero generation check
-                if (target.realYieldWh <= 50) {
-                    explanation = "❌";
-                    weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
-                    cssClass = "bad";
-                    criticalCount++;
-                }
-                // 2. Weather conditions compliance check (Natural cloud cover reduction)
-                else if (yieldAccuracyRatio >= 0.75) {
-                    if (avgClouds > 75 && sunHours < 3) {
-                        explanation = "🌧️"; 
-                        weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
-                    } else {
-                        explanation = "⛅"; 
-                        weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
-                    }
-                    weatherCount++;
-                }
-                // 3. Combined External & Technical Interruption Check
-                // FIXED: Hardened cloud threshold to maximum 30% to prevent mixed sky days (like April 24) from triggering false network/plug alarms.
-                // Triggers strictly on mostly cloudless days with high peak radiation where output is unphysically restricted.
-                else if (avgClouds <= 30 && maxPeak > 600) {
-                    explanation = "🔌📶"; 
-                    weatherTooltip = "External Interruption: High sun and clear skies confirmed, but local yield was restricted. (Possible causes: Fixed site shadowing, router/repeater disconnects, or test-phase relocation swaps).";
-                    cssClass = "warn"; // Warning classification preserves system hardware metrics
-                }
-                // 4. Regular Overcast Fallback
-                else {
-                    explanation = "☁️"; 
-                    weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
-                    cssClass = "text-dim"; 
-                    weatherCount++;       
-                }
+            let explanation = "⛅"; 
+            let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
+            let cssClass = "text-dim"; 
+
+            // 1. ABSOLUTE SYNCHRONIZATION: Force network flag from Table 1
+            if (target.wlanCrash) {
+                explanation = "🔌📶";
+                weatherTooltip = "Network Buffer Lag: High solar radiation confirmed, but transmission logs dropped out.";
+                cssClass = "warn";
+            }
+            // 2. Hardware complete near-zero generation check
+            else if (target.realYieldWh <= 50) {
+                explanation = "❌";
+                weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
+                cssClass = "bad";
+                criticalCount++;
+            }
+            // 3. Heavy Weather/Max Overcast Check
+            else if (avgClouds > 75 && sunHours < 3) {
+                explanation = "🌧️"; 
+                weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
+                weatherCount++;
+            }
+            // 4. Regular Weather compliance check
+            else if (yieldAccuracyRatio >= 0.75) {
+                explanation = "⛅"; 
+                weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
+                weatherCount++;
+            }
+            // 5. Combined External & Technical Interruption Check (Clear Sky Drop)
+            // REVERTED: Strict 30% boundary to perfectly isolate genuine technical & structural anomalies
+            else if (avgClouds <= 30 && maxPeak > 600) {
+                explanation = "🔌📶"; 
+                weatherTooltip = "External Interruption: High sun and clear skies confirmed, but local yield was restricted.";
+                cssClass = "warn"; 
+            }
+            // 6. Overcast Fallback / Moderate Diffuse Light
+            else {
+                explanation = "☁️"; 
+                weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
+                cssClass = "text-dim"; 
+                weatherCount++;       
+            }
 
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
@@ -847,10 +856,10 @@
 
         }
         
-        // 4. Inject standard UI legend box with balanced color indicators and scientific methodology descriptions
+        // 4. Inject standard UI legend box with balanced solar indicators and scientific methodology descriptions
         html += `
-        <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px;">
-            <strong>📋 System Indicators:</strong> ☀️ Optimal | 🟢 Normal | 🟠 Loss | 🔌📶 Interruption | ❌ Hardware Fail | ⏳ Pre-Install<br>
+        <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px; margin-top: 15px; border-top: 1px solid var(--border);">
+            <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | 🔌📶 Interruption | ❌ Hardware Fail | ⏳ Pre-Install<br>
             <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Mixed Clouds | ☁️ Cloud Shift | 🌧️ Max Overcast | 🔌📶 External Interruption (Clear Skies &lt;=30% Clouds) | ❌ Hardware Drop<br>
             <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> 
             The separation of open satellite data into direct (beam) and diffuse sky irradiance values follows the empirical regression principles established by 
@@ -858,8 +867,10 @@
             This mathematical proxy allows shading configurations to be simulated accurately across fixed panel arrays without requiring live local pyranometers.<br>
             <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> 
             Bifacial targets higher base performance ratios (14.0%+) due to rear-side light absorption. 
-            Standard Mono targets an adjusted 9.5% efficiency floor to account for real-world environmental shading dynamics (e.g., Garden layout limitations).
+            Standard Mono targets an adjusted 7.5 to 9.5 efficiency floor to account for real-world environmental shading dynamics.
         </div></div>`;
+
+
        
         // Write directly into DOM and instantly bind the global count context
         resultsDiv.innerHTML = html;
