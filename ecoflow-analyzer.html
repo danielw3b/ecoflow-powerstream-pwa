@@ -769,14 +769,7 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 2. Technical Interruption Check (Severe Circuit Disconnection)
-                // HARDENED BOUNDARY: Only flags a plug icon if the yield is almost entirely wiped out (<15%) during absolute clear peak hours (May event)
-                else if (avgClouds <= 45 && maxPeak > 600 && sunHours > 12 && yieldAccuracyRatio < 0.15) {
-                    explanation = "🔌"; 
-                    weatherTooltip = "Circuit Interruption: Clear skies tracked but hardware was verified offline (e.g., grid works).";
-                    cssClass = "warn";
-                }
-                // 3. Weather conditions compliance check
+                // 2. Weather conditions compliance check (Natural cloud cover reduction)
                 else if (yieldAccuracyRatio >= 0.75) {
                     if (avgClouds > 75 && sunHours < 3) {
                         explanation = "🌧️"; 
@@ -787,22 +780,15 @@
                     }
                     weatherCount++;
                 }
-                // 4. Signal Lag / Local Network Disconnect Check (Catching brief router dropouts)
-                // FIXED BOUNDARY: Triggered if skies are clear but yield drops moderately (between 35% and 75%) due to missing logger frames
-                else if (avgClouds <= 45 && maxPeak > 600 && yieldAccuracyRatio >= 0.35) {
-                    explanation = "📶"; 
-                    weatherTooltip = "Network Buffer Lag: Clear skies confirmed, but local repeater dropouts caused incomplete PWA data logging.";
-                    cssClass = "warn"; 
+                // 3. Combined External & Technical Interruption Check
+                // FIXED: Hardened cloud threshold to maximum 30% to prevent mixed sky days (like April 24) from triggering false network/plug alarms.
+                // Triggers strictly on mostly cloudless days with high peak radiation where output is unphysically restricted.
+                else if (avgClouds <= 30 && maxPeak > 600) {
+                    explanation = "🔌📶"; 
+                    weatherTooltip = "External Interruption: High sun and clear skies confirmed, but local yield was restricted. (Possible causes: Fixed site shadowing, router/repeater disconnects, or test-phase relocation swaps).";
+                    cssClass = "warn"; // Warning classification preserves system hardware metrics
                 }
-                // 5. Structural Shadowing or Heat-Induced Thermal Derating Check
-                // FIXED BOUNDARY: Reached safely now if clear-sky generation falls below 35%, pinpointing severe physical layout blockages
-                else if (avgClouds <= 45 && maxPeak > 600) {
-                    explanation = "🧱"; 
-                    weatherTooltip = "Shadow / Thermal Clipping: Clear sky anomaly detected. Check for structural array shadows, dirt, or heat-induced drops.";
-                    cssClass = "bad"; 
-                    criticalCount++; 
-                }
-                // 6. Overcast Fallback
+                // 4. Regular Overcast Fallback
                 else {
                     explanation = "☁️"; 
                     weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
