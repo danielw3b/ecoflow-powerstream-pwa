@@ -603,7 +603,7 @@
             // FIXED: Dynamically evaluate if the loop date is prior to first hardware deployment
             const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
 
-            let diagnosis = "⭐⭐";
+            let diagnosis = "😐"; // FIXED: Standardized to a single neutral icon for normal operation
             let cssClass = "good";
             let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
             const dynamicThreshold = baseEfficiencyThreshold * tempLossFactor;
@@ -613,30 +613,30 @@
     
             // FIXED: Intercept days prior to physical hardware tracking to avoid false positives
             if (isPreInstallation) {
-                diagnosis = "⏳ 🛠️";
+                diagnosis = "⏳"; // FIXED: Condensed pre-installation period to a single icon
                 cssClass = "text-dim";
                 fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
             }
             // Catch absolute zero / covered panels on sunny days first
             else if (realYieldWh <= 50 && totalSolarEnergyWh >= 4000) { 
-                diagnosis = "❌ 🛑"; cssClass = "bad"; 
+                diagnosis = "🛑"; cssClass = "bad"; // FIXED: Condensed critical error indicator to a single icon
                 fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked. Panels may be covered.";
             } 
             else if (isWlanHang) { 
-                diagnosis = "⚠️ 📶"; cssClass = "warn"; 
+                diagnosis = "📶"; cssClass = "warn"; // FIXED: Condensed WLAN buffer lag indicator to a single icon
                 fullTextExplanation = "WLAN Buffer Lag: High solar radiation detected but near-zero data transmitted.";
             } 
             else if (isCriticalFail) { 
-                diagnosis = "❌ 🛑"; cssClass = "bad"; 
+                diagnosis = "🛑"; cssClass = "bad"; 
                 fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked.";
             } 
             else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
-                diagnosis = "⭐⭐⭐"; cssClass = "good"; 
+                diagnosis = "🤩"; cssClass = "good"; // FIXED: Standardized to a single excited icon for optimal output
                 fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
             } 
             // STRICT METRIC CHECK: If efficiency falls below threshold, it is ALWAYS marked as performance loss
             else if (efficiency < dynamicThreshold) {
-                diagnosis = "⭐📉"; cssClass = "warn"; 
+                diagnosis = "😞"; cssClass = "warn"; // FIXED: Standardized to a single disappointed icon for performance loss
                 fullTextExplanation = "Performance Loss: Real generation falling below temperature-corrected baselines.";
             }
     
@@ -760,13 +760,13 @@
                 
                 const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
 
-                let explanation = "⛅☁️⛅";
+                let explanation = "⛅"; // FIXED: Standardized to a single icon for alternating cloud profiles
                 let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
                 let cssClass = "text-dim"; 
 
                 // 1. Hardware complete near-zero generation check
                 if (target.realYieldWh <= 50) {
-                    explanation = "❌ 🛑";
+                    explanation = "🛑"; // FIXED: Condensed hardware drop to match your main table error icon
                     weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
                     cssClass = "bad";
                     criticalCount++;
@@ -774,24 +774,24 @@
                 // 2. Weather conditions compliance check
                 else if (yieldAccuracyRatio >= 0.75) {
                     if (avgClouds > 75 && sunHours < 3) {
-                        explanation = "☁️☁️☁️";
+                        explanation = "🌧️"; // FIXED: Standardized to a single heavy cloud/rain icon for max overcast
                         weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
                     } else {
-                        explanation = "⛅☁️⛅";
+                        explanation = "⛅"; // FIXED: Kept clean single icon formatting matching default fallback
                         weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
                     }
                     weatherCount++;
                 } 
                 // 3. Clear Sky Array Shadows Check
                 else if (avgClouds <= 45 && maxPeak > 600) {
-                    explanation = "☀️🕶️🔥";
+                    explanation = "☀️"; // FIXED: Condensed tracking shadow/thermal variations to a single sun icon
                     weatherTooltip = "Shadow / Thermal Clipping: Clear sky variance. Check array shadows.";
                     cssClass = "bad"; 
                     criticalCount++; 
                 }
                 // 4. Overcast / Mixed profiles fallback
                 else {
-                    explanation = "⛅☁️☁️"; 
+                    explanation = "☁️"; // FIXED: Standardized high diffuse light under dense sheets to a single solid cloud icon
                     weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
                     cssClass = "text-dim"; 
                     weatherCount++;       
@@ -846,12 +846,16 @@
 
         }
         
-        // 4. Inject standard UI legend box and push full content block to DOM
+        // 4. Inject standard UI legend box with mobile-ready indicators and system descriptions
         html += `
-        <div class="legend-box">
-            <strong>📋 System Indicators:</strong> ⭐⭐⭐ Optimal | ⭐⭐ Normal | ⭐📉 Loss | ⚠️ 📶 WLAN | ❌ 🛑 Fail<br>
-            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅☁️⛅ Mixed Clouds | ⛅☁️☁️ Cloud Shift | ☁️☁️☁️ Max Overcast | ☀️🕶️🔥 Shadow/Temp | ❌ 🛑 Hardware Drop
+        <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px;">
+            <strong>📋 System Indicators:</strong> 🤩 Optimal | 😐 Normal | 😞 Loss | 📶 WLAN Lag | 🛑 Hardware Fail | ⏳ Pre-Install<br>
+            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Mixed Clouds | ☁️ Cloud Shift | 🌧️ Max Overcast | ☀️ Shadow/Temp | 🛑 Hardware Drop<br>
+            <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> 
+            Bifacial targets higher base performance ratios (14.0%+) due to rear-side light absorption. 
+            Standard Mono targets an adjusted 9.5% efficiency floor to account for real-world environmental shading dynamics (e.g., Garden layout limitations).
         </div></div>`;
+
         
         // Write directly into DOM and instantly bind the global count context
         resultsDiv.innerHTML = html;
@@ -932,8 +936,9 @@
         const link = document.createElement("a");
         link.href = url;
         
-        // FIXED: Added safe template fallback values to protect filename integrity if config is blank
-        const inverterName = globalConfig.inverter || "Unknown_Device";
+        // FIXED: Query DOM element directly to guarantee accurate file name parameters even if config is unmapped
+        const inverterSelect = document.getElementById('cfg_inverter');
+        const inverterName = inverterSelect && inverterSelect.value ? inverterSelect.value : "Unknown_Device";
         const startDateStr = globalConfig.startDate || "All_Time";
         
         link.download = `Solar_Analysis_${inverterName}_${startDateStr}.csv`;
