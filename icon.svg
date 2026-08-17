@@ -1,19 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
-  <!-- Central Main Star (Slightly more compact to give sparkles more room to breathe) -->
-  <polygon points="50,16 59,35 80,38 65,52 69,73 50,63 31,73 35,52 20,38 41,35" fill="#ffb830"/>
+  <!-- Central Main Star -->
+  <polygon points="50,15 59,34 80,37 65,52 68,73 50,63 32,73 35,52 20,37 41,34" fill="#ffb830"/>
   
-  <!-- Top Left Sparkle (Ultra-sharp needle design for micro-scaling) -->
-  <polygon points="20,8 21.5,18.5 32,20 21.5,21.5 20,32 18.5,21.5 8,20 18.5,18.5" fill="#ffe29d"/>
+  <!-- Top Left Sparkle (Organic & Nestled Close) -->
+  <path d="M 26,26 C 26,20 25,18 23,18 C 21,18 20,20 20,26 C 20,32 21,34 23,34 C 25,34 26,32 26,26 Z" fill="#ffe29d"/>
+  <path d="M 23,23 C 29,23 31,22 31,20 C 31,18 29,17 23,17 C 17,17 15,18 15,20 C 15,22 17,23 23,23 Z" fill="#ffe29d"/>
   
-  <!-- Top Right Sparkle (Ultra-sharp needle design for micro-scaling) -->
-  <polygon points="80,8 81.5,18.5 92,20 81.5,21.5 80,32 78.5,21.5 68,20 78.5,18.5" fill="#ffe29d"/>
+  <!-- Top Right Sparkle (Organic & Nestled Close) -->
+  <path d="M 80,26 C 80,20 79,18 77,18 C 75,18 74,20 74,26 C 74,32 75,34 77,34 C 79,34 80,32 80,26 Z" fill="#ffe29d"/>
+  <path d="M 77,23 C 83,23 85,22 85,20 C 85,18 83,17 77,17 C 71,17 69,18 69,20 C 69,22 71,23 77,23 Z" fill="#ffe29d"/>
   
-  <!-- Bottom Left Sparkle (Ultra-sharp needle design for micro-scaling) -->
-  <polygon points="20,68 21.5,78.5 32,80 21.5,81.5 20,92 18.5,81.5 8,80 18.5,78.5" fill="#ffe29d"/>
+  <!-- Bottom Left Sparkle (Organic & Nestled Close) -->
+  <path d="M 26,74 C 26,68 25,66 23,66 C 21,66 20,68 20,74 C 20,80 21,82 23,82 C 25,82 26,80 26,74 Z" fill="#ffe29d"/>
+  <path d="M 23,71 C 29,71 31,70 31,68 C 31,66 29,65 23,65 C 17,65 15,66 15,68 C 15,70 17,71 23,71 Z" fill="#ffe29d"/>
   
-  <!-- Bottom Right Sparkle (Ultra-sharp needle design for micro-scaling) -->
-  <polygon points="80,68 81.5,78.5 92,80 81.5,81.5 80,92 78.5,81.5 68,80 78.5,78.5" fill="#ffe29d"/>
+  <!-- Bottom Right Sparkle (Organic & Nestled Close) -->
+  <path d="M 80,74 C 80,68 79,66 77,66 C 75,66 74,68 74,74 C 74,80 75,82 77,82 C 79,82 80,80 80,74 Z" fill="#77,71 C 83,71 85,70 85,68 C 85,66 83,65 77,65 C 71,65 69,66 69,68 C 69,70 71,71 77,71 Z" fill="#ffe29d"/>
 </svg>
+
 
 
 
