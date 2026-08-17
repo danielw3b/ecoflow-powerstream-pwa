@@ -757,7 +757,7 @@
                 
                 const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                 const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-                
+                // Calculate the accurate ratio of performance against expected targets
                 const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
 
                 /*let explanation = "⛅"; 
@@ -802,7 +802,7 @@
                 let cssClass = "text-dim"; 
                 
                 // Calculate the accurate ratio of performance against expected targets
-                const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
+                //const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
 
                 // 1. Hardware complete near-zero generation check
                 if (target.realYieldWh <= 50) {
