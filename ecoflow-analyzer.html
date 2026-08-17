@@ -543,8 +543,10 @@
         // Dynamic hardware profiling: Bifacial stays at peak unshaded ratio (80%)
         // Standard Mono drops down to 60% to perfectly match your 125W backyard shading reality
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60; 
-        // Efficiency threshold adjusted so your old Garden panels register as healthy (Normal Operation)
-        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 9.5;
+        
+        // FIXED: Lowered Mono threshold from 9.5 to 7.0 to prevent healthy spring/angle yields from triggering false losses
+        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 7.0;
+
         
         let tableRowsHtml = "";
         
