@@ -836,29 +836,30 @@
                         weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
                     }
                     weatherCount++;
-                } 
-                // 5. Clear Sky Array Shadows or Thermal Derating Check
-                // Triggered if the sky is clear (low clouds, high peak radiation) but the hardware yields poorly
+                }
+
+                // 5. Clear Sky Array Shadows Check
                 else if (avgClouds <= 45 && maxPeak > 600) {
-                    explanation = "🧱"; // FIXED: Changed from a misleading sun to sunglasses to visually represent "sun is out, but panels are shaded/blocked"
-                    weatherTooltip = "Shadow / Thermal Clipping: Clear sky anomaly detected. Check for array shadows, dirt, or heat-induced performance drops.";
+                    explanation = "🧱"; 
+                    weatherTooltip = "Shadow / Thermal Clipping: Clear sky anomaly detected. Check array shadows.";
                     cssClass = "bad"; 
                     criticalCount++; 
                 }
-                // 6. Overcast / Mixed profiles fallback (Catching partial afternoon deployments)
+                // 6. Overcast / Mixed profiles fallback (With hardened physical deployment boundaries)
                 else {
-                    if (target.realYieldWh < 600 && sunHours > 8 && avgClouds < 70) {
-                        explanation = "🛠️"; // FIXED: Flags late activation hours on the day of setting up the circuit
+                    // FIXED: Hardened the threshold. Only flag setup days if the sun was blasting (>700 W/m² and low clouds <40%), 
+                    // otherwise it is strictly a natural thick cloud cover profile.
+                    if (target.realYieldWh < 600 && sunHours > 8 && avgClouds < 40 && maxPeak > 700) {
+                        explanation = "🛠️";
                         weatherTooltip = "Partial Day Deployment: System was logged but likely paired late in the afternoon.";
                         cssClass = "text-dim";
                     } else {
-                        explanation = "☁️"; 
+                        explanation = "☁️"; // FIXED: July 20th safely resolves here now as a natural heavy cloud layer
                         weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
                         cssClass = "text-dim"; 
                         weatherCount++;       
                     }
                 }
-
 
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
