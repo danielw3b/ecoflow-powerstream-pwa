@@ -800,9 +800,6 @@
                 let explanation = "⛅"; 
                 let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
                 let cssClass = "text-dim"; 
-                
-                // Calculate the accurate ratio of performance against expected targets
-                //const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
 
                 // 1. Hardware complete near-zero generation check
                 if (target.realYieldWh <= 50) {
@@ -811,22 +808,14 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 2. Technical Interruption Check (e.g., Grid works, fuse toggles, or structural modifications)
-                // Triggered if clouds are minimal and solar peak is high, but the yield is visibly missing a chunk (15%+)
-                else if (avgClouds <= 45 && maxPeak > 600 && sunHours > 12 && yieldAccuracyRatio < 0.85) {
-                    explanation = "🔌"; // FIXED: Uses plug icon to flag structural/manual circuit shutdowns
-                    weatherTooltip = "Circuit Interruption: Clear skies tracked but hardware went offline temporarily (e.g., grid maintenance).";
+                // 2. Technical Interruption Check (Severe Circuit Disconnection)
+                // HARDENED BOUNDARY: Only flags a plug icon if the yield is almost entirely wiped out (<15%) during absolute clear peak hours (May event)
+                else if (avgClouds <= 45 && maxPeak > 600 && sunHours > 12 && yieldAccuracyRatio < 0.15) {
+                    explanation = "🔌"; 
+                    weatherTooltip = "Circuit Interruption: Clear skies tracked but hardware was verified offline (e.g., grid works).";
                     cssClass = "warn";
-                    // Note: Intentionally left out of criticalCount to avoid triggering false hardware failure metrics
                 }
-                // 3. Bifacial Return Boost Check
-                // Triggered if the active real production out-performs the theoretical vorderseite-only expectation
-                else if (yieldAccuracyRatio > 1.05) {
-                    explanation = "🚀"; // FIXED: Rockets indicate environmental albedo/rear-side solar gain boosting yields
-                    weatherTooltip = "Bifacial Boost: Rear-side reflections outperforming standard sky-radiation expectations.";
-                    cssClass = "good";
-                }
-                // 4. Weather conditions compliance check
+                // 3. Weather conditions compliance check
                 else if (yieldAccuracyRatio >= 0.75) {
                     if (avgClouds > 75 && sunHours < 3) {
                         explanation = "🌧️"; 
@@ -836,25 +825,22 @@
                         weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
                     }
                     weatherCount++;
-                }
-
-                // 5. Clear Sky Array Shadows Check
+                } 
+                // 4. Signal Lag / Local Network Disconnect Check (Catching brief router dropouts)
+                // Triggered if the sky is clear, but yield accuracy is dropped moderately due to local repeater data lags
                 else if (avgClouds <= 45 && maxPeak > 600) {
-                    explanation = "🧱"; 
-                    weatherTooltip = "Shadow / Thermal Clipping: Clear sky anomaly detected. Check array shadows.";
-                    cssClass = "bad"; 
-                    criticalCount++; 
+                    explanation = "📶"; 
+                    weatherTooltip = "Network Buffer Lag: Clear skies confirmed, but local repeater dropouts caused incomplete PWA data logging.";
+                    cssClass = "warn"; 
                 }
-                // 6. Overcast / Mixed profiles fallback (With hardened physical deployment boundaries)
+                // 5. Overcast / Mixed profiles fallback
                 else {
-                    // FIXED: Hardened the threshold. Only flag setup days if the sun was blasting (>700 W/m² and low clouds <40%), 
-                    // otherwise it is strictly a natural thick cloud cover profile.
                     if (target.realYieldWh < 600 && sunHours > 8 && avgClouds < 40 && maxPeak > 700) {
                         explanation = "🛠️";
                         weatherTooltip = "Partial Day Deployment: System was logged but likely paired late in the afternoon.";
                         cssClass = "text-dim";
                     } else {
-                        explanation = "☁️"; // FIXED: July 20th safely resolves here now as a natural heavy cloud layer
+                        explanation = "☁️"; 
                         weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
                         cssClass = "text-dim"; 
                         weatherCount++;       
