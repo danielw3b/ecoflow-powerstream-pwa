@@ -2,22 +2,19 @@
   <!-- Central Main Star -->
   <polygon points="50,15 59,34 80,37 65,52 68,73 50,63 32,73 35,52 20,37 41,34" fill="#ffb830"/>
   
-  <!-- Top Left Sparkle -->
-  <path d="M 26,26 C 26,20 25,18 23,18 C 21,18 20,20 20,26 C 20,32 21,34 23,34 C 25,34 26,32 26,26 Z" fill="#ffe29d"/>
-  <path d="M 23,23 C 29,23 31,22 31,20 C 31,18 29,17 23,17 C 17,17 15,18 15,20 C 15,22 17,23 23,23 Z" fill="#ffe29d"/>
+  <!-- Top Left Sparkle (Sleek 4-pointed Diamond Star) -->
+  <polygon points="24,14 26,22 34,24 26,26 24,34 22,26 14,24 22,22" fill="#ffe29d"/>
   
-  <!-- Top Right Sparkle -->
-  <path d="M 80,26 C 80,20 79,18 77,18 C 75,18 74,20 74,26 C 74,32 75,34 77,34 C 79,34 80,32 80,26 Z" fill="#ffe29d"/>
-  <path d="M 77,23 C 83,23 85,22 85,20 C 85,18 83,17 77,17 C 71,17 69,18 69,20 C 69,22 71,23 77,23 Z" fill="#ffe29d"/>
+  <!-- Top Right Sparkle (Sleek 4-pointed Diamond Star) -->
+  <polygon points="76,14 78,22 86,24 78,26 76,34 74,26 66,24 74,22" fill="#ffe29d"/>
   
-  <!-- Bottom Left Sparkle -->
-  <path d="M 26,74 C 26,68 25,66 23,66 C 21,66 20,68 20,74 C 20,80 21,82 23,82 C 25,82 26,80 26,74 Z" fill="#ffe29d"/>
-  <path d="M 23,71 C 29,71 31,70 31,68 C 31,66 29,65 23,65 C 17,65 15,66 15,68 C 15,70 17,71 23,71 Z" fill="#ffe29d"/>
+  <!-- Bottom Left Sparkle (Sleek 4-pointed Diamond Star) -->
+  <polygon points="24,66 26,74 34,76 26,78 24,86 22,78 14,76 22,74" fill="#ffe29d"/>
   
-  <!-- Bottom Right Sparkle -->
-  <path d="M 80,74 C 80,68 79,66 77,66 C 75,66 74,68 74,74 C 74,80 75,82 77,82 C 79,82 80,80 80,74 Z" fill="#ffe29d"/>
-  <path d="M 77,71 C 83,71 85,70 85,68 C 85,66 83,65 77,65 C 71,65 69,66 69,68 C 69,70 71,71 77,71 Z" fill="#ffe29d"/>
+  <!-- Bottom Right Sparkle (Sleek 4-pointed Diamond Star) -->
+  <polygon points="76,66 78,74 86,76 78,78 76,86 74,78 66,76 74,74" fill="#ffe29d"/>
 </svg>
+
 
 
 
