@@ -757,55 +757,53 @@
                 const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                 const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
 
+
                 // Calculate the accurate ratio of performance against expected targets
                 const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
-
-            // Calculate the accurate ratio of performance against expected targets
-            const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
-
-            let explanation = "⛅"; 
-            let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
-            let cssClass = "text-dim"; 
-
-            // 1. ABSOLUTE SYNCHRONIZATION: Force network flag from Table 1
-            if (target.wlanCrash) {
-                explanation = "🔌📶";
-                weatherTooltip = "Network Buffer Lag: High solar radiation confirmed, but transmission logs dropped out.";
-                cssClass = "warn";
-            }
-            // 2. Hardware complete near-zero generation check
-            else if (target.realYieldWh <= 50) {
-                explanation = "❌";
-                weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
-                cssClass = "bad";
-                criticalCount++;
-            }
-            // 3. Heavy Weather/Max Overcast Check
-            else if (avgClouds > 75 && sunHours < 3) {
-                explanation = "🌧️"; 
-                weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
-                weatherCount++;
-            }
-            // 4. Regular Weather compliance check
-            else if (yieldAccuracyRatio >= 0.75) {
-                explanation = "⛅"; 
-                weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
-                weatherCount++;
-            }
-            // 5. Combined External & Technical Interruption Check (Clear Sky Drop)
-            // REVERTED: Strict 30% boundary to perfectly isolate genuine technical & structural anomalies
-            else if (avgClouds <= 30 && maxPeak > 600) {
-                explanation = "🔌📶"; 
-                weatherTooltip = "External Interruption: High sun and clear skies confirmed, but local yield was restricted.";
-                cssClass = "warn"; 
-            }
-            // 6. Overcast Fallback / Moderate Diffuse Light
-            else {
-                explanation = "☁️"; 
-                weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
-                cssClass = "text-dim"; 
-                weatherCount++;       
-            }
+    
+                let explanation = "⛅"; 
+                let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
+                let cssClass = "text-dim"; 
+    
+                // 1. ABSOLUTE SYNCHRONIZATION: Force network flag from Table 1
+                if (target.wlanCrash) {
+                    explanation = "🔌📶";
+                    weatherTooltip = "Network Buffer Lag: High solar radiation confirmed, but transmission logs dropped out.";
+                    cssClass = "warn";
+                }
+                // 2. Hardware complete near-zero generation check
+                else if (target.realYieldWh <= 50) {
+                    explanation = "❌";
+                    weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
+                    cssClass = "bad";
+                    criticalCount++;
+                }
+                // 3. Heavy Weather/Max Overcast Check
+                else if (avgClouds > 75 && sunHours < 3) {
+                    explanation = "🌧️"; 
+                    weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
+                    weatherCount++;
+                }
+                // 4. Regular Weather compliance check
+                else if (yieldAccuracyRatio >= 0.75) {
+                    explanation = "⛅"; 
+                    weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
+                    weatherCount++;
+                }
+                // 5. Combined External & Technical Interruption Check (Clear Sky Drop)
+                // REVERTED: Strict 30% boundary to perfectly isolate genuine technical & structural anomalies
+                else if (avgClouds <= 30 && maxPeak > 600) {
+                    explanation = "🔌📶"; 
+                    weatherTooltip = "External Interruption: High sun and clear skies confirmed, but local yield was restricted.";
+                    cssClass = "warn"; 
+                }
+                // 6. Overcast Fallback / Moderate Diffuse Light
+                else {
+                    explanation = "☁️"; 
+                    weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
+                    cssClass = "text-dim"; 
+                    weatherCount++;       
+                }
 
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
