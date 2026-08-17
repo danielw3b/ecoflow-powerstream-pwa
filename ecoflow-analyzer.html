@@ -338,13 +338,6 @@
         
     // Initialize or populate inverters dropdown list with custom user alias names
     function initInverters() {
-
-
-// Remove the old un-suffixed single analyzer config key
-localStorage.removeItem('ecoflow_analyzer_config');
-console.log("Target data cleanup complete!");
-
-      
         const select = document.getElementById('cfg_inverter');
         if (!select) return;
     
@@ -635,7 +628,8 @@ console.log("Target data cleanup complete!");
             }
     
             // Push to anomalies array once to pass down to Table 2 Context evaluation
-            if ((isWlanHang || isCriticalFail || efficiency < dynamicThreshold) && dateStr !== globalConfig.startDate) {
+            // FIXED: Removed start-date restriction to ensure a universal check across all historical entries
+            if (isWlanHang || isCriticalFail || efficiency < dynamicThreshold) {
                 anomalies.push({ 
                     date: dateStr, 
                     realYieldWh, 
@@ -644,6 +638,7 @@ console.log("Target data cleanup complete!");
                     reason: fullTextExplanation 
                 });
             }
+
     
             tableRowsHtml += `<tr>
                 <td>${dateStr}</td>
@@ -689,95 +684,6 @@ console.log("Target data cleanup complete!");
             
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
-
-            // Loop through anomalies first to compute metrics and assemble rows dynamically
-            /*for (const target of anomalies) {
-                try {
-                    const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
-                    const hResp = await fetch(hUrl);
-                    if (!hResp.ok) continue;
-                    const hData = await hResp.json();
-                    
-                    let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
-                    for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
-                        if (j >= 6 && j <= 20) {
-                            cloudSum += hData.hourly.cloud_cover[j];
-                            daylightHours++;
-                        }
-                        sunSeconds += hData.hourly.sunshine_duration[j];
-                        if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
-                    }
-                    
-                    const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
-                    const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-                    
-                    // SCIENTIFIC EVALUATION: Check performance relative to weather target model
-                    const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
-
-                    let explanation = "⛅☁️⛅";
-                    let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
-                    let cssClass = "text-dim"; 
-
-                    // 1. Check if hardware dropped entirely / covered panels on sunny day
-                    if (target.realYieldWh <= 50) {
-                        explanation = "❌ 🛑";
-                        weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
-                        cssClass = "bad";
-                        criticalCount++;
-                    }
-                    // 2. If the panels track targets accurately (>=75%), underperformance is pure weather
-                    else if (yieldAccuracyRatio >= 0.75) {
-                        if (avgClouds > 75 && sunHours < 3) {
-                            explanation = "☁️☁️☁️";
-                            weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
-                        } else {
-                            explanation = "⛅☁️⛅";
-                            weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
-                        }
-                        weatherCount++;
-                    } 
-                    // 3. TRUE SHADOW ANOMALY (FIXED: Shifted from OR to AND)
-                    // High output potential under verified clear skies, but absolute efficiency failed.
-                    else if (avgClouds <= 45 && maxPeak > 600) {
-                        explanation = "☀️🕶️🔥";
-                        weatherTooltip = "Shadow / Thermal Clipping: Clear sky variance. Check array shadows.";
-                        cssClass = "bad"; 
-                        criticalCount++; 
-                    }
-                    // 4. Fallback default for bright, highly overcast or mixed cloud profiles
-                    else {
-                        explanation = "⛅☁️☁️"; 
-                        weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
-                        cssClass = "text-dim"; // Changes color style from yellow warn to muted weather style
-                        weatherCount++;       // FIXED: Increments weather bucket instead of criticalCount++
-                    }
-
-                    subTableRowsHtml += `<tr>
-                        <td>${target.date}</td>
-                        <td>${(target.realYieldWh/1000).toFixed(2)}</td>
-                        <td class="bad">${target.efficiency.toFixed(1)}%</td>
-                        <td>${avgClouds}%</td>
-                        <td>${sunHours} h</td>
-                        <td>${maxPeak}</td>
-                        <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
-                    </tr>`;
-                    
-                    // UNIVERSAL STANDARD: Pure comma-separated format with double-quoted metrics
-                    globalCsvRows.push([
-                        `"${target.date}"`, 
-                        `"${(target.realYieldWh/1000).toFixed(2)}"`, 
-                        `"${target.efficiency.toFixed(1)}"`, 
-                        `"${avgClouds}"`, 
-                        `"${sunHours.toString()}"`, 
-                        `"${maxPeak}"`, 
-                        `"${explanation}"`
-                    ]);
-
-
-                } catch (err) {
-                    console.error("Error fetching hourly context:", err);
-                }
-            }*/
 
             // 🚀 PERFORMANCE PACK: Optimized for fast parallel loading without 429 blocks
             const resolvedAnomalies = [];
@@ -914,15 +820,17 @@ console.log("Target data cleanup complete!");
                 </table>
             </div>`;
 
-            // 📊 INSERTED SUMMARY ROWS FOR CSV EXPORT
+            // INSERTED SUMMARY ROWS FOR CSV EXPORT
             globalCsvRows.push([]); // Blank spacer line
             globalCsvRows.push(["OVERALL ANALYSIS SUMMARY"]);
             globalCsvRows.push([
-                `Efficiency Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`,
+                // FIXED: Updated label from 'Efficiency Ratio' to 'Anomaly Ratio' to reflect true dataset distribution
+                `Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`,
                 `Critical Issues: ${criticalCount}`,
                 `Weather Context: ${weatherCount}`
             ]);
             globalCsvRows.push([]); // Blank spacer line
+
         }
         
         // 4. Inject standard UI legend box and push full content block to DOM
@@ -943,59 +851,6 @@ console.log("Target data cleanup complete!");
         };
     }
     
-    // Generate dynamic ROI and financial summary based on individual inverter yield
-    /*function renderFinancialReport() {
-        // 1. Calculate total real generation for this specific inverter during the active tariff period
-        const selectedSn = document.getElementById('cfg_inverter').value;
-        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-        const deviceDaily = dailyStorage[selectedSn] || {};
-        
-        let totalGeneratedWh = 0;
-        for (const [dateStr, wh] of Object.entries(deviceDaily)) {
-            if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
-                totalGeneratedWh += wh;
-            }
-        }
-        const totalGeneratedKwh = totalGeneratedWh / 1000;
-    
-        // 2. Apply the self-consumption rate (default to 100% if not set via UI)
-        const selfConsumptionRate = globalConfig.selfConsumptionRate !== undefined ? globalConfig.selfConsumptionRate : 100;
-        const savedKwh = totalGeneratedKwh * (selfConsumptionRate / 100);
-        
-        // FIXED: Maps to the new updated explicit config schema keys to prevent NaN errors
-        const energyPrice = globalConfig.energyPrice || 0;
-        const investment = globalConfig.investment || 0;
-        const consumption = globalConfig.consumption || 0;
-        const cur = globalConfig.currency || '€';
-    
-        // 3. Financial calculations adjusted to use the corrected layout variable signatures
-        const savingsNet = savedKwh * (energyPrice / 100);
-        const theoryDemand = window.tariffDaysCounter * consumption;
-        const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
-        const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
-    
-        let html = `<div class="card" style="border-color: var(--accent); margin-top: 20px;">
-            <h2 style="color: var(--accent);">💰 Financial & ROI Report</h2>
-            <table>
-                <tr><th>Metric</th><th>Value</th><th>Context</th></tr>
-                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td>Since current tariff start (${globalConfig.tariffStart})</td></tr>
-                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td>Output generated under THIS tariff period</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Saved since ${globalConfig.tariffStart}</td></tr>
-                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
-                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td>Cash saved by this inverter</td></tr>
-                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${cur}${investment} investment</td></tr>
-            </table>
-        </div>`;
-        
-        document.getElementById('results').innerHTML += html;
-        
-        globalCsvRows.push(["FINANCIAL REPORT"]);
-        globalCsvRows.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
-        globalCsvRows.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
-        globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
-        globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
-    }*/
-
     // Generate dynamic ROI and financial summary based on individual inverter yield
     // Audited: Added parameter signatures to receive counts directly from the controller pipeline
     function renderFinancialReport(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}) {
