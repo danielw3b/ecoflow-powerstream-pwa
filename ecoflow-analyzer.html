@@ -628,7 +628,7 @@
                 fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked.";
             } 
             else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
-                diagnosis = "✅"; cssClass = "good"; // FIXED: Green checkmark for peak performance
+                diagnosis = "☀️"; cssClass = "good"; // FIXED: Green checkmark for peak performance
                 fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
             } 
             // STRICT METRIC CHECK: If efficiency falls below threshold, it is ALWAYS marked as performance loss
@@ -848,7 +848,7 @@
         // 4. Inject standard UI legend box with balanced color indicators and scientific methodology descriptions
         html += `
         <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px;">
-            <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | 🔌📶 Interruption | ❌ Hardware Fail | ⏳ Pre-Install<br>
+            <strong>📋 System Indicators:</strong> ☀️ Optimal | 🟢 Normal | 🟠 Loss | 🔌📶 Interruption | ❌ Hardware Fail | ⏳ Pre-Install<br>
             <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Mixed Clouds | ☁️ Cloud Shift | 🌧️ Max Overcast | 🔌📶 External Interruption (Clear Skies &lt;=30% Clouds) | ❌ Hardware Drop<br>
             <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> 
             The separation of open satellite data into direct (beam) and diffuse sky irradiance values follows the empirical regression principles established by 
