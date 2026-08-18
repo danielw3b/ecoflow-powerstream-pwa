@@ -5,207 +5,215 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoFlow Solar & Weather Analyzer</title>
     <style>
-        :root {
-            --bg: #060c1a;
-            --panel: #0d182b;
-            --text: #e0f0ff;
-            --text-dim: #8b9eb3;
-            --accent: #2ecc71;
-            --accent-hover: #27ae60;
-            --danger: #e74c3c;
-            --warning: #f1c40f;
-            --border: rgba(107, 138, 170, 0.2);
-        }
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            line-height: 1.5;
-        }
-
-        /* Unified Typography Styles */
-        h1, h2, h3 { color: #fff; margin-top: 0; }
-        h1 { font-size: 1.5rem; }
-        h2 { font-size: 1.2rem; }
-        h3 { 
-            font-size: 0.9rem; 
-            border-bottom: 1px solid var(--border); 
-            padding-bottom: 5px; 
-            margin-top: 20px; 
-            color: var(--text-dim); 
-        }
-        
-        /* Desktop Responsive Typography */
-        @media (min-width: 850px) {
-            h1 { font-size: 2rem; }
-            h2 { font-size: 1.5rem; }
-            h3 { font-size: 1rem; }
-        }
-      
-        .container { max-width: 1200px; margin: 0 auto; }
-        
-        .card { 
-            background: var(--panel); 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            padding: 20px; 
-            margin-bottom: 20px; 
-        }
-        
-        .table-scroll-frame {
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            margin-top: 15px;
-            position: relative;
-            overflow-x: auto;
-        }
-        
-        /* Grid Layout Blocks */
-        .grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-            margin-bottom: 15px; 
-        }
-        @media (min-width: 600px) {
-            .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-        }
-        
-        .form-group { display: flex; flex-direction: column; }
-        .full-width-row { grid-column: span 2; }
-        
-        label { 
-            font-size: 0.85rem; 
-            color: var(--text-dim); 
-            margin-bottom: 5px; 
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-        }
-        input, select { 
-            background: var(--bg); 
-            border: 1px solid var(--border); 
-            color: var(--text); 
-            padding: 6px 10px; 
-            border-radius: 4px; 
-            font-family: monospace; 
-            width: 100%; 
-            box-sizing: border-box; 
-            height: 34px; 
-        }
-        input:focus, select:focus { outline: 1px solid var(--accent); }
-        
-        /* Button Elements */
-        button {
-            background: var(--accent); color: white; border: none; padding: 12px 20px;
-            font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s;
-        }
-        button:hover { background: var(--accent-hover); }
-        button:disabled { background: var(--text-dim); cursor: not-allowed; }
-        .btn-secondary { background: #3498db; }
-        .btn-secondary:hover { background: #2980b9; }
-        .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
-
-        .btn-icon:hover {
-            background: rgba(107, 138, 170, 0.25) !important;
-            border-color: var(--accent) !important;
-            cursor: pointer;
-        }
-
-        /* Config Form Container Alignment */
-        .config-row {
-            display: grid;
-            grid-template-columns: 1fr; 
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-        @media (min-width: 480px) {
-            .config-row { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (min-width: 850px) {
-            .config-row { grid-template-columns: repeat(4, 1fr); }
-            .config-row > div[style*="display: grid"] { grid-column: span 2; }
-        }
-
-        /* Global Data Tables Styling */
-        table { 
-            width: 100%; 
-            border-collapse: separate; 
-            border-spacing: 0;
-        }
-        th, td { 
-            padding: 10px 6px; 
-            text-align: left; 
-            border-bottom: 1px solid var(--border); 
-            font-size: 0.82rem; 
-            word-break: break-word; 
-        }
-        th { 
-            color: var(--text-dim); 
-            font-weight: normal; 
-            position: sticky; 
-            top: 0; 
-            background-color: var(--panel); 
-            z-index: 10; 
-            box-shadow: inset 0 -1px 0 var(--border); 
-        }
-        tr:hover { background: rgba(255,255,255,0.02); }
-
-        @media (min-width: 600px) {
-            th, td { padding: 10px; font-size: 0.9rem; }
-            table td:first-child, table th:first-child { white-space: nowrap; }
-        }
-
-        /* Diagnostic States & Utility Elements */
-        .good { color: var(--accent); }
-        .bad { color: var(--danger); }
-        .warn { color: var(--warning); }
-        .text-dim { color: var(--text-dim); }
-        
-        .legend-box {
-            margin-top: 20px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 0.82rem;
-            color: var(--text-dim);
-            line-height: 1.6;
-        }
-        .legend-box strong { color: #fff; }
-        #results { margin-top: 30px; }
-        .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
-
-        /* Accordion UI Customization */
-        details {
-            width: 100%;
-        }
-        summary {
-            cursor: pointer;
-            list-style: none;
-            user-select: none;
-        }
-        summary::-webkit-details-marker {
-            display: none;
-        }
-        .accordion-content {
-            background: rgba(0, 0, 0, 0.25);
-            padding: 12px;
-            border-top: 1px dashed var(--border);
-            margin-top: 5px;
-            border-radius: 4px;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            background: rgba(255,255,255,0.1);
-        }
+            :root {
+                --bg: #060c1a;
+                --panel: #0d182b;
+                --text: #e0f0ff;
+                --text-dim: #8b9eb3;
+                --accent: #2ecc71;
+                --accent-hover: #27ae60;
+                --danger: #e74c3c;
+                --warning: #f1c40f;
+                --border: rgba(107, 138, 170, 0.2);
+            }
+            body {
+                font-family: system-ui, -apple-system, sans-serif;
+                background-color: var(--bg);
+                color: var(--text);
+                margin: 0;
+                padding: 20px;
+                line-height: 1.5;
+            }
+    
+            /* Unified Typography Styles */
+            h1, h2, h3 { color: #fff; margin-top: 0; }
+            h1 { font-size: 1.5rem; }
+            h2 { font-size: 1.2rem; }
+            h3 { 
+                font-size: 0.9rem; 
+                border-bottom: 1px solid var(--border); 
+                padding-bottom: 5px; 
+                margin-top: 20px; 
+                color: var(--text-dim); 
+            }
+            
+            /* Desktop Responsive Typography */
+            @media (min-width: 850px) {
+                h1 { font-size: 2rem; }
+                h2 { font-size: 1.5rem; }
+                h3 { font-size: 1rem; }
+            }
+          
+            .container { max-width: 1200px; margin: 0 auto; }
+            
+            .card { 
+                background: var(--panel); 
+                border: 1px solid var(--border); 
+                border-radius: 8px; 
+                padding: 20px; 
+                margin-bottom: 20px; 
+            }
+            
+            /* Table scroll frame container for vertical and horizontal scrolling */
+            .table-scroll-frame {
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                margin-top: 15px;
+                position: relative;
+                overflow-x: auto;
+                overflow-y: auto;
+                max-height: 70vh; /* Ensures vertical scrolling with sticky header */
+            }
+            
+            /* Grid Layout Blocks */
+            .grid { 
+                display: grid; 
+                grid-template-columns: 1fr 1fr; 
+                gap: 15px; 
+                margin-bottom: 15px; 
+            }
+            @media (min-width: 600px) {
+                .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+            }
+            
+            .form-group { display: flex; flex-direction: column; }
+            .full-width-row { grid-column: span 2; }
+            
+            label { 
+                font-size: 0.85rem; 
+                color: var(--text-dim); 
+                margin-bottom: 5px; 
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+            }
+            input, select { 
+                background: var(--bg); 
+                border: 1px solid var(--border); 
+                color: var(--text); 
+                padding: 6px 10px; 
+                border-radius: 4px; 
+                font-family: monospace; 
+                width: 100%; 
+                box-sizing: border-box; 
+                height: 34px; 
+            }
+            input:focus, select:focus { outline: 1px solid var(--accent); }
+            
+            /* Button Elements */
+            button {
+                background: var(--accent); color: white; border: none; padding: 12px 20px;
+                font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s;
+            }
+            button:hover { background: var(--accent-hover); }
+            button:disabled { background: var(--text-dim); cursor: not-allowed; }
+            .btn-secondary { background: #3498db; }
+            .btn-secondary:hover { background: #2980b9; }
+            .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
+    
+            .btn-icon:hover {
+                background: rgba(107, 138, 170, 0.25) !important;
+                border-color: var(--accent) !important;
+                cursor: pointer;
+            }
+    
+            /* Config Form Container Alignment */
+            .config-row {
+                display: grid;
+                grid-template-columns: 1fr; 
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+            @media (min-width: 480px) {
+                .config-row { grid-template-columns: repeat(2, 1fr); }
+            }
+            @media (min-width: 850px) {
+                .config-row { grid-template-columns: repeat(4, 1fr); }
+                .config-row > div[style*="display: grid"] { grid-column: span 2; }
+            }
+    
+            /* Global Data Tables Styling */
+            table { 
+                width: 100%; 
+                border-collapse: separate; 
+                border-spacing: 0;
+            }
+            th, td { 
+                padding: 10px 6px; 
+                text-align: left; 
+                border-bottom: 1px solid var(--border); 
+                font-size: 0.82rem; 
+                word-break: break-word; 
+            }
+            /* Sticky header configuration for table headers */
+            th { 
+                color: var(--text-dim); 
+                font-weight: normal; 
+                position: sticky; 
+                top: 0; 
+                background-color: var(--panel); 
+                z-index: 10; 
+                box-shadow: inset 0 -1px 0 var(--border); 
+            }
+            tr:hover { background: rgba(255,255,255,0.02); }
+    
+            @media (min-width: 600px) {
+                th, td { padding: 10px; font-size: 0.9rem; }
+                table td:first-child, table th:first-child { white-space: nowrap; }
+            }
+    
+            /* Diagnostic States & Utility Elements */
+            .good { color: var(--accent); }
+            .bad { color: var(--danger); }
+            .warn { color: var(--warning); }
+            .text-dim { color: var(--text-dim); }
+            
+            .legend-box {
+                margin-top: 20px;
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.01);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 0.82rem;
+                color: var(--text-dim);
+                line-height: 1.6;
+            }
+            .legend-box strong { color: #fff; }
+            #results { margin-top: 30px; }
+            .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
+    
+            /* Accordion UI Customization for deep-dive inspections */
+            details {
+                width: 100%;
+            }
+            summary {
+                cursor: pointer;
+                list-style: none;
+                user-select: none;
+            }
+            summary::-webkit-details-marker {
+                display: none;
+            }
+            details[open] summary {
+                margin-bottom: 6px;
+            }
+            .accordion-content {
+                background: rgba(0, 0, 0, 0.25);
+                padding: 12px;
+                border-top: 1px dashed var(--border);
+                margin-top: 5px;
+                border-radius: 4px;
+            }
+            .badge {
+                display: inline-block;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-weight: bold;
+                background: rgba(255,255,255,0.1);
+            }
     </style>
+
 </head>
 <body>
 
@@ -587,21 +595,27 @@
             });
         });
 
-        // Generate CSV Header
+        // 100% original CSV Header structure restored
         let csvHeader = ["Date", "Radiation (kWh/m2)", "Max Temp (°C)"];
         serials.forEach(sn => {
             const name = customNames[sn] || sn;
-            csvHeader.push(`${name} Yield(kWh)`, `${name} Eff(%)`, `${name} Status`);
+            csvHeader.push(`${name} Expected Soll (kWh)`, `${name} EcoFlow Real (kWh)`, `${name} Efficiency (%)`, `${name} Diagnosis`);
         });
         globalCsvRows.push(["CONSOLIDATED MASTER SOLAR REPORT"]);
         globalCsvRows.push(csvHeader);
 
-        // Render Consolidated Master Table HTML
-        let tableHeaderHtml = `<tr><th>Date</th><th>Radiation</th><th>Temp</th>`;
+        // Render Consolidated Master Table HTML with Sticky Header
+        let tableHeaderHtml = `<thead><tr>
+            <th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">Date</th>
+            <th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">Radiation</th>
+            <th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">Temp</th>`;
+        
         serials.forEach(sn => {
-            tableHeaderHtml += `<th>${customNames[sn] || sn.substring(0,6)}</th>`;
+            const shortName = (customNames[sn] || sn).substring(0, 8);
+            tableHeaderHtml += `<th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">${shortName} (Real/Eff)</th>`;
         });
-        tableHeaderHtml += `<th>System Diagnosis</th><th>Details</th></tr>`;
+        tableHeaderHtml += `<th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">System Diagnosis</th>
+                            <th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">Details</th></tr></thead>`;
 
         let masterRowsHtml = "";
         let totalTariffDays = 0;
@@ -614,9 +628,9 @@
             let statuses = serials.map(sn => rowData.inverters[sn].status);
             
             if (statuses.every(s => s === "❌")) {
-                masterStatusIcon = "❌ (Multi-Outage / Wi-Fi)";
+                masterStatusIcon = "❌ (Multi-Outage)";
             } else if (statuses.includes("❌") && statuses.includes("🟢")) {
-                masterStatusIcon = "⚠️ (Single Circuit Drop / FI)";
+                masterStatusIcon = "⚠️ (Single Drop)";
             } else if (statuses.includes("🟠")) {
                 masterStatusIcon = "🟠 (Partial Loss)";
             }
@@ -628,17 +642,26 @@
 
             serials.forEach(sn => {
                 const inv = rowData.inverters[sn];
-                rowInverterCells += `<td>${inv.status} <span style="font-size:0.8rem;">(${(inv.realYieldWh/1000).toFixed(2)} kWh)</span></td>`;
+                rowInverterCells += `<td>
+                    <div>${inv.status} <strong>${(inv.realYieldWh/1000).toFixed(2)} kWh</strong></div>
+                    <div style="font-size:0.75rem; color:var(--text-dim);">Eff: <span class="${inv.cssClass}">${inv.efficiency.toFixed(1)}%</span> | Soll: ${(inv.expectedSollWh/1000).toFixed(2)}</div>
+                </td>`;
                 
                 accordionDetailsHtml += `
-                    <div style="margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+                    <div style="margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px; font-size:0.85rem;">
                         <strong>${inv.friendlyName}:</strong> ${(inv.realYieldWh/1000).toFixed(2)} kWh | 
                         Expected: ${(inv.expectedSollWh/1000).toFixed(2)} kWh | 
                         Eff: <span class="${inv.cssClass}">${inv.efficiency.toFixed(1)}%</span> | 
                         Status: ${inv.status} (${inv.diagText})
                     </div>`;
 
-                csvRow.push(`"${(inv.realYieldWh/1000).toFixed(2)}"`, `"${inv.efficiency.toFixed(1)}"`, `"${inv.status}"`);
+                // Original CSV data row sequence
+                csvRow.push(
+                    `"${(inv.expectedSollWh/1000).toFixed(2)}"`, 
+                    `"${(inv.realYieldWh/1000).toFixed(2)}"`, 
+                    `"${inv.efficiency.toFixed(1)}"`, 
+                    `"${inv.status}"`
+                );
             });
 
             globalCsvRows.push(csvRow);
@@ -652,8 +675,8 @@
                     <td>${masterStatusIcon}</td>
                     <td>
                         <details>
-                            <summary><button style="padding:2px 8px; font-size:0.75rem;">🔍 View</button></summary>
-                            <div class="accordion-content">
+                            <summary style="cursor:pointer; font-size:0.8rem; padding:4px 8px; background:rgba(255,255,255,0.05); border-radius:4px; display:inline-block;">🔍 View</summary>
+                            <div class="accordion-content" style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:4px;">
                                 ${accordionDetailsHtml}
                             </div>
                         </details>
@@ -664,15 +687,17 @@
         let html = `<div class="card">
             <h2>📡 Consolidated Master Solar Overview</h2>
             <h3>All Connected Circuits & Diagnostics <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${serials.length} Devices Active</span></h3>
-            <div class="table-scroll-frame">
-                <table>
+            <div class="table-scroll-frame" style="max-height: 70vh; overflow-y: auto; overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
                     ${tableHeaderHtml}
-                    ${masterRowsHtml}
+                    <tbody>
+                        ${masterRowsHtml}
+                    </tbody>
                 </table>
             </div>
             
-            <div class="legend-box">
-                <strong>📋 Master Diagnosis Icons:</strong> 🟢 All Circuits Operational | ❌ Multi-Outage (Wi-Fi/Cloud Drop) | ⚠️ Single Circuit Fault (FI/Inverter Drop) | 🟠 High Shading/Loss | ⏳ Pre-Install
+            <div class="legend-box" style="margin-top:10px; font-size:0.85rem;">
+                <strong>📋 Master Diagnosis Icons:</strong> 🟢 All Operational | ❌ Multi-Outage | ⚠️ Single Circuit Fault | 🟠 Partial Loss | ⏳ Pre-Install
             </div>
         </div>`;
 
