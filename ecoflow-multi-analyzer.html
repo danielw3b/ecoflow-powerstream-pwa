@@ -173,6 +173,22 @@
               overflow-x: auto; /* Only allow horizontal overflow if screen is too narrow */
             }
 
+
+            /* Ensure the headers stack properly when scrolling */
+            .sticky-header-weather {
+              position: sticky;
+              top: 0;
+              z-index: 100;
+              background: var(--panel);
+            }
+      
+            .sticky-header-inverter {
+              position: sticky;
+              top: 38px; /* Adjust this value if your header row height differs */
+              z-index: 90;
+              background: var(--panel);
+            }      
+
             /* Diagnostic States & Utility Elements */
             .good { color: var(--accent); }
             .bad { color: var(--danger); }
@@ -615,118 +631,74 @@
         globalCsvRows.push(["CONSOLIDATED MASTER SOLAR REPORT"]);
         globalCsvRows.push(csvHeader);
 
-        // Render Consolidated Master Table HTML with Sticky Header
-        let tableHeaderHtml = `<thead><tr>
-            <th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">Date</th>
-            <th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">Radiation</th>
-            <th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">Temp</th>`;
+        // Render Consolidated Master Table HTML with Sticky Header for weather and inverters
+        let tableHtml = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+                <!-- Row 1: Weather Header (Sticky top: 0) -->
+                <tr class="sticky-header-weather">
+                    <th>Date</th><th>Temp °C</th><th>Rad. kWh/m²</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak</th>
+                </tr>
+                <!-- Row 2: Inverter Header (Sticky top: 35px approx) -->
+                <tr class="sticky-header-inverter">
+                    <th>Inverter</th><th>Exp. Soll</th><th>Real Yield</th><th>Eff. %</th><th>Diagnosis</th>
+                </tr>
+            </thead>
+            <tbody>`;
         
-        serials.forEach(sn => {
-            const shortName = (customNames[sn] || sn).substring(0, 8);
-            tableHeaderHtml += `<th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">${shortName} (Real/Eff)</th>`;
-        });
-        tableHeaderHtml += `<th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">System Diagnosis</th>
-                            <th style="position: sticky; top: 0; z-index: 10; background: var(--card-bg, #1e1e1e);">Details</th></tr></thead>`;
-
-        let masterRowsHtml = "";
-        let totalTariffDays = 0;
-
         Object.keys(masterDates).sort().reverse().forEach(dateStr => {
             const rowData = masterDates[dateStr];
-            
-            // Tariff days check
-            const isTariffActive = new Date(dateStr) >= new Date(activeConfig.tariffStart);
-            if (isTariffActive) totalTariffDays++;
-
-            let masterStatusIcon = "🟢 (Optimal)";
-            let statuses = serials.map(sn => rowData.inverters[sn].status);
-            
-            if (statuses.every(s => s === "❌")) {
-                masterStatusIcon = "❌ (Multi-Outage)";
-            } else if (statuses.includes("❌") && statuses.includes("🟢")) {
-                masterStatusIcon = "⚠️ (Single Drop)";
-            } else if (statuses.includes("🟠")) {
-                masterStatusIcon = "🟠 (Partial Loss)";
-            }
-
-            let csvRow = [
-                `"${dateStr}"`, 
-                `"${rowData.totalRadKwhM2.toFixed(2)}"`, 
-                `"${rowData.dayTemp.toFixed(1)}"`,
-                `"${rowData.dirKwhM2 ? rowData.dirKwhM2.toFixed(2) : '0.00'}"`,
-                `"${rowData.diffKwhM2 ? rowData.diffKwhM2.toFixed(2) : '0.00'}"`,
-                `"${rowData.tempLossFactor ? rowData.tempLossFactor.toFixed(3) : '1.0'}"`
-            ];
-
-            let inverterDetailsList = "";
-
+        
+            // Weather Row (Summary Row 1: Shared environmental data for the day)
+            tableHtml += `
+                <tr style="background: rgba(255,255,255,0.08); font-weight: bold;">
+                    <td>${dateStr}</td>
+                    <td>${rowData.dayTemp.toFixed(1)}</td>
+                    <td>${rowData.totalRadKwhM2.toFixed(2)}</td>
+                    <td>${rowData.clouds || '-'}</td>
+                    <td>${rowData.sunHours || '-'}</td>
+                    <td>${rowData.maxPeak || '-'}</td>
+                </tr>`;
+        
+            // Inverter Rows (Data Row 2+: Individual performance details)
             serials.forEach(sn => {
                 const inv = rowData.inverters[sn];
                 const deviceName = inv.friendlyName || sn;
-
-                // Feste zweite Zeile: Inverter-Spezifika + Diagnose-Feld
-                inverterDetailsList += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px dashed rgba(255,255,255,0.08);">
-                        <div>
-                            <strong style="color: var(--text);">${deviceName}</strong> <span style="font-size:0.8rem;">${inv.status}</span><br>
-                            <span style="font-size:0.75rem; color:var(--text-dim);">Soll: ${(inv.expectedSollWh/1000).toFixed(2)} kWh | Real: ${(inv.realYieldWh/1000).toFixed(2)} kWh | ${inv.diagText}</span>
-                        </div>
-                        <div style="text-align: right;">
-                            <span class="${inv.cssClass}" style="font-weight: bold; font-size: 0.85rem;">${inv.efficiency.toFixed(1)}%</span><br>
-                            <input type="text" placeholder="Diagnose..." style="width: 100px; height: 26px; font-size: 0.75rem; margin-top: 4px;" />
-                        </div>
-                    </div>`;
-
-                csvRow.push(
-                    `"${(inv.expectedSollWh/1000).toFixed(2)}"`, 
-                    `"${(inv.realYieldWh/1000).toFixed(2)}"`, 
-                    `"${inv.efficiency.toFixed(1)}"`, 
-                    `"${inv.status}"`
-                );
+        
+                // Display status icon, device name and automatic diagnostic text
+                tableHtml += `
+                    <tr>
+                        <td>
+                            <span style="margin-right: 5px;">${inv.status}</span>
+                            <strong>${deviceName}</strong>
+                        </td>
+                        <td>${(inv.expectedSollWh/1000).toFixed(2)} kWh</td>
+                        <td>${(inv.realYieldWh/1000).toFixed(2)} kWh</td>
+                        <td class="${inv.cssClass}">${inv.efficiency.toFixed(1)}%</td>
+                        <td style="font-size: 0.85rem; color: var(--text-dim);">${inv.diagText || '-'}</td>
+                    </tr>`;
+                
+                // Track CSV data for export
+                globalCsvRows.push([
+                    dateStr, rowData.totalRadKwhM2, deviceName, inv.realYieldWh/1000, inv.efficiency.toFixed(1)
+                ]);
             });
-
-            globalCsvRows.push(csvRow);
-
-            // Permanente 2-Zeilen-Struktur pro Tag (Ohne Aufklappen)
-            masterRowsHtml += `
-                <div style="border-bottom: 1px solid var(--border); background: var(--panel); padding: 12px 15px; margin-bottom: 8px; border-radius: 6px;">
-                    <!-- Zeile 1: Datum & Alle Umwelt-/Wetterdaten -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
-                        <div style="font-weight: bold; color: var(--text);">${dateStr}</div>
-                        <div style="color: var(--text-dim); font-size: 0.78rem; display: flex; gap: 8px; flex-wrap: wrap;">
-                            <span>Rad: <strong>${rowData.totalRadKwhM2.toFixed(2)}</strong></span>
-                            <span>Dir: <strong>${rowData.dirKwhM2 ? rowData.dirKwhM2.toFixed(2) : '0.00'}</strong></span>
-                            <span>Diff: <strong>${rowData.diffKwhM2 ? rowData.diffKwhM2.toFixed(2) : '0.00'}</strong></span>
-                            <span>Temp: <strong>${rowData.dayTemp.toFixed(1)}°C</strong></span>
-                            <span>Loss: <strong>${rowData.tempLossFactor ? rowData.tempLossFactor.toFixed(3) : '1.0'}</strong></span>
-                        </div>
-                        <div>
-                            <span class="badge" style="background: rgba(255,255,255,0.08); padding: 3px 6px; border-radius: 4px; font-size: 0.75rem;">${masterStatusIcon}</span>
-                        </div>
-                    </div>
-                    <!-- Zeile 2: Inverter-Daten & Diagnose direkt sichtbar -->
-                    <div style="background: rgba(0,0,0,0.2); padding: 8px 10px; border-radius: 4px;">
-                        ${inverterDetailsList}
-                    </div>
-                </div>`;
         });
-
-        let html = `<div class="card" style="padding: 0; overflow: hidden;">
-            <div style="padding: 20px 20px 10px 20px;">
-                <h2>📡 Consolidated Master Solar Overview</h2>
-                <h3>Daily Weather & Inverter Breakdown <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${serials.length} Devices Active</span></h3>
-            </div>
-            <div style="padding: 0 15px;">
-                ${masterRowsHtml}
-            </div>
-            <div class="legend-box" style="margin: 15px; padding: 12px; font-size:0.85rem; background: rgba(0,0,0,0.1); border-radius: 6px;">
-                <strong>📋 Master Diagnosis Icons:</strong> 🟢 Optimal | ❌ Multi-Outage | ⚠️ Single Drop | 🟠 Partial Loss
+        
+        tableHtml += `</tbody></table>`;
+        
+        // Update DOM with table and status legend
+        resultsDiv.innerHTML = `
+        <div class="card" style="padding:0;">
+            ${tableHtml}
+            <div class="legend-box" style="margin: 15px; padding: 10px; font-size: 0.85rem; border-top: 1px solid var(--border);">
+                <strong>📋 Status Reference:</strong> 🟢 Optimal | ❌ Multi-Outage | ⚠️ Single Drop | 🟠 Partial Loss
             </div>
         </div>`;
-
-        resultsDiv.innerHTML = html;
+        
         window.tariffDaysCounter = totalTariffDays;
-
+        
+        // Calculate and render financial report based on consolidated data
         renderConsolidatedFinancialReport(serials, dailyStorage, activeConfig);
     }
 
