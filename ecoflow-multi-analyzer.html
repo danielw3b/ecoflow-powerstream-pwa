@@ -541,6 +541,9 @@
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const resultsDiv = document.getElementById('results');
 
+        // Safe initialization for tariff days counter
+        let totalTariffDays = 0;
+
         // Build master data matrix per date
         const masterDates = {};
         const tempCoefficient = -0.004;
@@ -550,6 +553,11 @@
 
             let totalRadKwhM2 = radSumRaw[idx] / 3.6;
             let dayTemp = maxTempRaw[idx] || 25;
+
+            // Track tariff days accurately
+            if (new Date(dateStr) >= new Date(activeConfig.tariffStart)) {
+                totalTariffDays++;
+            }
 
             // Liu-Jordan Empirical Model
             let diffuseShare = 0.30; 
@@ -570,6 +578,9 @@
                 dirKwhM2,
                 diffKwhM2,
                 tempLossFactor,
+                clouds: 0,        // Clean initial value, updated via Open-Meteo fetch
+                sunHours: 0.0,    // Clean initial value
+                maxPeak: 0,       // Clean initial value
                 inverters: {}
             };
 
@@ -597,15 +608,16 @@
                 let status = "🟢";
                 let cssClass = "good";
                 let diagText = "Normal Operation";
+                let weatherIcon = "⛅";
 
                 if (isPreInstallation) {
-                    status = "⏳"; cssClass = "text-dim"; diagText = "Pre-Installation";
+                    status = "⏳"; cssClass = "text-dim"; diagText = "Pre-Installation"; weatherIcon = "";
                 } else if (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500) {
-                    status = "❌"; cssClass = "bad"; diagText = "System / Data Outage";
+                    status = "❌"; cssClass = "bad"; diagText = "System / Data Outage"; weatherIcon = "🔌📶";
                 } else if (efficiency >= (baseEfficiencyThreshold + 3.5)) {
-                    status = "✅"; cssClass = "good"; diagText = "Optimal Yield";
+                    status = "✅"; cssClass = "good"; diagText = "Optimal Yield"; weatherIcon = "☀️";
                 } else if (efficiency < dynamicThreshold) {
-                    status = "🟠"; cssClass = "warn"; diagText = "Performance Loss";
+                    status = "🟠"; cssClass = "warn"; diagText = "Performance Loss"; weatherIcon = "⛅";
                 }
 
                 masterDates[dateStr].inverters[sn] = {
@@ -617,12 +629,67 @@
                     status,
                     cssClass,
                     diagText,
+                    weatherIcon,
                     isPreInstallation
                 };
             });
         });
 
-        // 100% original CSV Header structure restored
+        // --- ASYNCHRONOUS HOURLY WEATHER FETCH FOR MASTER TABLE ---
+        const dateKeys = Object.keys(masterDates);
+        const batchSize = 4;
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        for (let i = 0; i < dateKeys.length; i += batchSize) {
+            const chunk = dateKeys.slice(i, i + batchSize);
+            
+            const chunkPromises = chunk.map(async (dateStr) => {
+                try {
+                    const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${activeConfig.lat}&longitude=${activeConfig.lon}&start_date=${dateStr}&end_date=${dateStr}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
+                    const hResp = await fetch(hUrl);
+                    if (!hResp.ok) return null;
+                    const hData = await hResp.json();
+                    return { dateStr, hData };
+                } catch (err) {
+                    return null;
+                }
+            });
+
+            const chunkResults = await Promise.all(chunkPromises);
+            
+            chunkResults.forEach(item => {
+                if (!item || !item.hData || !item.hData.hourly) return;
+                const { dateStr, hData } = item;
+                
+                let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
+                for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
+                    if (j >= 6 && j <= 20) {
+                        cloudSum += hData.hourly.cloud_cover[j];
+                        daylightHours++;
+                    }
+                    sunSeconds += hData.hourly.sunshine_duration[j];
+                    if (hData.hourly.shortwave_radiation[j] > maxPeak) {
+                        maxPeak = hData.hourly.shortwave_radiation[j];
+                    }
+                }
+                
+                const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
+                const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
+
+                if (masterDates[dateStr]) {
+                    masterDates[dateStr].clouds = avgClouds;
+                    masterDates[dateStr].sunHours = sunHours;
+                    masterDates[dateStr].maxPeak = maxPeak;
+                }
+            });
+
+            if (i + batchSize < dateKeys.length) {
+                await sleep(100);
+            }
+        }
+        // ----------------------------------------------------------
+
+        // CSV Header structure
         let csvHeader = ["Date", "Radiation (kWh/m2)", "Max Temp (°C)"];
         serials.forEach(sn => {
             const name = customNames[sn] || sn;
@@ -635,13 +702,13 @@
         let tableHtml = `
         <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
             <thead>
-                <!-- Row 1: Weather Header (Sticky top: 0) -->
-                <tr class="sticky-header-weather">
+                <!-- Row 1: Weather Header -->
+                <tr class="sticky-header-weather" style="border-bottom: 2px solid var(--border);">
                     <th>Date</th><th>Temp °C</th><th>Rad. kWh/m²</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak</th>
                 </tr>
-                <!-- Row 2: Inverter Header (Sticky top: 35px approx) -->
-                <tr class="sticky-header-inverter">
-                    <th>Inverter</th><th>Exp. Soll</th><th>Real Yield</th><th>Eff. %</th><th>Diagnosis</th>
+                <!-- Row 2: Inverter Header -->
+                <tr class="sticky-header-inverter" style="border-bottom: 2px solid var(--border);">
+                    <th>Inverter</th><th>Exp. Soll</th><th>Real Yield</th><th>Eff. %</th><th>Diagnosis & Micro-Weather</th>
                 </tr>
             </thead>
             <tbody>`;
@@ -653,19 +720,19 @@
             tableHtml += `
                 <tr style="background: rgba(255,255,255,0.08); font-weight: bold;">
                     <td>${dateStr}</td>
-                    <td>${rowData.dayTemp.toFixed(1)}</td>
-                    <td>${rowData.totalRadKwhM2.toFixed(2)}</td>
-                    <td>${rowData.clouds || '-'}</td>
-                    <td>${rowData.sunHours || '-'}</td>
-                    <td>${rowData.maxPeak || '-'}</td>
+                    <td>${rowData.dayTemp.toFixed(1)} °C</td>
+                    <td>${rowData.totalRadKwhM2.toFixed(2)} kWh/m²</td>
+                    <td>${rowData.clouds !== undefined ? rowData.clouds + '%' : '-'}</td>
+                    <td>${rowData.sunHours !== undefined ? rowData.sunHours + ' h' : '-'}</td>
+                    <td>${rowData.maxPeak !== undefined ? rowData.maxPeak + ' W/m²' : '-'}</td>
                 </tr>`;
         
             // Inverter Rows (Data Row 2+: Individual performance details)
             serials.forEach(sn => {
                 const inv = rowData.inverters[sn];
+                if (!inv) return;
                 const deviceName = inv.friendlyName || sn;
         
-                // Display status icon, device name and automatic diagnostic text
                 tableHtml += `
                     <tr>
                         <td>
@@ -675,7 +742,10 @@
                         <td>${(inv.expectedSollWh/1000).toFixed(2)} kWh</td>
                         <td>${(inv.realYieldWh/1000).toFixed(2)} kWh</td>
                         <td class="${inv.cssClass}">${inv.efficiency.toFixed(1)}%</td>
-                        <td style="font-size: 0.85rem; color: var(--text-dim);">${inv.diagText || '-'}</td>
+                        <td style="font-size: 0.85rem; color: var(--text-dim);">
+                            <span style="font-size: 1rem; margin-right: 4px;">${inv.weatherIcon || ''}</span>
+                            ${inv.diagText || '-'}
+                        </td>
                     </tr>`;
                 
                 // Track CSV data for export
@@ -687,12 +757,13 @@
         
         tableHtml += `</tbody></table>`;
         
-        // Update DOM with table and status legend
+        // Update DOM with table and status & micro-weather legend
         resultsDiv.innerHTML = `
         <div class="card" style="padding:0;">
             ${tableHtml}
             <div class="legend-box" style="margin: 15px; padding: 10px; font-size: 0.85rem; border-top: 1px solid var(--border);">
-                <strong>📋 Status Reference:</strong> 🟢 Optimal | ❌ Multi-Outage | ⚠️ Single Drop | 🟠 Partial Loss
+                <strong>📋 Status Reference:</strong> 🟢 Optimal | ❌ Multi-Outage | ⚠️ Single Drop | 🟠 Partial Loss<br>
+                <strong>🌤️ Micro-Weather:</strong> ☀️ Optimal | ⛅ Partly Cloudy | 🔌📶 Technical/Wi-Fi Drop
             </div>
         </div>`;
         
