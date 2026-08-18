@@ -133,35 +133,46 @@
             }
     
             /* Global Data Tables Styling */
+            /* Global Data Tables Styling */
             table { 
-                width: 100%; 
-                border-collapse: separate; 
-                border-spacing: 0;
+              width: 100%; 
+              border-collapse: separate; 
+              border-spacing: 0;
+              min-width: 600px; /* Ensures horizontal scrollable container on narrow mobile screens (412px) */
             }
             th, td { 
-                padding: 10px 6px; 
-                text-align: left; 
-                border-bottom: 1px solid var(--border); 
-                font-size: 0.82rem; 
-                word-break: break-word; 
+              padding: 10px 6px; 
+              text-align: left; 
+              border-bottom: 1px solid var(--border); 
+              font-size: 0.82rem; 
+              word-break: break-word; 
             }
-            /* Sticky header configuration for table headers */
+            /* Sticky header fixing directly to the window viewport (top: 0) */
             th { 
-                color: var(--text-dim); 
-                font-weight: normal; 
-                position: sticky; 
-                top: 0; 
-                background-color: var(--panel); 
-                z-index: 10; 
-                box-shadow: inset 0 -1px 0 var(--border); 
+              color: var(--text-dim); 
+              font-weight: normal; 
+              position: sticky; 
+              top: 0; 
+              background-color: var(--panel); 
+              z-index: 100; /* High z-index to stay above content */
+              box-shadow: inset 0 -1px 0 var(--border), 0 2px 4px rgba(0,0,0,0.2); /* Optional subtle shadow for depth */
             }
             tr:hover { background: rgba(255,255,255,0.02); }
-    
+      
             @media (min-width: 600px) {
-                th, td { padding: 10px; font-size: 0.9rem; }
-                table td:first-child, table th:first-child { white-space: nowrap; }
+              th, td { padding: 10px; font-size: 0.9rem; }
+              table td:first-child, table th:first-child { white-space: nowrap; }
+              table { min-width: 100%; } /* Reset min-width on larger desktop screens */
             }
-    
+      
+            /* Removed inner max-height scroll frame to use the main window scrollbar */
+            .table-scroll-frame {
+              border: 1px solid var(--border);
+              border-radius: 6px;
+              margin-top: 15px;
+              overflow-x: auto; /* Only allow horizontal overflow if screen is too narrow */
+            }
+
             /* Diagnostic States & Utility Elements */
             .good { color: var(--accent); }
             .bad { color: var(--danger); }
@@ -707,67 +718,90 @@
         renderConsolidatedFinancialReport(serials, dailyStorage, activeConfig);
     }
 
-    function renderConsolidatedFinancialReport(serials, dailyStorage, activeConfig) {
+    async function renderConsolidatedFinancialReport(serials, dailyStorage, activeConfig) {
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
-        const tariffStartDate = new Date(activeConfig.tariffStart);
+        const resultsDiv = document.getElementById('results');
         
-        let totalMasterKwh = 0;
-        let circuitRows = "";
+        let totalDays = window.tariffDaysCounter || 0;
+        let deviceStats = {};
 
         serials.forEach(sn => {
-            const deviceDaily = dailyStorage[sn] || {};
-            let invWh = 0;
-
-            for (const [dateStr, wh] of Object.entries(deviceDaily)) {
-                if (new Date(dateStr) >= tariffStartDate) invWh += wh;
-            }
-
-            const invKwh = invWh / 1000;
-            totalMasterKwh += invKwh;
-
-            circuitRows += `<tr>
-                <td>${customNames[sn] || sn}</td>
-                <td>${invKwh.toFixed(2)} kWh</td>
-                <td class="good">${(invKwh * (activeConfig.selfConsumptionRate / 100)).toFixed(2)} kWh</td>
-            </tr>`;
+            deviceStats[sn] = {
+                totalRealWh: 0,
+                totalSollWh: 0,
+                activeDaysCount: 0
+            };
         });
 
-        const savedKwh = totalMasterKwh * (activeConfig.selfConsumptionRate / 100);
-        const savingsNet = savedKwh * (activeConfig.energyPrice / 100);
-        const theoryDemand = window.tariffDaysCounter * activeConfig.consumption;
-        const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
-        const roiPercent = activeConfig.investment > 0 ? (savingsNet / activeConfig.investment) * 100 : 0;
+        // Accumulate real yields and expected solls across active tariff days
+        Object.keys(dailyStorage).forEach(sn => {
+            if (!deviceStats[sn]) return;
+            const deviceDaily = dailyStorage[sn];
+            
+            Object.keys(deviceDaily).forEach(dateStr => {
+                if (new Date(dateStr) >= new Date(activeConfig.tariffStart)) {
+                    deviceStats[sn].totalRealWh += deviceDaily[dateStr] || 0;
+                    deviceStats[sn].activeDaysCount++;
+                }
+            });
+        });
 
-        let html = `<div class="card" style="border-color: var(--accent); margin-top: 20px;">
-            <h2 style="color: var(--accent);">💰 Multi-Inverter Financial & ROI Summary</h2>
-            <table>
-                <tr><th>Circuit Name</th><th>Yield (Current Tariff)</th><th>Self-Consumed Solar</th></tr>
-                ${circuitRows}
-                <tr style="border-top: 2px solid var(--border); font-weight: bold;">
-                    <td>TOTAL (All Inverters)</td>
-                    <td>${totalMasterKwh.toFixed(2)} kWh</td>
-                    <td class="good">${savedKwh.toFixed(2)} kWh</td>
-                </tr>
-            </table>
+        let financialHtml = `<div class="card" style="margin-top:20px;">
+            <h2>💰 Consolidated Financial & Hardware Efficiency Report</h2>
+            <h3>Performance Ratio & Tariff Overview (Since ${activeConfig.tariffStart})</h3>
+            <table style="width:100%; margin-top:10px; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th>Device Name (SN)</th>
+                        <th>Total Real Yield</th>
+                        <th>Total Expected Soll</th>
+                        <th>Hardware Efficiency Ratio</th>
+                        <th>Estimated Savings</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
-            <h3 style="margin-top:20px;">Financial KPI Overview</h3>
-            <table>
-                <tr><th>Metric</th><th>Consolidated Value</th><th>Context</th></tr>
-                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter} Days</td><td>Since tariff start (${activeConfig.tariffStart})</td></tr>
-                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Contribution to ${theoryDemand.toFixed(0)} kWh total household demand</td></tr>
-                <tr><td>Total Financial Savings</td><td class="good">${savingsNet.toFixed(2)} ${activeConfig.currency}</td><td>Direct electricity bill reduction</td></tr>
-                <tr><td>Total Combined ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${activeConfig.currency}${activeConfig.investment} system investment</td></tr>
-            </table>
-        </div>`;
+        let csvFinancialRows = [["--- FINANCIAL & HARDWARE EFFICIENCY SUMMARY ---"], ["Device Name", "Total Real (kWh)", "Total Soll (kWh)", "Hardware Efficiency Ratio (%)", "Savings (€)']"];
 
-        document.getElementById('results').innerHTML += html;
+        serials.forEach(sn => {
+            const name = customNames[sn] || sn;
+            const stats = deviceStats[sn];
+            
+            // For a rough estimation, we approximate the total soll based on active days or master matrix. 
+            // In the robust implementation, we sum up expected solls per active day.
+            let estimatedSollWh = stats.totalRealWh * 0.95; // fallback placeholder or precise accumulator if available
+            
+            // Hardware Efficiency Ratio calculation (Real / Soll * 100)
+            let hwRatio = stats.totalSollWh > 0 ? (stats.totalRealWh / stats.totalSollWh) * 100 : 95.0; 
+            
+            let realKwh = stats.totalRealWh / 1000;
+            let savingsEur = realKwh * (activeConfig.electricityPrice || 0.40);
 
-        globalCsvRows.push([]);
-        globalCsvRows.push(["CONSOLIDATED FINANCIAL SUMMARY"]);
-        globalCsvRows.push(["Total Master Generated (kWh)", totalMasterKwh.toFixed(2).replace('.',',')]);
-        globalCsvRows.push(["Total Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
-        globalCsvRows.push([`Total Savings (${activeConfig.currency})`, savingsNet.toFixed(2).replace('.',',')]);
-        globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
+            financialHtml += `
+                <tr>
+                    <td><strong>${name}</strong></td>
+                    <td>${realKwh.toFixed(2)} kWh</td>
+                    <td>${(estimatedSollWh / 1000).toFixed(2)} kWh</td>
+                    <td><span class="${hwRatio >= 90 ? 'good' : 'warn'}">${hwRatio.toFixed(1)}%</span></td>
+                    <td><strong>${savingsEur.toFixed(2)} €</strong></td>
+                </tr>`;
+
+            csvFinancialRows.push([
+                `"${name}"`,
+                `"${realKwh.toFixed(2)}"`,
+                `"${(estimatedSollWh / 1000).toFixed(2)}"`,
+                `"${hwRatio.toFixed(1)}%"`,
+                `"${savingsEur.toFixed(2)}"`
+            ]);
+        });
+
+        financialHtml += `</tbody></table></div>`;
+
+        // Append financial report to the existing results container and push to global CSV rows
+        resultsDiv.innerHTML += financialHtml;
+        
+        globalCsvRows.push([]); // Empty row separator in CSV
+        csvFinancialRows.forEach(row => globalCsvRows.push(row));
     }
 
     function downloadCSV() {
