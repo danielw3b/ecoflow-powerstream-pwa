@@ -754,17 +754,18 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 4. Extreme Heat Derating
-                else if (avgClouds <= 35 && maxPeak > 600 && maxTemp >= 33) {
-                    explanation = "🌡️";
-                    weatherTooltip = `Heat Derating: High solar radiation, but thermal efficiency loss due to extreme heat (${maxTemp}°C).`;
-                    cssClass = "warn";
-                }
-                // 5. HEAVY RAIN / EXTREME CLOUDS
+                // 4. HEAVY RAIN / EXTREME CLOUDS: Primary weather limitation
                 else if (avgClouds > 90 && sunHours < 3) {
                     explanation = "🌧️"; 
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
+                }
+                // 5. Extreme Heat Derating: Prioritized thermal limitation if not dominated by extreme cloud cover
+                else if (maxTemp >= 33 && avgClouds < 90) {
+                    explanation = "🌡️";
+                    weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing significant thermal efficiency loss.`;
+                    cssClass = "warn";
+                    weatherCount++; // Wichtig: Hier für die Statistik mitzählen
                 }
                 // 6. SUNSHINE OVERRIDE
                 else if (sunHours >= 10) {
