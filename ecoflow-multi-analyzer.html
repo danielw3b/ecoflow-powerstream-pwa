@@ -648,25 +648,26 @@
 
             let csvRow = [`"${dateStr}"`, `"${rowData.totalRadKwhM2.toFixed(2)}"`, `"${rowData.dayTemp.toFixed(1)}"`];
 
-            let rowInverterCells = "";
-            let accordionDetailsHtml = "";
+            let inverterDetailsList = "";
 
             serials.forEach(sn => {
                 const inv = rowData.inverters[sn];
-                rowInverterCells += `<td>
-                    <div>${inv.status} <strong>${(inv.realYieldWh/1000).toFixed(2)} kWh</strong></div>
-                    <div style="font-size:0.75rem; color:var(--text-dim);">Eff: <span class="${inv.cssClass}">${inv.efficiency.toFixed(1)}%</span> | Soll: ${(inv.expectedSollWh/1000).toFixed(2)}</div>
-                </td>`;
-                
-                accordionDetailsHtml += `
-                    <div style="margin-bottom:6px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px; font-size:0.85rem;">
-                        <strong>${inv.friendlyName}:</strong> ${(inv.realYieldWh/1000).toFixed(2)} kWh | 
-                        Expected: ${(inv.expectedSollWh/1000).toFixed(2)} kWh | 
-                        Eff: <span class="${inv.cssClass}">${inv.efficiency.toFixed(1)}%</span> | 
-                        Status: ${inv.status} (${inv.diagText})
+                const deviceName = inv.friendlyName || sn;
+
+                // Vertikale Inverter-Liste für den aufgeklappten Detailbereich mit Platz für Diagnose
+                inverterDetailsList += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
+                        <div>
+                            <strong>${deviceName}</strong> (${inv.status})<br>
+                            <span style="font-size:0.75rem; color:var(--text-dim);">Real: ${(inv.realYieldWh/1000).toFixed(2)} kWh | Soll: ${(inv.expectedSollWh/1000).toFixed(2)} kWh | ${inv.diagText}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="${inv.cssClass}" style="font-weight: bold;">${inv.efficiency.toFixed(1)}%</span><br>
+                            <input type="text" placeholder="Diagnose..." style="width: 100px; height: 26px; font-size: 0.75rem; margin-top: 4px;" />
+                        </div>
                     </div>`;
 
-                // Original CSV data row sequence
+                // Original CSV data row sequence remains fully intact
                 csvRow.push(
                     `"${(inv.expectedSollWh/1000).toFixed(2)}"`, 
                     `"${(inv.realYieldWh/1000).toFixed(2)}"`, 
@@ -677,37 +678,37 @@
 
             globalCsvRows.push(csvRow);
 
+            // Accordion-Zeile: Klickbar über die gesamte Breite, mit integrierten Wetter- und Inverter-Details
             masterRowsHtml += `
-                <tr>
-                    <td><strong>${dateStr}</strong></td>
-                    <td>${rowData.totalRadKwhM2.toFixed(2)} kWh/m²</td>
-                    <td>${rowData.dayTemp.toFixed(1)} °C</td>
-                    ${rowInverterCells}
-                    <td>${masterStatusIcon}</td>
-                    <td>
-                        <details>
-                            <summary style="cursor:pointer; font-size:0.8rem; padding:4px 8px; background:rgba(255,255,255,0.05); border-radius:4px; display:inline-block;">🔍 View</summary>
-                            <div class="accordion-content" style="margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:4px;">
-                                ${accordionDetailsHtml}
-                            </div>
-                        </details>
-                    </td>
-                </tr>`;
+                <details style="border-bottom: 1px solid var(--border); background: var(--panel);">
+                    <summary style="display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; cursor: pointer; user-select: none;">
+                        <div><strong>${dateStr}</strong></div>
+                        <div style="color: var(--text-dim); font-size: 0.85rem;">
+                            Rad: ${rowData.totalRadKwhM2.toFixed(2)} kWh/m² | Temp: ${rowData.dayTemp.toFixed(1)} °C
+                        </div>
+                        <div>
+                            <span class="badge" style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">${masterStatusIcon}</span>
+                        </div>
+                    </summary>
+                    <div class="accordion-content" style="padding: 15px; background: rgba(0,0,0,0.2);">
+                        <div style="margin-bottom: 12px; font-size: 0.85rem; color: var(--text-dim);">
+                            🌤️ <strong>Day Weather Overview:</strong> Radiation: ${rowData.totalRadKwhM2.toFixed(2)} kWh/m² | Temp: ${rowData.dayTemp.toFixed(1)} °C
+                        </div>
+                        <h3 style="margin-top: 5px; font-size: 0.85rem; color: var(--text-dim); border-bottom: 1px solid var(--border); padding-bottom: 4px;">Inverter Status & Diagnosis</h3>
+                        ${inverterDetailsList}
+                    </div>
+                </details>`;
         });
 
-        let html = `<div class="card">
-            <h2>📡 Consolidated Master Solar Overview</h2>
-            <h3>All Connected Circuits & Diagnostics <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${serials.length} Devices Active</span></h3>
-            <div class="table-scroll-frame" style="max-height: 70vh; overflow-y: auto; overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    ${tableHeaderHtml}
-                    <tbody>
-                        ${masterRowsHtml}
-                    </tbody>
-                </table>
+        let html = `<div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 20px 20px 10px 20px;">
+                <h2>📡 Consolidated Master Solar Overview</h2>
+                <h3>All Connected Circuits & Diagnostics <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${serials.length} Devices Active</span></h3>
             </div>
-            
-            <div class="legend-box" style="margin-top:10px; font-size:0.85rem;">
+            <div>
+                ${masterRowsHtml}
+            </div>
+            <div class="legend-box" style="margin: 15px; padding: 12px; font-size:0.85rem;">
                 <strong>📋 Master Diagnosis Icons:</strong> 🟢 All Operational | ❌ Multi-Outage | ⚠️ Single Circuit Fault | 🟠 Partial Loss | ⏳ Pre-Install
             </div>
         </div>`;
