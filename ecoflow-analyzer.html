@@ -545,7 +545,6 @@
 
         let tableRowsHtml = "";
         
-        //globalCsvRows.push([`DEVICE: ${sn}`]);
         globalCsvRows.push([`DEVICE: ${sn} / ${friendlyName}`]);
         globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
   
@@ -562,8 +561,6 @@
             let totalRadKwhM2 = radSumRaw[i] / 3.6; 
 
             // SCIENTIFIC APPROXIMATION: Liu-Jordan Empirical Clearness Index Model (1960)
-            // This algorithm splits horizontal Global Radiation into Direct (Beam) and Diffuse components
-            // based on the atmospheric transmission profiles established by Benjamin Y. H. Liu and Richard C. Jordan.         
             let diffuseShare = 0.30; 
             if (totalRadKwhM2 < 1.5) diffuseShare = 0.85; 
             else if (totalRadKwhM2 < 3.5) diffuseShare = 0.50; 
@@ -574,7 +571,7 @@
         
             const dayTemp = maxTempRaw[i] || 25;
     
-            // FIXED: Removed tempLossFactor distortion from baseline Soll calculations
+            // Clean baseline calculations without temperature distortion
             const expectedDirectWh = dirKwhM2 * totalWp;
             const expectedDiffuseWh = diffKwhM2 * totalWp * 0.45; 
             let calculatedSollWh = (expectedDirectWh + expectedDiffuseWh) * standardSystemEfficiency;
@@ -584,31 +581,32 @@
             const realYieldWh = deviceDaily[dateStr] || 0;
             
             const totalSolarEnergyWh = totalRadKwhM2 * 1000 * globalConfig.moduleArea;
-            let efficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
+            let rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
+            
+            // Clean rounded efficiency to avoid microscopic floating-point rounding discrepancies
+            let efficiency = Math.round(rawEfficiency * 10) / 10;
     
             if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
                 tariffDaysCounter++; 
             }
                 
             // --- Inside the daily loop of analyzeDevice ---
-            // FIXED: Dynamically evaluate if the loop date is prior to first hardware deployment
             const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
+            const isInstallationDay = firstActiveDate && dateStr === firstActiveDate;
 
-            let diagnosis = "🟢"; // FIXED: Clean green circle for stable, normal operation
+            let diagnosis = "🟢"; 
             let cssClass = "good";
             let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
             
-            // FIXED: Use fixed baseEfficiencyThreshold without temperature bending
             const dynamicThreshold = baseEfficiencyThreshold;
             
-            // 1. Intercept pre-installation days to avoid false failure reports
+            // 1. Intercept pre-installation days
             if (isPreInstallation) {
                 diagnosis = "⏳";
                 cssClass = "text-dim";
                 fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
             }
-            // 2. Total Outage / Data Gap: 
-            // Triggered when yield is below 10% of expected potential despite high solar conditions
+            // 2. Total Outage / Data Gap
             else if (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500) { 
                 diagnosis = "❌"; 
                 cssClass = "bad"; 
@@ -620,8 +618,8 @@
                 cssClass = "good"; 
                 fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
             } 
-            // 4. Performance loss falling below fixed baseline
-            else if (efficiency < dynamicThreshold) {
+            // 4. Performance loss falling strictly below baseline (Gleichstand / exakte Erfüllung bleibt grün!)
+            else if (efficiency < dynamicThreshold && realYieldWh < expectedSollWh) {
                 diagnosis = "🟠"; 
                 cssClass = "warn"; 
                 fullTextExplanation = "Performance Loss: Real generation falling below expected baselines.";
@@ -634,6 +632,7 @@
                     realYieldWh, 
                     expectedYieldWh: expectedSollWh, 
                     efficiency, 
+                    isInstallationDay,
                     reason: fullTextExplanation 
                 });
             }
@@ -647,7 +646,6 @@
                 <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
             </tr>`;
     
-            // UNIVERSAL STANDARD: Pure comma-separated format with double-quoted metrics
             globalCsvRows.push([
                 `"${dateStr}"`, 
                 `"${totalRadKwhM2.toFixed(2)}"`, 
@@ -657,11 +655,9 @@
                 `"${efficiency.toFixed(1)}"`, 
                 `"${diagnosis}"`
             ]);
-
         }
     
-        // 2. Build the main layout HTML container string with the calculation ratio restored
-        // FIXED: Correctly compute and display the dynamic anomaly ratio percentage right next to the sub-header
+        // 2. Build the main layout HTML container string
         const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
   
         let html = `<div class="card">
@@ -673,7 +669,6 @@
                         ${tableRowsHtml}
                     </table>
                 </div>`;
-
             
         globalCsvRows.push([]);
         
@@ -683,11 +678,9 @@
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
 
-            // 🚀 PERFORMANCE PACK: Optimized for fast parallel loading without 429 blocks
             const resolvedAnomalies = [];
-            const batchSize = 4; // Upgraded from 3 to 9, then 4 concurrent requests per burst
-            const delayMs = 120;  // Dropped from 150ms to 80ms, then 120 to clear network threads instantly
-
+            const batchSize = 4;
+            const delayMs = 120;  
 
             const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -696,20 +689,15 @@
                 
                 const chunkPromises = chunk.map(async (target) => {
                     try {
-                        // FIXED: Re-enforced the stable, correct archive-api URL endpoint string parameters
                         const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration&timezone=auto`;
                         const hResp = await fetch(hUrl);
                         
-                        if (hResp.status === 429) {
-                            console.warn(`⚠️ Rate limited on ${target.date}. Retrying...`);
-                            return null;
-                        }
+                        if (hResp.status === 429) return null;
                         if (!hResp.ok) return null;
                         
                         const hData = await hResp.json();
                         return { target, hData };
                     } catch (err) {
-                        console.error(`Error fetching hourly context for ${target.date}:`, err);
                         return null;
                     }
                 });
@@ -721,9 +709,7 @@
                     await sleep(delayMs);
                 }
             }
-            // =================================================================
 
-            // Process the parallelized datasets synchronously to update counters and DOM rows
             for (const item of resolvedAnomalies) {
                 if (!item || !item.hData || !item.hData.hourly) continue;
                 
@@ -742,69 +728,62 @@
                 
                 const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                 const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-
-
-                // Calculate the accurate ratio of performance against expected targets
-                //const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
-                // Extract maxTemp from the target object (adjust property name if needed, e.g., target.temperature)
                 const maxTemp = parseFloat(target.maxTemp || 0);
               
-                // Purely weather-based & temperature-aware context evaluation (Icon assignment only)
                 let explanation = "⛅"; 
                 let weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
                 let cssClass = "text-dim"; 
 
-                // 1. ABSOLUTE SYNCHRONIZATION: Adopt network/Wi-Fi drops from Table 1
-                if (target.wlanCrash) {
+                // 1. Installation / Start-day override (Forces clean network icon on deployment day)
+                if (target.isInstallationDay) {
                     explanation = "🔌📶";
-                    weatherTooltip = "Network Buffer Lag: High radiation confirmed, but transmission protocol aborted.";
+                    weatherTooltip = "Installation Day: System activated mid-day, partial connection and data logging profile.";
                     cssClass = "warn";
                 }
-                // 2. Complete hardware failure: Zero yield despite massive solar radiation (> 600 W/m² peak)
+                // 2. Technical / Connection Drop: Good solar conditions (sun or peak), but yield collapsed
+                else if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
+                    explanation = "🔌📶";
+                    weatherTooltip = `Technical / Connection Drop: Good solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²), but yield collapsed. Likely offline / WLAN issue.`;
+                    cssClass = "warn";
+                    criticalCount++;
+                }
+                // 3. Complete hardware failure: Zero yield despite massive solar radiation
                 else if (target.realYieldWh <= 100 && maxPeak > 600) {
                     explanation = "❌";
                     weatherTooltip = "Hardware Drop: Complete yield failure despite high solar radiation. Check inverter or DC switch.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3. Technical / External drop under high peaks (Yield collapses below 5% expected despite > 600 W/m²)
-                else if (maxPeak > 600 && target.realYieldWh < (target.expectedYieldWh * 0.05)) {
-                    explanation = "🔌📶"; 
-                    weatherTooltip = "Technical Drop: High peak radiation confirmed, but yield collapsed (e.g. Wi-Fi / Inverter lag / System shutdown).";
-                    cssClass = "warn"; 
-                    criticalCount++; 
-                }
-                // 4. Extreme Heat Derating: Ambient >= 33°C causes cell temps >60°C and active inverter derating
+                // 4. Extreme Heat Derating
                 else if (avgClouds <= 35 && maxPeak > 600 && maxTemp >= 33) {
                     explanation = "🌡️";
                     weatherTooltip = `Heat Derating: High solar radiation, but thermal efficiency loss due to extreme heat (${maxTemp}°C).`;
                     cssClass = "warn";
                 }
-                // 5. HEAVY RAIN / EXTREME CLOUDS (Strictly > 90% cloud cover and very low sun)
+                // 5. HEAVY RAIN / EXTREME CLOUDS
                 else if (avgClouds > 90 && sunHours < 3) {
                     explanation = "🌧️"; 
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
                 }
-                // 6. SUNSHINE OVERRIDE: High sun hours (> 10h) guarantees a friendly partly-cloudy icon despite moderate cloud percentages
+                // 6. SUNSHINE OVERRIDE
                 else if (sunHours >= 10) {
                     explanation = "⛅";
                     weatherTooltip = "Partly cloudy with long sunshine duration.";
                     weatherCount++;
                 }
-                // 7. Overcast / High diffuse light (Between 75% and 90% cloud cover)
+                // 7. Overcast / High diffuse light
                 else if (avgClouds >= 75 && maxPeak < 600) {
                     explanation = "☁️"; 
                     weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted sunshine duration.";
                     weatherCount++;       
                 }
-                // 8. General Overcast (>= 60%)
+                // 8. General Overcast
                 else if (avgClouds >= 60 && maxPeak < 700) {
                     explanation = "☁️"; 
                     weatherTooltip = "Overcast: High cloudiness.";
                     weatherCount++;
                 }
-                // 9. Partly cloudy / Fair (Fallback)
                 else {
                     weatherCount++;
                 }
@@ -830,7 +809,6 @@
                 ]);
             }
 
-            // Construct the final HTML chunk using the computed metrics
             html += `
             <h3 style="margin-top:30px; color:var(--warning);">
                 🔍 Daily Anomaly & Weather Context
@@ -845,40 +823,29 @@
                 </table>
             </div>`;
 
-            // INSERTED SUMMARY ROWS FOR CSV EXPORT
-            globalCsvRows.push([]); // Blank spacer line
+            globalCsvRows.push([]);
             globalCsvRows.push(["OVERALL ANALYSIS SUMMARY"]);
             globalCsvRows.push([
-                // FIXED: Updated label from 'Efficiency Ratio' to 'Anomaly Ratio' to reflect true dataset distribution
                 `Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`,
                 `Critical Issues: ${criticalCount}`,
                 `Weather Context: ${weatherCount}`
             ]);
-            globalCsvRows.push([]); // Blank spacer line
-
+            globalCsvRows.push([]);
         }
         
-        // 4. Inject standard UI legend box with balanced solar indicators and scientific methodology descriptions
         html += `
         <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px; margin-top: 15px; border-top: 1px solid var(--border);">
             <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | 🔌📶 Interruption | ❌ Hardware Fail | ⏳ Pre-Install<br>
-            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Partly Cloudy | ☁️ Overcast & Diffuse | 🌧️ Heavy Cloud / Rain | 🌡️ Heat Derating (&ge;33°C) | 🔌📶 External Interruption (&le;30% Clouds / Lag) | ❌ Hardware Drop<br>
+            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Partly Cloudy | ☁️ Overcast & Diffuse | 🌧️ Heavy Cloud / Rain | 🌡️ Heat Derating (&ge;33°C) | 🔌📶 External Interruption | ❌ Hardware Drop<br>
             <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> 
-            The separation of open satellite data into direct (beam) and diffuse sky irradiance values follows the empirical regression principles established by 
-            <em>Liu & Jordan (1960) - "The interrelationship and characteristic distribution of direct, diffuse and total solar radiation"</em>. 
-            This mathematical proxy allows shading configurations to be simulated accurately across fixed panel arrays without requiring live local pyranometers.<br>
+            Liu & Jordan (1960) empirical regression principles for direct and diffuse split irradiance.<br>
             <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> 
-            Bifacial targets higher base performance ratios (14.0%+) due to rear-side light absorption. 
-            Standard Mono targets an adjusted 7.5 to 9.5 efficiency floor to account for real-world environmental shading dynamics.
+            Bifacial (14.0%+) & Standard Mono (7.5%).
         </div></div>`;
 
-
-       
-        // Write directly into DOM and instantly bind the global count context
         resultsDiv.innerHTML = html;
         window.tariffDaysCounter = tariffDaysCounter;
 
-        // 🚀 AUDITED FIX: Pass counts up to the runAnalysis framework scope
         return {
             totalDaysAnalyzed: totalDaysAnalyzed,
             criticalCount: (typeof criticalCount !== 'undefined') ? criticalCount : 0
