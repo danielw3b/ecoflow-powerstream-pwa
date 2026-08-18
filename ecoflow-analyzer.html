@@ -755,11 +755,11 @@
                 // Extract maxTemp from the target object (adjust property name if needed, e.g., target.temperature)
                 const maxTemp = parseFloat(target.maxTemp || 0);
               
-                // Purely weather-based & temperature-aware context evaluation with Soll-Prioritization
+                // Purely weather-based & temperature-aware context evaluation
                 let explanation = "⛅"; 
                 let weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
                 let cssClass = "text-dim"; 
-                let diagnosisStatus = "🟢"; // Default green, upgraded if target met
+                let diagnosisStatus = "🟢"; // Default green
 
                 // 1. ABSOLUTE SYNCHRONIZATION: Adopt network/Wi-Fi drops from Table 1
                 if (target.wlanCrash) {
@@ -789,34 +789,35 @@
                     cssClass = "warn";
                     diagnosisStatus = "🟠";
                 }
-                // 5. FORCED OVERCAST / RAIN FOR HIGH CLOUD DAYS (e.g. High cloud cover & low sun hours)
-                else if (avgClouds >= 90 && sunHours < 3) {
+                // 5. HEAVY RAIN / EXTREME CLOUDS (Strictly ONLY > 90% cloud cover and low sun)
+                else if (avgClouds > 90 && sunHours < 3) {
                     explanation = "🌧️"; 
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
                 }
-                // 6. Heavy cloud cover / Continuous rain
+                // 6. Overcast / High diffuse light (Between 75% and 90% cloud cover)
                 else if (avgClouds >= 75 && maxPeak < 600) {
-                    explanation = "🌧️"; 
-                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal direct radiation.";
-                    weatherCount++;
-                }
-                // 7. Overcast / High diffuse light
-                else if (avgClouds >= 60 && maxPeak < 700) {
                     explanation = "☁️"; 
                     weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted sunshine duration.";
                     weatherCount++;       
                 }
-                // 8. Partly cloudy / Fair (Fallback)
+                // 7. General Overcast (>= 60%)
+                else if (avgClouds >= 60 && maxPeak < 700) {
+                    explanation = "☁️"; 
+                    weatherTooltip = "Overcast: High cloudiness.";
+                    weatherCount++;
+                }
+                // 8. Partly cloudy / Fair
                 else {
                     weatherCount++;
                 }
 
-                // 9. SPECIAL RULE: If the target was met or exceeded, the day is a success!
-                if (target.realYieldWh >= target.expectedYieldWh && diagnosisStatus !== "❌") {
-                    diagnosisStatus = "✅"; // or solid 🟢 optimal status
+                // 9. ULTIMATE OVERRIDE: If the target yield was met or exceeded, it's a successful/optimal day!
+                if (target.realYieldWh >= target.expectedYieldWh && diagnosisStatus !== "❌" && diagnosisStatus !== "🟠") {
+                    diagnosisStatus = "✅"; 
+                    cssClass = "text-success";
                 }
-
+              
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
                     <td>${(target.realYieldWh/1000).toFixed(2)}</td>
