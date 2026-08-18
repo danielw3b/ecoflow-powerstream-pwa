@@ -773,34 +773,33 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3. Extreme Heat Derating: Ambient >= 33°C causes cell temps >60°C and active inverter derating
+                // 3. Technical / External drop under high peaks (CORRECTED: High peak rules out pure weather blame)
+                else if (maxPeak > 600 && target.realYieldWh < (target.expectedYieldWh * 0.15)) {
+                    explanation = "🔌📶"; 
+                    weatherTooltip = "Technical Drop: High peak radiation confirmed despite cloud shares, but yield collapsed (e.g. Wi-Fi / Inverter lag).";
+                    cssClass = "warn"; 
+                    criticalCount++; // Count as critical technical issue instead of weather!
+                }
+                // 4. Extreme Heat Derating: Ambient >= 33°C causes cell temps >60°C and active inverter derating
                 else if (avgClouds <= 35 && maxPeak > 600 && maxTemp >= 33) {
                     explanation = "🌡️";
                     weatherTooltip = `Heat Derating: High solar radiation, but thermal efficiency loss due to extreme heat (${maxTemp}°C).`;
                     cssClass = "warn";
                 }
-                // 4. Technical / External drop under clear skies (cool sunny day with yield drop/gap)
-                else if (avgClouds <= 30 && maxPeak > 600) {
-                    explanation = "🔌📶"; 
-                    weatherTooltip = "Sunny day drop: High radiation & clear skies confirmed, but yield was reduced (e.g., shade/throttling/Wi-Fi).";
-                    cssClass = "warn"; 
-                }
-                // 5. Heavy cloud cover / Continuous rain
-                else if ((avgClouds > 75 && sunHours < 3) || (avgClouds > 85 && sunHours < 5)) {
+                // 5. Heavy cloud cover / Continuous rain (Only if peak is also low!)
+                else if ((avgClouds > 75 && sunHours < 3 && maxPeak < 400) || (avgClouds > 85 && sunHours < 5 && maxPeak < 400)) {
                     explanation = "🌧️"; 
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal direct radiation.";
                     weatherCount++;
                 }
-                // 6. Overcast / High diffuse light (high cloudiness AND restricted sunshine)
-                else if (avgClouds > 65 && sunHours < 8) {
+                // 6. Overcast / High diffuse light
+                else if (avgClouds > 65 && sunHours < 8 && maxPeak < 500) {
                     explanation = "☁️"; 
                     weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted sunshine duration.";
                     weatherCount++;       
                 }
-                // 7. Partly cloudy / Fair (standard sunny day with clouds)
+                // 7. Partly cloudy / Fair
                 else {
-                    //explanation = "⛅"; 
-                    //weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
                     weatherCount++;
                 }
 
