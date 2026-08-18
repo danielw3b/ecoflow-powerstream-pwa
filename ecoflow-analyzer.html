@@ -760,7 +760,9 @@
 
                 // Calculate the accurate ratio of performance against expected targets
                 //const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
-    
+                // Extract maxTemp from the target object (adjust property name if needed, e.g., target.temperature)
+                const maxTemp = parseFloat(target.maxTemp || 0);
+              
                 // Purely weather-based & temperature-aware context evaluation
                 let explanation = "⛅"; 
                 let weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
