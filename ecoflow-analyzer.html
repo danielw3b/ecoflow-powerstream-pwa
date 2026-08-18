@@ -755,58 +755,66 @@
                 // Extract maxTemp from the target object (adjust property name if needed, e.g., target.temperature)
                 const maxTemp = parseFloat(target.maxTemp || 0);
               
-                // Purely weather-based & temperature-aware context evaluation
+                // Purely weather-based & temperature-aware context evaluation with Soll-Prioritization
                 let explanation = "⛅"; 
                 let weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
                 let cssClass = "text-dim"; 
-                
+                let diagnosisStatus = "🟢"; // Default green, upgraded if target met
+
                 // 1. ABSOLUTE SYNCHRONIZATION: Adopt network/Wi-Fi drops from Table 1
                 if (target.wlanCrash) {
                     explanation = "🔌📶";
                     weatherTooltip = "Network Buffer Lag: High radiation confirmed, but transmission protocol aborted.";
                     cssClass = "warn";
+                    diagnosisStatus = "🟠";
                 }
                 // 2. Complete hardware failure: Zero yield despite massive solar radiation (> 600 W/m² peak)
                 else if (target.realYieldWh <= 100 && maxPeak > 600) {
                     explanation = "❌";
                     weatherTooltip = "Hardware Drop: Complete yield failure despite high solar radiation. Check inverter or DC switch.";
                     cssClass = "bad";
-                    criticalCount++;
+                    diagnosisStatus = "❌";
                 }
                 // 3. Technical / External drop under high peaks (Yield collapses below 5% expected despite > 600 W/m²)
                 else if (maxPeak > 600 && target.realYieldWh < (target.expectedYieldWh * 0.05)) {
                     explanation = "🔌📶"; 
                     weatherTooltip = "Technical Drop: High peak radiation confirmed, but yield collapsed (e.g. Wi-Fi / Inverter lag / System shutdown).";
                     cssClass = "warn"; 
-                    criticalCount++; 
+                    diagnosisStatus = "🟠";
                 }
                 // 4. Extreme Heat Derating: Ambient >= 33°C causes cell temps >60°C and active inverter derating
                 else if (avgClouds <= 35 && maxPeak > 600 && maxTemp >= 33) {
                     explanation = "🌡️";
                     weatherTooltip = `Heat Derating: High solar radiation, but thermal efficiency loss due to extreme heat (${maxTemp}°C).`;
                     cssClass = "warn";
+                    diagnosisStatus = "🟠";
                 }
-                // === FORCED OVERCAST / RAIN FOR HIGH CLOUD DAYS (e.g. Yesterday with 97% clouds & low sun) ===
+                // 5. FORCED OVERCAST / RAIN FOR HIGH CLOUD DAYS (e.g. High cloud cover & low sun hours)
                 else if (avgClouds >= 90 && sunHours < 3) {
                     explanation = "🌧️"; 
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
                 }
-                // 5. Heavy cloud cover / Continuous rain
+                // 6. Heavy cloud cover / Continuous rain
                 else if (avgClouds >= 75 && maxPeak < 600) {
                     explanation = "🌧️"; 
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal direct radiation.";
                     weatherCount++;
                 }
-                // 6. Overcast / High diffuse light
+                // 7. Overcast / High diffuse light
                 else if (avgClouds >= 60 && maxPeak < 700) {
                     explanation = "☁️"; 
                     weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted sunshine duration.";
                     weatherCount++;       
                 }
-                // 7. Partly cloudy / Fair
+                // 8. Partly cloudy / Fair (Fallback)
                 else {
                     weatherCount++;
+                }
+
+                // 9. SPECIAL RULE: If the target was met or exceeded, the day is a success!
+                if (target.realYieldWh >= target.expectedYieldWh && diagnosisStatus !== "❌") {
+                    diagnosisStatus = "✅"; // or solid 🟢 optimal status
                 }
 
                 subTableRowsHtml += `<tr>
