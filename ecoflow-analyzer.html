@@ -613,12 +613,13 @@
                 cssClass = "text-dim";
                 fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
             }
-            // 2. Total Outage / Data Gap: High solar radiation calculated but near-zero hardware yield
-            else if (realYieldWh <= 150 && totalSolarEnergyWh >= 4000) { 
+            // 2. Total Outage / Data Gap: 
+            // Triggered when yield is below 10% of expected potential despite high solar conditions
+            else if (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500) { 
                 diagnosis = "❌"; 
                 cssClass = "bad"; 
-                fullTextExplanation = "System / Data Outage: Substantial solar radiation calculated, but near-zero generation recorded.";
-            } 
+                fullTextExplanation = "System / Data Outage: Significant generation gap compared to calculated potential (Soll).";
+            }
             // 3. Peak performance exceeding standard baseline (+3.5% threshold)
             else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
                 diagnosis = "✅"; 
@@ -642,7 +643,7 @@
                     reason: fullTextExplanation 
                 });
             }
-    
+
             tableRowsHtml += `<tr>
                 <td>${dateStr}</td>
                 <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
