@@ -606,42 +606,34 @@
             let cssClass = "good";
             let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
             const dynamicThreshold = baseEfficiencyThreshold * tempLossFactor;
-    
-            const isWlanHang = totalSolarEnergyWh > 10000 && realYieldWh < 150;
-            const isCriticalFail = totalSolarEnergyWh > 8000 && realYieldWh === 0;
-    
-            // FIXED: Intercept days prior to physical hardware tracking to avoid false positives
+            
+            // 1. Intercept pre-installation days to avoid false failure reports
             if (isPreInstallation) {
                 diagnosis = "⏳";
                 cssClass = "text-dim";
                 fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
             }
-            // Catch absolute zero / covered panels on sunny days first
-            else if (realYieldWh <= 50 && totalSolarEnergyWh >= 4000) { 
-                diagnosis = "❌"; cssClass = "bad"; // FIXED: Changed from stop sign to red cross for a calmer visual profile
-                fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked. Panels may be covered.";
+            // 2. Total Outage / Data Gap: High solar radiation calculated but near-zero hardware yield
+            else if (realYieldWh <= 150 && totalSolarEnergyWh >= 4000) { 
+                diagnosis = "❌"; 
+                cssClass = "bad"; 
+                fullTextExplanation = "System / Data Outage: Substantial solar radiation calculated, but near-zero generation recorded.";
             } 
-            else if (isWlanHang) { 
-                diagnosis = "📶"; cssClass = "warn"; 
-                fullTextExplanation = "WLAN Buffer Lag: High solar radiation detected but near-zero data transmitted.";
-            } 
-            else if (isCriticalFail) { 
-                diagnosis = "❌"; cssClass = "bad"; // FIXED: Harmonized critical failure with a clean red cross
-                fullTextExplanation = "Critical Failure: Substantial sunlight calculated but zero hardware generation tracked.";
-            } 
+            // 3. Peak performance exceeding standard baseline (+3.5% threshold)
             else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
-                diagnosis = "✅"; cssClass = "good"; // FIXED: Green checkmark for peak performance
+                diagnosis = "✅"; 
+                cssClass = "good"; 
                 fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
             } 
-            // STRICT METRIC CHECK: If efficiency falls below threshold, it is ALWAYS marked as performance loss
+            // 4. Performance loss falling below dynamic temperature-adjusted baseline
             else if (efficiency < dynamicThreshold) {
-                diagnosis = "🟠"; cssClass = "warn"; // FIXED: Smooth orange circle for minor performance drops
+                diagnosis = "🟠"; 
+                cssClass = "warn"; 
                 fullTextExplanation = "Performance Loss: Real generation falling below temperature-corrected baselines.";
             }
-    
-            // Push to anomalies array once to pass down to Table 2 Context evaluation
-            // FIXED: Prevent pre-installation records from filling the anomaly list
-            if ((isWlanHang || isCriticalFail || efficiency < dynamicThreshold) && !isPreInstallation) {
+            
+            // Push non-pre-installation anomalies to array for Table 2 context processing
+            if ((diagnosis === "❌" || diagnosis === "🟠") && !isPreInstallation) {
                 anomalies.push({ 
                     date: dateStr, 
                     realYieldWh, 
@@ -650,7 +642,6 @@
                     reason: fullTextExplanation 
                 });
             }
-
     
             tableRowsHtml += `<tr>
                 <td>${dateStr}</td>
