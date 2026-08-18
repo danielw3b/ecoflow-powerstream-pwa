@@ -735,7 +735,7 @@
                 let cssClass = "text-dim"; 
 
                 // 1. Technical / Connection Drop: Good solar conditions, but yield collapsed
-                else if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
+                if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
                     explanation = "🔌📶";
                     weatherTooltip = `Technical / Connection Drop: Good solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²), but yield collapsed. Likely offline or WLAN issue.`;
                     cssClass = "warn";
