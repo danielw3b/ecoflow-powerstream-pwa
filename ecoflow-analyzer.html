@@ -735,26 +735,27 @@
                 let weatherTooltip = "Partly cloudy with mixed radiation.";
                 let cssClass = "text-dim"; 
 
-                // 1. Technical / Connection Drop: Good solar conditions, but yield collapsed
-                if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
-                    explanation = "📶 ⚠️";
-                    weatherTooltip = `Technical / Connection Drop: Good solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²), but yield collapsed. Likely offline or WLAN issue.`;
-                    cssClass = "warn";
-                    criticalCount++;
-                }
-                // 2. Complete hardware failure: Zero yield despite massive solar radiation
-                else if (target.realYieldWh <= 100 && maxPeak > 600) {
+                // 1. Hardware Failure: Extreme case (0-100 Wh) despite solar radiation
+                if (target.realYieldWh <= 100 && maxPeak > 400) {
                     explanation = "❌ 🔌";
-                    weatherTooltip = "Hardware Drop: Complete yield failure despite high solar radiation. Check inverter or DC switch.";
+                    weatherTooltip = "Hardware Drop: Complete yield failure despite solar radiation. Check inverter or DC switch.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3. Extreme Heat Derating: Temperature is the dominant limiting factor
+                // 2. Extreme Heat Derating
                 else if (maxTemp >= 33) {
                     explanation = "🌡️ ☀️";
-                    weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing significant thermal efficiency loss.`;
+                    weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss.`;
                     cssClass = "warn";
                     weatherCount++;
+                }
+                // 3. Technical / External Interruption (FIXED)
+                // If it's a beautifully sunny day but flagged as an anomaly, it MUST be an interruption/shadow
+                else if (avgClouds <= 35 && maxPeak > 600) {
+                    explanation = "📶 ⚠️";
+                    weatherTooltip = `Technical / Interruption: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired. Likely offline, shadows, or limiters.`;
+                    cssClass = "warn";
+                    criticalCount++;
                 }
                 // 4. Heavy Rain / Extreme Clouds
                 else if (avgClouds > 90 && sunHours < 3) {
@@ -778,7 +779,7 @@
                 else {
                     weatherCount++;
                 }
-              
+
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
                     <td>${(target.realYieldWh/1000).toFixed(2)}</td>
