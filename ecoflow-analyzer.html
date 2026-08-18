@@ -731,55 +731,50 @@
                 const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
                 const maxTemp = parseFloat(target.maxTemp || 0);
               
-                let explanation = "⛅"; 
-                let weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
+                let explanation = "⛅ ☀️"; 
+                let weatherTooltip = "Partly cloudy with mixed radiation.";
                 let cssClass = "text-dim"; 
 
                 // 1. Technical / Connection Drop: Good solar conditions, but yield collapsed
                 if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
-                    explanation = "🔌📶";
+                    explanation = "📶 ⚠️";
                     weatherTooltip = `Technical / Connection Drop: Good solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²), but yield collapsed. Likely offline or WLAN issue.`;
                     cssClass = "warn";
                     criticalCount++;
                 }
                 // 2. Complete hardware failure: Zero yield despite massive solar radiation
                 else if (target.realYieldWh <= 100 && maxPeak > 600) {
-                    explanation = "❌";
+                    explanation = "❌ 🔌";
                     weatherTooltip = "Hardware Drop: Complete yield failure despite high solar radiation. Check inverter or DC switch.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3. Extreme Heat Derating: PRIORITIZED! If temperature >= 33°C, heat is the dominant limiting factor.
+                // 3. Extreme Heat Derating: Temperature is the dominant limiting factor
                 else if (maxTemp >= 33) {
-                    explanation = "🌡️";
+                    explanation = "🌡️ ☀️";
                     weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing significant thermal efficiency loss.`;
                     cssClass = "warn";
                     weatherCount++;
                 }
-                // 4. HEAVY RAIN / EXTREME CLOUDS: Primary weather limitation
+                // 4. Heavy Rain / Extreme Clouds
                 else if (avgClouds > 90 && sunHours < 3) {
-                    explanation = "🌧️"; 
+                    explanation = "🌧️ ☁️"; 
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
                 }
-                // 5. SUNSHINE OVERRIDE
-                else if (sunHours >= 10) {
-                    explanation = "⛅";
-                    weatherTooltip = "Partly cloudy with long sunshine duration.";
+                // 5. Mostly Overcast with Sun Breaks
+                else if (avgClouds >= 80 && maxPeak >= 600) {
+                    explanation = "☁️ ⛅";
+                    weatherTooltip = "Mostly Overcast with Sun Breaks: Dense clouds overall, but intense short solar peaks.";
                     weatherCount++;
                 }
-                // 6. Overcast / High diffuse light
-                else if (avgClouds >= 75 && maxPeak < 600) {
-                    explanation = "☁️"; 
-                    weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted sunshine duration.";
+                // 6. General Overcast / Diffuse
+                else if (avgClouds >= 70 || (avgClouds >= 60 && maxPeak < 600)) {
+                    explanation = "☁️ ☁️"; 
+                    weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted direct radiation.";
                     weatherCount++;       
                 }
-                // 7. General Overcast
-                else if (avgClouds >= 60 && maxPeak < 700) {
-                    explanation = "☁️"; 
-                    weatherTooltip = "Overcast: High cloudiness.";
-                    weatherCount++;
-                }
+                // 7. Standard Mixed Weather (Fallback)
                 else {
                     weatherCount++;
                 }
@@ -831,8 +826,8 @@
         
         html += `
         <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px; margin-top: 15px; border-top: 1px solid var(--border);">
-            <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | 🔌📶 Interruption | ❌ Hardware Fail | ⏳ Pre-Install<br>
-            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Partly Cloudy | ☁️ Overcast & Diffuse | 🌧️ Heavy Cloud / Rain | 🌡️ Heat Derating (&ge;33°C) | 🔌📶 External Interruption | ❌ Hardware Drop<br>
+            <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
+            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | 🌡️ ☀️ Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
             <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> 
             Liu & Jordan (1960) empirical regression principles for direct and diffuse split irradiance.<br>
             <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> 
