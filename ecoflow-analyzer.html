@@ -734,11 +734,10 @@
                 let weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
                 let cssClass = "text-dim"; 
 
-                // 1. Technical / Connection Drop: Good solar conditions (sun or peak), but yield collapsed.
-                // Universal rule for offline inversions / WLAN dropouts.
-                if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
+                // 1. Technical / Connection Drop: Good solar conditions, but yield collapsed
+                else if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
                     explanation = "🔌📶";
-                    weatherTooltip = `Technical / Connection Drop: Good solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²), but yield collapsed. Likely offline, late installation, or WLAN issue.`;
+                    weatherTooltip = `Technical / Connection Drop: Good solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²), but yield collapsed. Likely offline or WLAN issue.`;
                     cssClass = "warn";
                     criticalCount++;
                 }
@@ -749,17 +748,17 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3. HEAVY RAIN / EXTREME CLOUDS: Primary weather limitation
-                else if (avgClouds > 90 && sunHours < 3) {
-                    explanation = "🌧️"; 
-                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
-                    weatherCount++;
-                }
-                // 4. Extreme Heat Derating: Prioritized thermal limitation if not dominated by extreme cloud cover
-                else if (maxTemp >= 33 && avgClouds < 90) {
+                // 3. Extreme Heat Derating: PRIORITIZED! If temperature >= 33°C, heat is the dominant limiting factor.
+                else if (maxTemp >= 33) {
                     explanation = "🌡️";
                     weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing significant thermal efficiency loss.`;
                     cssClass = "warn";
+                    weatherCount++;
+                }
+                // 4. HEAVY RAIN / EXTREME CLOUDS: Primary weather limitation
+                else if (avgClouds > 90 && sunHours < 3) {
+                    explanation = "🌧️"; 
+                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
                 }
                 // 5. SUNSHINE OVERRIDE
