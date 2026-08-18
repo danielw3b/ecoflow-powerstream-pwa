@@ -734,52 +734,47 @@
                 let weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
                 let cssClass = "text-dim"; 
 
-                // 1. Installation / Start-day override (Forces clean network icon on deployment day)
-                if (target.isInstallationDay) {
+                // 1. Technical / Connection Drop: Good solar conditions (sun or peak), but yield collapsed.
+                // Universal rule for offline inversions / WLAN dropouts.
+                if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
                     explanation = "🔌📶";
-                    weatherTooltip = "Installation Day: System activated mid-day, partial connection and data logging profile.";
-                    cssClass = "warn";
-                }
-                // 2. Technical / Connection Drop: Good solar conditions (sun or peak), but yield collapsed
-                else if ((sunHours >= 4 || maxPeak >= 400) && (target.realYieldWh < (target.expectedYieldWh * 0.15) || target.efficiency < 5)) {
-                    explanation = "🔌📶";
-                    weatherTooltip = `Technical / Connection Drop: Good solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²), but yield collapsed. Likely offline / WLAN issue.`;
+                    weatherTooltip = `Technical / Connection Drop: Good solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²), but yield collapsed. Likely offline, late installation, or WLAN issue.`;
                     cssClass = "warn";
                     criticalCount++;
                 }
-                // 3. Complete hardware failure: Zero yield despite massive solar radiation
+                // 2. Complete hardware failure: Zero yield despite massive solar radiation
                 else if (target.realYieldWh <= 100 && maxPeak > 600) {
                     explanation = "❌";
                     weatherTooltip = "Hardware Drop: Complete yield failure despite high solar radiation. Check inverter or DC switch.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 4. HEAVY RAIN / EXTREME CLOUDS: Primary weather limitation
+                // 3. HEAVY RAIN / EXTREME CLOUDS: Primary weather limitation
                 else if (avgClouds > 90 && sunHours < 3) {
                     explanation = "🌧️"; 
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
                 }
-                // 5. Extreme Heat Derating: Prioritized thermal limitation if not dominated by extreme cloud cover
+                // 4. Extreme Heat Derating: Prioritized thermal limitation if not dominated by extreme cloud cover
                 else if (maxTemp >= 33 && avgClouds < 90) {
                     explanation = "🌡️";
                     weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing significant thermal efficiency loss.`;
                     cssClass = "warn";
-                    weatherCount++; // Wichtig: Hier für die Statistik mitzählen
+                    weatherCount++;
                 }
-                // 6. SUNSHINE OVERRIDE
+                // 5. SUNSHINE OVERRIDE
                 else if (sunHours >= 10) {
                     explanation = "⛅";
                     weatherTooltip = "Partly cloudy with long sunshine duration.";
                     weatherCount++;
                 }
-                // 7. Overcast / High diffuse light
+                // 6. Overcast / High diffuse light
                 else if (avgClouds >= 75 && maxPeak < 600) {
                     explanation = "☁️"; 
                     weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted sunshine duration.";
                     weatherCount++;       
                 }
-                // 8. General Overcast
+                // 7. General Overcast
                 else if (avgClouds >= 60 && maxPeak < 700) {
                     explanation = "☁️"; 
                     weatherTooltip = "Overcast: High cloudiness.";
