@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoFlow Solar & Weather Analyzer</title>
+    <style>
+        :root {
+            --bg: #060c1a;
+            --panel: #0d182b;
+            --text: #e0f0ff;
+            --text-dim: #8b9eb3;
+            --accent: #2ecc71;
+            --accent-hover: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --border: rgba(107, 138, 170, 0.2);
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        /* Unified Typography Styles */
+        h1, h2, h3 { color: #fff; margin-top: 0; }
+        h1 { font-size: 1.5rem; }
+        h2 { font-size: 1.2rem; }
+        h3 { 
+            font-size: 0.9rem; 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 5px; 
+            margin-top: 20px; 
+            color: var(--text-dim); 
+        }
+        
+        /* Desktop Responsive Typography */
+        @media (min-width: 850px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            h3 { font-size: 1rem; }
+        }
+      
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .card { 
+            background: var(--panel); 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+        }
+        
+        .table-scroll-frame {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-top: 15px;
+            position: relative;
+            overflow-x: auto;
+        }
+        
+        /* Grid Layout Blocks */
+        .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-bottom: 15px; 
+        }
+        @media (min-width: 600px) {
+            .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+        }
+        
+        .form-group { display: flex; flex-direction: column; }
+        .full-width-row { grid-column: span 2; }
+        
+        label { 
+            font-size: 0.85rem; 
+            color: var(--text-dim); 
+            margin-bottom: 5px; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        input, select { 
+            background: var(--bg); 
+            border: 1px solid var(--border); 
+            color: var(--text); 
+            padding: 6px 10px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            width: 100%; 
+            box-sizing: border-box; 
+            height: 34px; 
+        }
+        input:focus, select:focus { outline: 1px solid var(--accent); }
+        
+        /* Button Elements */
+        button {
+            background: var(--accent); color: white; border: none; padding: 12px 20px;
+            font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s;
+        }
+        button:hover { background: var(--accent-hover); }
+        button:disabled { background: var(--text-dim); cursor: not-allowed; }
+        .btn-secondary { background: #3498db; }
+        .btn-secondary:hover { background: #2980b9; }
+        .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
+
+        .btn-icon:hover {
+            background: rgba(107, 138, 170, 0.25) !important;
+            border-color: var(--accent) !important;
+            cursor: pointer;
+        }
+
+        /* Config Form Container Alignment */
+        .config-row {
+            display: grid;
+            grid-template-columns: 1fr; 
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        @media (min-width: 480px) {
+            .config-row { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 850px) {
+            .config-row { grid-template-columns: repeat(4, 1fr); }
+            .config-row > div[style*="display: grid"] { grid-column: span 2; }
+        }
+
+        /* Global Data Tables Styling */
+        table { 
+            width: 100%; 
+            border-collapse: separate; 
+            border-spacing: 0;
+        }
+        th, td { 
+            padding: 10px 6px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--border); 
+            font-size: 0.82rem; 
+            word-break: break-word; 
+        }
+        th { 
+            color: var(--text-dim); 
+            font-weight: normal; 
+            position: sticky; 
+            top: 0; 
+            background-color: var(--panel); 
+            z-index: 10; 
+            box-shadow: inset 0 -1px 0 var(--border); 
+        }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        @media (min-width: 600px) {
+            th, td { padding: 10px; font-size: 0.9rem; }
+            table td:first-child, table th:first-child { white-space: nowrap; }
+        }
+
+        /* Diagnostic States & Utility Elements */
+        .good { color: var(--accent); }
+        .bad { color: var(--danger); }
+        .warn { color: var(--warning); }
+        .text-dim { color: var(--text-dim); }
+        
+        .legend-box {
+            margin-top: 20px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        .legend-box strong { color: #fff; }
+        #results { margin-top: 30px; }
+        .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
+
+        /* Accordion UI Customization */
+        details {
+            width: 100%;
+        }
+        summary {
+            cursor: pointer;
+            list-style: none;
+            user-select: none;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        .accordion-content {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 12px;
+            border-top: 1px dashed var(--border);
+            margin-top: 5px;
+            border-radius: 4px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            background: rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌤️ Solar & Weather Multi-Inverter Analyzer</h1>
+    <p style="color: var(--text-dim)">Consolidates all PWA LocalStorage devices into a single master view cross-referenced with Open-Meteo weather data.</p>
+    
+    <div class="card">
+        <h2>⚙️ Configuration</h2>
+        <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
+            
+            <h3>🔌 Active System Selector & Location</h3>
+            <div class="config-row">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="cfg_inverter">Inverter Config Context</label>
+                    <select id="cfg_inverter" onchange="loadInverterConfig()">
+                        <option value="">-- All LocalStorage Devices --</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Coordinates (LAT / LON)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center;">
+                        <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
+                        <input type="number" step="any" id="cfg_lon" required placeholder="LON">
+                        <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS" style="padding: 0; height: 34px; width: 34px; display: flex; align-items: center; justify-content: center; background: rgba(107, 138, 170, 0.1); border: 1px solid var(--border); color: var(--text);">📍</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: Hardware Parameters -->
+            <h3>🛠️ Hardware Parameters (Selected Inverter)</h3>
+            <div class="config-row">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_panelType">Panel Tech</label>
+                        <select id="cfg_panelType">
+                            <option value="mono">Mono</option>
+                            <option value="bifacial" selected>Bifacial</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_selfConsumptionRate">Self-Use Rate (%)</label>
+                        <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_moduleArea">Module Area (m²)</label>
+                        <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_totalWp">Power Peak (Wp)</label>
+                        <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: Tariff & Investment -->
+            <h3>💶 Tariff & Investment</h3>
+            <div class="config-row">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_currency">Currency</label>
+                        <input type="text" id="cfg_currency" required placeholder="e.g. €">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_investment">Investment Cost</label>
+                        <input type="number" step="0.01" id="cfg_investment" required placeholder="e.g. 295">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_energyPrice">Energy Price/kWh(Cent)</label>
+                        <input type="number" step="0.0001" id="cfg_energyPrice" required placeholder="e.g. 29.89">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_baseFee">Base Fee/Month</label>
+                        <input type="number" step="0.01" id="cfg_baseFee" required placeholder="e.g. 14.25">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: Meter & Timeline -->
+            <h3>📊 Meter & Timeline</h3>
+            <div class="config-row">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_meterTariffStart">Tariff Start Meter(kWh)</label>
+                        <input type="number" step="0.1" id="cfg_meterTariffStart" required placeholder="e.g. 46406">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_meterCurrent">Meter Current(kWh)</label>
+                        <input type="number" step="0.1" id="cfg_meterCurrent" required placeholder="e.g. 46473">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_consumption">Ø kWh w/o Solar/Day</label>
+                        <input type="number" step="0.1" id="cfg_consumption" required placeholder="e.g. 5">
+                    </div>
+                    <div class="form-group"></div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="form-group">
+                        <label for="cfg_tariffStart">Tariff Start Date</label>
+                        <input type="date" id="cfg_tariffStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_startDate">Analysis Start</label>
+                        <input type="date" id="cfg_startDate" required>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button type="submit" id="runBtn" class="btn-full" style="background: var(--accent);">💾 Save Config & Run Multi-Inverter Analysis</button>
+            </div>
+        </form>
+        
+        <div style="margin-top: 12px;">
+            <button id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-full" style="display:none; background: #2980b9;">📥 Export Consolidated CSV Report</button>
+        </div>
+        <div id="loading" class="loader" style="margin-top: 15px;">⏳ Fetching Open-Meteo weather history & processing local storage databases...</div>
+    </div>
+
+    <div id="results"></div>
+</div>
+
+<script>
+    let globalCsvRows = [];
+    let allInverterConfigs = {};
+
+    function getStorageKey(sn) {
+        return sn ? `ecoflow_analyzer_config_${sn}` : 'ecoflow_analyzer_config_default';
+    }
+        
+    function initInverters() {
+        const select = document.getElementById('cfg_inverter');
+        if (!select) return;
+    
+        select.innerHTML = '<option value="">-- Consolidated All Inverters --</option>';
+    
+        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
+        const serials = Object.keys(dailyStorage);
+    
+        if (serials.length === 0) {
+            select.innerHTML = '<option value="">-- No Inverters Found in LocalStorage --</option>';
+            return;
+        }
+        
+        serials.forEach(sn => {
+            const opt = document.createElement('option');
+            opt.value = sn;
+            opt.textContent = customNames[sn] || `Inverter (${sn.substring(0, 6)}...)`;
+            select.appendChild(opt);
+        });
+
+        if (serials.length > 0) {
+            select.value = serials[0];
+            loadInverterConfig();
+        }
+    }
+    
+    function loadInverterConfig() {
+        const selectedSn = document.getElementById('cfg_inverter')?.value;
+        const key = getStorageKey(selectedSn);
+        const saved = localStorage.getItem(key);
+    
+        if (saved) {
+            try {
+                const cfg = JSON.parse(saved);
+                for (const [k, value] of Object.entries(cfg)) {
+                    const el = document.getElementById(`cfg_${k}`);
+                    if (el && value !== undefined) el.value = value;
+                }
+            } catch (e) {
+                console.error("Error parsing saved configuration:", e);
+            }
+        } else {
+            document.getElementById('cfg_currency').value = "€";
+            document.getElementById('cfg_investment').value = "0";
+            document.getElementById('cfg_energyPrice').value = "29.89";
+            document.getElementById('cfg_baseFee').value = "14.25";
+            document.getElementById('cfg_startDate').value = "2026-05-07";
+            document.getElementById('cfg_tariffStart').value = "2026-06-26";
+            if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "900";
+            if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial";
+        }
+    }
+
+    function getUserConfigFor(sn) {
+        const activeSn = document.getElementById('cfg_inverter')?.value;
+        if (sn === activeSn || !sn) {
+            const config = {
+                inverter: activeSn,
+                lat: parseFloat(document.getElementById('cfg_lat')?.value) || 0,
+                lon: parseFloat(document.getElementById('cfg_lon')?.value) || 0,
+                panelType: document.getElementById('cfg_panelType')?.value || 'bifacial', 
+                selfConsumptionRate: parseFloat(document.getElementById('cfg_selfConsumptionRate')?.value) || 75,
+                moduleArea: parseFloat(document.getElementById('cfg_moduleArea')?.value) || 0,
+                totalWp: parseFloat(document.getElementById('cfg_totalWp')?.value) || 900,
+                currency: document.getElementById('cfg_currency')?.value || '€',
+                investment: parseFloat(document.getElementById('cfg_investment')?.value) || 0,
+                energyPrice: parseFloat(document.getElementById('cfg_energyPrice')?.value) || 0,
+                baseFee: parseFloat(document.getElementById('cfg_baseFee')?.value) || 0,
+                consumption: parseFloat(document.getElementById('cfg_consumption')?.value) || 0,
+                meterTariffStart: parseFloat(document.getElementById('cfg_meterTariffStart')?.value) || 0,
+                meterCurrent: parseFloat(document.getElementById('cfg_meterCurrent')?.value) || 0,
+                tariffStart: document.getElementById('cfg_tariffStart')?.value || '',
+                startDate: document.getElementById('cfg_startDate')?.value || ''
+            };
+            if(activeSn) localStorage.setItem(getStorageKey(activeSn), JSON.stringify(config));
+            return config;
+        } else {
+            const saved = localStorage.getItem(getStorageKey(sn));
+            if (saved) return JSON.parse(saved);
+            return getUserConfigFor(activeSn);
+        }
+    }
+
+    function detectLocation() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                document.getElementById('cfg_lat').value = pos.coords.latitude.toFixed(4);
+                document.getElementById('cfg_lon').value = pos.coords.longitude.toFixed(4);
+            }, err => {
+                alert("Location access denied or unavailable: " + err.message);
+            });
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+    }
+
+    async function runAnalysis() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('runBtn').disabled = true;
+        document.getElementById('csvBtn').style.display = 'none';
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '';
+        globalCsvRows = [];
+
+        const activeConfig = getUserConfigFor(document.getElementById('cfg_inverter').value);
+        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+        const serials = Object.keys(dailyStorage);
+
+        if (serials.length === 0) {
+            alert("No EcoFlow PWA data found in localStorage key 'ecoflow_wh'.");
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('runBtn').disabled = false;
+            return;
+        }
+
+        const localNow = new Date();
+        const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
+        const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);
+        localTargetTime.setDate(localTargetTime.getDate() - 1);
+        const endDate = localTargetTime.toISOString().split('T')[0];
+
+        const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${activeConfig.lat}&longitude=${activeConfig.lon}&start_date=${activeConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum,temperature_2m_max&timezone=auto`;
+        
+        try {
+            const dailyResponse = await fetch(dailyUrl);
+            if (!dailyResponse.ok) throw new Error(`Open-Meteo API Error: ${dailyResponse.status}`);
+            const dailyData = await dailyResponse.json();
+
+            if (!dailyData.daily || !dailyData.daily.shortwave_radiation_sum || !dailyData.daily.temperature_2m_max) {
+                throw new Error("Missing required weather parameters in API response.");
+            }
+
+            let dates = dailyData.daily.time;
+            let radSumRaw = dailyData.daily.shortwave_radiation_sum;
+            let maxTempRaw = dailyData.daily.temperature_2m_max;
+
+            if (dates.length > 0 && radSumRaw[radSumRaw.length - 1] === null) {
+                dates.pop();
+                radSumRaw.pop();
+                maxTempRaw.pop();
+            }
+
+            await analyzeConsolidatedSystems(serials, dates, radSumRaw, maxTempRaw, dailyStorage, activeConfig);
+            document.getElementById('csvBtn').style.display = 'block';
+
+        } catch (error) {
+            console.error(error);
+            resultsDiv.innerHTML += `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
+        }
+        
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('runBtn').disabled = false;
+    }
+
+    async function analyzeConsolidatedSystems(serials, dates, radSumRaw, maxTempRaw, dailyStorage, activeConfig) {
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
+        const resultsDiv = document.getElementById('results');
+
+        // Build master data matrix per date
+        const masterDates = {};
+        const tempCoefficient = -0.004;
+
+        dates.forEach((dateStr, idx) => {
+            if (radSumRaw[idx] === null) return;
+
+            let totalRadKwhM2 = radSumRaw[idx] / 3.6;
+            let dayTemp = maxTempRaw[idx] || 25;
+
+            // Liu-Jordan Empirical Model
+            let diffuseShare = 0.30; 
+            if (totalRadKwhM2 < 1.5) diffuseShare = 0.85; 
+            else if (totalRadKwhM2 < 3.5) diffuseShare = 0.50; 
+            else if (totalRadKwhM2 > 5.5) diffuseShare = 0.18; 
+
+            let dirKwhM2 = totalRadKwhM2 * (1 - diffuseShare);
+            let diffKwhM2 = totalRadKwhM2 * diffuseShare;
+
+            let tempLossFactor = 1.0;
+            if (dayTemp > 25) tempLossFactor = 1.0 + ((dayTemp - 25) * tempCoefficient);
+
+            masterDates[dateStr] = {
+                date: dateStr,
+                totalRadKwhM2,
+                dayTemp,
+                dirKwhM2,
+                diffKwhM2,
+                tempLossFactor,
+                inverters: {}
+            };
+
+            serials.forEach(sn => {
+                const cfg = getUserConfigFor(sn);
+                const deviceDaily = dailyStorage[sn] || {};
+                
+                const validDates = Object.keys(deviceDaily).filter(d => deviceDaily[d] !== undefined);
+                const firstActiveDate = validDates.length > 0 ? validDates.sort()[0] : null;
+
+                const expectedDirectWh = dirKwhM2 * cfg.totalWp * tempLossFactor;
+                const expectedDiffuseWh = diffKwhM2 * cfg.totalWp * 0.45 * tempLossFactor;
+                const standardEfficiency = cfg.panelType === 'bifacial' ? 0.80 : 0.60;
+                let calculatedSollWh = (expectedDirectWh + expectedDiffuseWh) * standardEfficiency;
+                const expectedSollWh = Math.min(calculatedSollWh, cfg.totalWp * 7);
+
+                const realYieldWh = deviceDaily[dateStr] || 0;
+                const totalSolarEnergyWh = totalRadKwhM2 * 1000 * cfg.moduleArea;
+                let efficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
+
+                const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
+                const baseEfficiencyThreshold = cfg.panelType === 'bifacial' ? 14.0 : 7.5;
+                const dynamicThreshold = baseEfficiencyThreshold * tempLossFactor;
+
+                let status = "🟢";
+                let cssClass = "good";
+                let diagText = "Normal Operation";
+
+                if (isPreInstallation) {
+                    status = "⏳"; cssClass = "text-dim"; diagText = "Pre-Installation";
+                } else if (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500) {
+                    status = "❌"; cssClass = "bad"; diagText = "System / Data Outage";
+                } else if (efficiency >= (baseEfficiencyThreshold + 3.5)) {
+                    status = "✅"; cssClass = "good"; diagText = "Optimal Yield";
+                } else if (efficiency < dynamicThreshold) {
+                    status = "🟠"; cssClass = "warn"; diagText = "Performance Loss";
+                }
+
+                masterDates[dateStr].inverters[sn] = {
+                    sn,
+                    friendlyName: customNames[sn] || sn,
+                    realYieldWh,
+                    expectedSollWh,
+                    efficiency,
+                    status,
+                    cssClass,
+                    diagText,
+                    isPreInstallation
+                };
+            });
+        });
+
+        // Generate CSV Header
+        let csvHeader = ["Date", "Radiation (kWh/m2)", "Max Temp (°C)"];
+        serials.forEach(sn => {
+            const name = customNames[sn] || sn;
+            csvHeader.push(`${name} Yield(kWh)`, `${name} Eff(%)`, `${name} Status`);
+        });
+        globalCsvRows.push(["CONSOLIDATED MASTER SOLAR REPORT"]);
+        globalCsvRows.push(csvHeader);
+
+        // Render Consolidated Master Table HTML
+        let tableHeaderHtml = `<tr><th>Date</th><th>Radiation</th><th>Temp</th>`;
+        serials.forEach(sn => {
+            tableHeaderHtml += `<th>${customNames[sn] || sn.substring(0,6)}</th>`;
+        });
+        tableHeaderHtml += `<th>System Diagnosis</th><th>Details</th></tr>`;
+
+        let masterRowsHtml = "";
+        let totalTariffDays = 0;
+
+        Object.keys(masterDates).sort().reverse().forEach(dateStr => {
+            const rowData = masterDates[dateStr];
+            if (new Date(dateStr) >= new Date(activeConfig.tariffStart)) totalTariffDays++;
+
+            let masterStatusIcon = "🟢";
+            let statuses = serials.map(sn => rowData.inverters[sn].status);
+            
+            if (statuses.every(s => s === "❌")) {
+                masterStatusIcon = "❌ (Multi-Outage / Wi-Fi)";
+            } else if (statuses.includes("❌") && statuses.includes("🟢")) {
+                masterStatusIcon = "⚠️ (Single Circuit Drop / FI)";
+            } else if (statuses.includes("🟠")) {
+                masterStatusIcon = "🟠 (Partial Loss)";
+            }
+
+            let csvRow = [`"${dateStr}"`, `"${rowData.totalRadKwhM2.toFixed(2)}"`, `"${rowData.dayTemp.toFixed(1)}"`];
+
+            let rowInverterCells = "";
+            let accordionDetailsHtml = "";
+
+            serials.forEach(sn => {
+                const inv = rowData.inverters[sn];
+                rowInverterCells += `<td>${inv.status} <span style="font-size:0.8rem;">(${(inv.realYieldWh/1000).toFixed(2)} kWh)</span></td>`;
+                
+                accordionDetailsHtml += `
+                    <div style="margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
+                        <strong>${inv.friendlyName}:</strong> ${(inv.realYieldWh/1000).toFixed(2)} kWh | 
+                        Expected: ${(inv.expectedSollWh/1000).toFixed(2)} kWh | 
+                        Eff: <span class="${inv.cssClass}">${inv.efficiency.toFixed(1)}%</span> | 
+                        Status: ${inv.status} (${inv.diagText})
+                    </div>`;
+
+                csvRow.push(`"${(inv.realYieldWh/1000).toFixed(2)}"`, `"${inv.efficiency.toFixed(1)}"`, `"${inv.status}"`);
+            });
+
+            globalCsvRows.push(csvRow);
+
+            masterRowsHtml += `
+                <tr>
+                    <td><strong>${dateStr}</strong></td>
+                    <td>${rowData.totalRadKwhM2.toFixed(2)} kWh/m²</td>
+                    <td>${rowData.dayTemp.toFixed(1)} °C</td>
+                    ${rowInverterCells}
+                    <td>${masterStatusIcon}</td>
+                    <td>
+                        <details>
+                            <summary><button style="padding:2px 8px; font-size:0.75rem;">🔍 View</button></summary>
+                            <div class="accordion-content">
+                                ${accordionDetailsHtml}
+                            </div>
+                        </details>
+                    </td>
+                </tr>`;
+        });
+
+        let html = `<div class="card">
+            <h2>📡 Consolidated Master Solar Overview</h2>
+            <h3>All Connected Circuits & Diagnostics <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${serials.length} Devices Active</span></h3>
+            <div class="table-scroll-frame">
+                <table>
+                    ${tableHeaderHtml}
+                    ${masterRowsHtml}
+                </table>
+            </div>
+            
+            <div class="legend-box">
+                <strong>📋 Master Diagnosis Icons:</strong> 🟢 All Circuits Operational | ❌ Multi-Outage (Wi-Fi/Cloud Drop) | ⚠️ Single Circuit Fault (FI/Inverter Drop) | 🟠 High Shading/Loss | ⏳ Pre-Install
+            </div>
+        </div>`;
+
+        resultsDiv.innerHTML = html;
+        window.tariffDaysCounter = totalTariffDays;
+
+        renderConsolidatedFinancialReport(serials, dailyStorage, activeConfig);
+    }
+
+    function renderConsolidatedFinancialReport(serials, dailyStorage, activeConfig) {
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
+        const tariffStartDate = new Date(activeConfig.tariffStart);
+        
+        let totalMasterKwh = 0;
+        let circuitRows = "";
+
+        serials.forEach(sn => {
+            const deviceDaily = dailyStorage[sn] || {};
+            let invWh = 0;
+
+            for (const [dateStr, wh] of Object.entries(deviceDaily)) {
+                if (new Date(dateStr) >= tariffStartDate) invWh += wh;
+            }
+
+            const invKwh = invWh / 1000;
+            totalMasterKwh += invKwh;
+
+            circuitRows += `<tr>
+                <td>${customNames[sn] || sn}</td>
+                <td>${invKwh.toFixed(2)} kWh</td>
+                <td class="good">${(invKwh * (activeConfig.selfConsumptionRate / 100)).toFixed(2)} kWh</td>
+            </tr>`;
+        });
+
+        const savedKwh = totalMasterKwh * (activeConfig.selfConsumptionRate / 100);
+        const savingsNet = savedKwh * (activeConfig.energyPrice / 100);
+        const theoryDemand = window.tariffDaysCounter * activeConfig.consumption;
+        const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
+        const roiPercent = activeConfig.investment > 0 ? (savingsNet / activeConfig.investment) * 100 : 0;
+
+        let html = `<div class="card" style="border-color: var(--accent); margin-top: 20px;">
+            <h2 style="color: var(--accent);">💰 Multi-Inverter Financial & ROI Summary</h2>
+            <table>
+                <tr><th>Circuit Name</th><th>Yield (Current Tariff)</th><th>Self-Consumed Solar</th></tr>
+                ${circuitRows}
+                <tr style="border-top: 2px solid var(--border); font-weight: bold;">
+                    <td>TOTAL (All Inverters)</td>
+                    <td>${totalMasterKwh.toFixed(2)} kWh</td>
+                    <td class="good">${savedKwh.toFixed(2)} kWh</td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top:20px;">Financial KPI Overview</h3>
+            <table>
+                <tr><th>Metric</th><th>Consolidated Value</th><th>Context</th></tr>
+                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter} Days</td><td>Since tariff start (${activeConfig.tariffStart})</td></tr>
+                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Contribution to ${theoryDemand.toFixed(0)} kWh total household demand</td></tr>
+                <tr><td>Total Financial Savings</td><td class="good">${savingsNet.toFixed(2)} ${activeConfig.currency}</td><td>Direct electricity bill reduction</td></tr>
+                <tr><td>Total Combined ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${activeConfig.currency}${activeConfig.investment} system investment</td></tr>
+            </table>
+        </div>`;
+
+        document.getElementById('results').innerHTML += html;
+
+        globalCsvRows.push([]);
+        globalCsvRows.push(["CONSOLIDATED FINANCIAL SUMMARY"]);
+        globalCsvRows.push(["Total Master Generated (kWh)", totalMasterKwh.toFixed(2).replace('.',',')]);
+        globalCsvRows.push(["Total Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
+        globalCsvRows.push([`Total Savings (${activeConfig.currency})`, savingsNet.toFixed(2).replace('.',',')]);
+        globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
+    }
+
+    function downloadCSV() {
+        const csvContent = "\uFEFF" + globalCsvRows.map(e => e.join(";")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const activeConfig = getUserConfigFor(document.getElementById('cfg_inverter')?.value);
+        
+        link.href = url;
+        link.download = `Consolidated_Solar_Analysis_${activeConfig.startDate || 'Export'}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    window.addEventListener('DOMContentLoaded', initInverters);
+</script>
+</body>
+</html>
