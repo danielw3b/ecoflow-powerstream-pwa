@@ -674,19 +674,19 @@
 
         }
     
-            // 2. Build the main layout HTML container string with the calculation ratio restored
-            // FIXED: Correctly compute and display the dynamic anomaly ratio percentage right next to the sub-header
-            const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-        
-            let html = `<div class="card">
-                <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
-                <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)</span></h3>
-                <div class="table-scroll-frame">
-                    <table>
-                        <tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>
-                        ${tableRowsHtml}
-                    </table>
-                </div>`;
+        // 2. Build the main layout HTML container string with the calculation ratio restored
+        // FIXED: Correctly compute and display the dynamic anomaly ratio percentage right next to the sub-header
+        const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
+  
+        let html = `<div class="card">
+                  <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
+                  <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)</span></h3>
+                  <div class="table-scroll-frame">
+                      <table>
+                          <tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>
+                          ${tableRowsHtml}
+                      </table>
+                  </div>`;
 
             
         globalCsvRows.push([]);
@@ -759,50 +759,55 @@
 
 
                 // Calculate the accurate ratio of performance against expected targets
-                const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
+                //const yieldAccuracyRatio = target.expectedYieldWh > 0 ? (target.realYieldWh / target.expectedYieldWh) : 1.0;
     
+                // Purely weather-based & temperature-aware context evaluation
                 let explanation = "⛅"; 
-                let weatherTooltip = "Cloud Shift: Alternating conditions with passing clouds.";
+                let weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
                 let cssClass = "text-dim"; 
-    
-                // 1. ABSOLUTE SYNCHRONIZATION: Force network flag from Table 1
+                
+                // 1. ABSOLUTE SYNCHRONIZATION: Adopt network/Wi-Fi drops from Table 1
                 if (target.wlanCrash) {
                     explanation = "🔌📶";
-                    weatherTooltip = "Network Buffer Lag: High solar radiation confirmed, but transmission logs dropped out.";
+                    weatherTooltip = "Network Buffer Lag: High radiation confirmed, but transmission protocol aborted.";
                     cssClass = "warn";
                 }
-                // 2. Hardware complete near-zero generation check
+                // 2. Complete hardware failure (zero yield despite solar radiation)
                 else if (target.realYieldWh <= 50) {
                     explanation = "❌";
-                    weatherTooltip = "Hardware Drop: Complete near-zero generation detected. Verify if panels are covered.";
+                    weatherTooltip = "Hardware Drop: Complete yield failure. Check if panels are covered or disconnected.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3. Heavy Weather/Max Overcast Check
-                else if (avgClouds > 75 && sunHours < 3) {
-                    explanation = "🌧️"; 
-                    weatherTooltip = "Max Overcast: Dense continuous cloud layers blocking solar inputs.";
-                    weatherCount++;
+                // 3. Extreme Heat Derating: Ambient >= 33°C causes cell temps >60°C and active inverter derating
+                else if (avgClouds <= 35 && maxPeak > 600 && maxTemp >= 33) {
+                    explanation = "🌡️";
+                    weatherTooltip = `Heat Derating: High solar radiation, but thermal efficiency loss due to extreme heat (${maxTemp}°C).`;
+                    cssClass = "warn";
                 }
-                // 4. Regular Weather compliance check
-                else if (yieldAccuracyRatio >= 0.75) {
-                    explanation = "⛅"; 
-                    weatherTooltip = "Cloud Shift: Normal shifting cloud cover matched expected target profiles.";
-                    weatherCount++;
-                }
-                // 5. Combined External & Technical Interruption Check (Clear Sky Drop)
-                // REVERTED: Strict 30% boundary to perfectly isolate genuine technical & structural anomalies
+                // 4. Technical / External drop under clear skies (cool sunny day with yield drop/gap)
                 else if (avgClouds <= 30 && maxPeak > 600) {
                     explanation = "🔌📶"; 
-                    weatherTooltip = "External Interruption: High sun and clear skies confirmed, but local yield was restricted.";
+                    weatherTooltip = "Sunny day drop: High radiation & clear skies confirmed, but yield was reduced (e.g., shade/throttling/Wi-Fi).";
                     cssClass = "warn"; 
                 }
-                // 6. Overcast Fallback / Moderate Diffuse Light
-                else {
+                // 5. Heavy cloud cover / Continuous rain
+                else if ((avgClouds > 75 && sunHours < 3) || (avgClouds > 85 && sunHours < 5)) {
+                    explanation = "🌧️"; 
+                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal direct radiation.";
+                    weatherCount++;
+                }
+                // 6. Overcast / High diffuse light (high cloudiness AND restricted sunshine)
+                else if (avgClouds > 65 && sunHours < 8) {
                     explanation = "☁️"; 
-                    weatherTooltip = "High Diffuse Light: High total radiation and sun hours penetrating heavy cloud cover sheets.";
-                    cssClass = "text-dim"; 
+                    weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted sunshine duration.";
                     weatherCount++;       
+                }
+                // 7. Partly cloudy / Fair (standard sunny day with clouds)
+                else {
+                    //explanation = "⛅"; 
+                    //weatherTooltip = "Partly cloudy: Good solar radiation with passing clouds.";
+                    weatherCount++;
                 }
 
                 subTableRowsHtml += `<tr>
@@ -858,10 +863,10 @@
         html += `
         <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px; margin-top: 15px; border-top: 1px solid var(--border);">
             <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | 🔌📶 Interruption | ❌ Hardware Fail | ⏳ Pre-Install<br>
-            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Mixed Clouds | ☁️ Cloud Shift | 🌧️ Max Overcast | 🔌📶 External Interruption (Clear Skies &lt;=30% Clouds) | ❌ Hardware Drop<br>
+            <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ Partly Cloudy | ☁️ Overcast & Diffuse | 🌧️ Heavy Cloud / Rain | 🌡️ Heat Derating (&ge;33°C) | 🔌📶 External Interruption (&le;30% Clouds / Lag) | ❌ Hardware Drop<br>
             <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> 
             The separation of open satellite data into direct (beam) and diffuse sky irradiance values follows the empirical regression principles established by 
-            <em>Liu & Jordan (1960) - \"The interrelationship and characteristic distribution of direct, diffuse and total solar radiation\"</em>. 
+            <em>Liu & Jordan (1960) - "The interrelationship and characteristic distribution of direct, diffuse and total solar radiation"</em>. 
             This mathematical proxy allows shading configurations to be simulated accurately across fixed panel arrays without requiring live local pyranometers.<br>
             <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> 
             Bifacial targets higher base performance ratios (14.0%+) due to rear-side light absorption. 
