@@ -633,9 +633,12 @@
 
         Object.keys(masterDates).sort().reverse().forEach(dateStr => {
             const rowData = masterDates[dateStr];
-            if (new Date(dateStr) >= new Date(activeConfig.tariffStart)) totalTariffDays++;
+            
+            // Tariff days check
+            const isTariffActive = new Date(dateStr) >= new Date(activeConfig.tariffStart);
+            if (isTariffActive) totalTariffDays++;
 
-            let masterStatusIcon = "🟢";
+            let masterStatusIcon = "🟢 (Optimal)";
             let statuses = serials.map(sn => rowData.inverters[sn].status);
             
             if (statuses.every(s => s === "❌")) {
@@ -646,7 +649,14 @@
                 masterStatusIcon = "🟠 (Partial Loss)";
             }
 
-            let csvRow = [`"${dateStr}"`, `"${rowData.totalRadKwhM2.toFixed(2)}"`, `"${rowData.dayTemp.toFixed(1)}"`];
+            let csvRow = [
+                `"${dateStr}"`, 
+                `"${rowData.totalRadKwhM2.toFixed(2)}"`, 
+                `"${rowData.dayTemp.toFixed(1)}"`,
+                `"${rowData.dirKwhM2 ? rowData.dirKwhM2.toFixed(2) : '0.00'}"`,
+                `"${rowData.diffKwhM2 ? rowData.diffKwhM2.toFixed(2) : '0.00'}"`,
+                `"${rowData.tempLossFactor ? rowData.tempLossFactor.toFixed(3) : '1.0'}"`
+            ];
 
             let inverterDetailsList = "";
 
@@ -654,20 +664,19 @@
                 const inv = rowData.inverters[sn];
                 const deviceName = inv.friendlyName || sn;
 
-                // Vertikale Inverter-Liste für den aufgeklappten Detailbereich mit Platz für Diagnose
+                // Feste zweite Zeile: Inverter-Spezifika + Diagnose-Feld
                 inverterDetailsList += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px dashed rgba(255,255,255,0.08);">
                         <div>
-                            <strong>${deviceName}</strong> (${inv.status})<br>
-                            <span style="font-size:0.75rem; color:var(--text-dim);">Real: ${(inv.realYieldWh/1000).toFixed(2)} kWh | Soll: ${(inv.expectedSollWh/1000).toFixed(2)} kWh | ${inv.diagText}</span>
+                            <strong style="color: var(--text);">${deviceName}</strong> <span style="font-size:0.8rem;">${inv.status}</span><br>
+                            <span style="font-size:0.75rem; color:var(--text-dim);">Soll: ${(inv.expectedSollWh/1000).toFixed(2)} kWh | Real: ${(inv.realYieldWh/1000).toFixed(2)} kWh | ${inv.diagText}</span>
                         </div>
                         <div style="text-align: right;">
-                            <span class="${inv.cssClass}" style="font-weight: bold;">${inv.efficiency.toFixed(1)}%</span><br>
+                            <span class="${inv.cssClass}" style="font-weight: bold; font-size: 0.85rem;">${inv.efficiency.toFixed(1)}%</span><br>
                             <input type="text" placeholder="Diagnose..." style="width: 100px; height: 26px; font-size: 0.75rem; margin-top: 4px;" />
                         </div>
                     </div>`;
 
-                // Original CSV data row sequence remains fully intact
                 csvRow.push(
                     `"${(inv.expectedSollWh/1000).toFixed(2)}"`, 
                     `"${(inv.realYieldWh/1000).toFixed(2)}"`, 
@@ -678,38 +687,40 @@
 
             globalCsvRows.push(csvRow);
 
-            // Accordion-Zeile: Klickbar über die gesamte Breite, mit integrierten Wetter- und Inverter-Details
+            // Permanente 2-Zeilen-Struktur pro Tag (Ohne Aufklappen)
             masterRowsHtml += `
-                <details style="border-bottom: 1px solid var(--border); background: var(--panel);">
-                    <summary style="display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; cursor: pointer; user-select: none;">
-                        <div><strong>${dateStr}</strong></div>
-                        <div style="color: var(--text-dim); font-size: 0.85rem;">
-                            Rad: ${rowData.totalRadKwhM2.toFixed(2)} kWh/m² | Temp: ${rowData.dayTemp.toFixed(1)} °C
+                <div style="border-bottom: 1px solid var(--border); background: var(--panel); padding: 12px 15px; margin-bottom: 8px; border-radius: 6px;">
+                    <!-- Zeile 1: Datum & Alle Umwelt-/Wetterdaten -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                        <div style="font-weight: bold; color: var(--text);">${dateStr}</div>
+                        <div style="color: var(--text-dim); font-size: 0.78rem; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span>Rad: <strong>${rowData.totalRadKwhM2.toFixed(2)}</strong></span>
+                            <span>Dir: <strong>${rowData.dirKwhM2 ? rowData.dirKwhM2.toFixed(2) : '0.00'}</strong></span>
+                            <span>Diff: <strong>${rowData.diffKwhM2 ? rowData.diffKwhM2.toFixed(2) : '0.00'}</strong></span>
+                            <span>Temp: <strong>${rowData.dayTemp.toFixed(1)}°C</strong></span>
+                            <span>Loss: <strong>${rowData.tempLossFactor ? rowData.tempLossFactor.toFixed(3) : '1.0'}</strong></span>
                         </div>
                         <div>
-                            <span class="badge" style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">${masterStatusIcon}</span>
+                            <span class="badge" style="background: rgba(255,255,255,0.08); padding: 3px 6px; border-radius: 4px; font-size: 0.75rem;">${masterStatusIcon}</span>
                         </div>
-                    </summary>
-                    <div class="accordion-content" style="padding: 15px; background: rgba(0,0,0,0.2);">
-                        <div style="margin-bottom: 12px; font-size: 0.85rem; color: var(--text-dim);">
-                            🌤️ <strong>Day Weather Overview:</strong> Radiation: ${rowData.totalRadKwhM2.toFixed(2)} kWh/m² | Temp: ${rowData.dayTemp.toFixed(1)} °C
-                        </div>
-                        <h3 style="margin-top: 5px; font-size: 0.85rem; color: var(--text-dim); border-bottom: 1px solid var(--border); padding-bottom: 4px;">Inverter Status & Diagnosis</h3>
+                    </div>
+                    <!-- Zeile 2: Inverter-Daten & Diagnose direkt sichtbar -->
+                    <div style="background: rgba(0,0,0,0.2); padding: 8px 10px; border-radius: 4px;">
                         ${inverterDetailsList}
                     </div>
-                </details>`;
+                </div>`;
         });
 
         let html = `<div class="card" style="padding: 0; overflow: hidden;">
             <div style="padding: 20px 20px 10px 20px;">
                 <h2>📡 Consolidated Master Solar Overview</h2>
-                <h3>All Connected Circuits & Diagnostics <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${serials.length} Devices Active</span></h3>
+                <h3>Daily Weather & Inverter Breakdown <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${serials.length} Devices Active</span></h3>
             </div>
-            <div>
+            <div style="padding: 0 15px;">
                 ${masterRowsHtml}
             </div>
-            <div class="legend-box" style="margin: 15px; padding: 12px; font-size:0.85rem;">
-                <strong>📋 Master Diagnosis Icons:</strong> 🟢 All Operational | ❌ Multi-Outage | ⚠️ Single Circuit Fault | 🟠 Partial Loss | ⏳ Pre-Install
+            <div class="legend-box" style="margin: 15px; padding: 12px; font-size:0.85rem; background: rgba(0,0,0,0.1); border-radius: 6px;">
+                <strong>📋 Master Diagnosis Icons:</strong> 🟢 Optimal | ❌ Multi-Outage | ⚠️ Single Drop | 🟠 Partial Loss
             </div>
         </div>`;
 
@@ -723,66 +734,59 @@
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const resultsDiv = document.getElementById('results');
         
-        let totalDays = window.tariffDaysCounter || 0;
         let deviceStats = {};
-
         serials.forEach(sn => {
-            deviceStats[sn] = {
-                totalRealWh: 0,
-                totalSollWh: 0,
-                activeDaysCount: 0
-            };
+            deviceStats[sn] = { totalRealWh: 0, totalSollWh: 0 };
         });
 
-        // Accumulate real yields and expected solls across active tariff days
-        Object.keys(dailyStorage).forEach(sn => {
-            if (!deviceStats[sn]) return;
-            const deviceDaily = dailyStorage[sn];
-            
-            Object.keys(deviceDaily).forEach(dateStr => {
+        // Exakte Aufsummierung analog zum Inliner-Skript
+        if (window.masterDates) {
+            Object.keys(window.masterDates).forEach(dateStr => {
                 if (new Date(dateStr) >= new Date(activeConfig.tariffStart)) {
-                    deviceStats[sn].totalRealWh += deviceDaily[dateStr] || 0;
-                    deviceStats[sn].activeDaysCount++;
+                    const row = window.masterDates[dateStr];
+                    serials.forEach(sn => {
+                        if (row.inverters && row.inverters[sn]) {
+                            deviceStats[sn].totalRealWh += row.inverters[sn].realYieldWh || 0;
+                            deviceStats[sn].totalSollWh += row.inverters[sn].expectedSollWh || 0;
+                        }
+                    });
                 }
             });
-        });
+        }
 
         let financialHtml = `<div class="card" style="margin-top:20px;">
             <h2>💰 Consolidated Financial & Hardware Efficiency Report</h2>
             <h3>Performance Ratio & Tariff Overview (Since ${activeConfig.tariffStart})</h3>
-            <table style="width:100%; margin-top:10px; border-collapse:collapse;">
-                <thead>
-                    <tr>
-                        <th>Device Name (SN)</th>
-                        <th>Total Real Yield</th>
-                        <th>Total Expected Soll</th>
-                        <th>Hardware Efficiency Ratio</th>
-                        <th>Estimated Savings</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+            <div style="overflow-x: auto;">
+                <table style="width:100%; margin-top:10px; border-collapse:collapse; min-width: 500px;">
+                    <thead>
+                        <tr>
+                            <th>Device Name (SN)</th>
+                            <th>Total Real Yield</th>
+                            <th>Total Expected Soll</th>
+                            <th>Hardware Efficiency Ratio</th>
+                            <th>Estimated Savings</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
 
         let csvFinancialRows = [["--- FINANCIAL & HARDWARE EFFICIENCY SUMMARY ---"], ["Device Name", "Total Real (kWh)", "Total Soll (kWh)", "Hardware Efficiency Ratio (%)", "Savings (€)"]];
 
-      serials.forEach(sn => {
+        serials.forEach(sn => {
             const name = customNames[sn] || sn;
             const stats = deviceStats[sn];
             
-            // For a rough estimation, we approximate the total soll based on active days or master matrix. 
-            // In the robust implementation, we sum up expected solls per active day.
-            let estimatedSollWh = stats.totalRealWh * 0.95; // fallback placeholder or precise accumulator if available
-            
-            // Hardware Efficiency Ratio calculation (Real / Soll * 100)
-            let hwRatio = stats.totalSollWh > 0 ? (stats.totalRealWh / stats.totalSollWh) * 100 : 95.0; 
-            
             let realKwh = stats.totalRealWh / 1000;
+            let sollKwh = stats.totalSollWh / 1000;
+            
+            let hwRatio = stats.totalSollWh > 0 ? (stats.totalRealWh / stats.totalSollWh) * 100 : 0;
             let savingsEur = realKwh * (activeConfig.electricityPrice || 0.40);
 
             financialHtml += `
                 <tr>
                     <td><strong>${name}</strong></td>
                     <td>${realKwh.toFixed(2)} kWh</td>
-                    <td>${(estimatedSollWh / 1000).toFixed(2)} kWh</td>
+                    <td>${sollKwh.toFixed(2)} kWh</td>
                     <td><span class="${hwRatio >= 90 ? 'good' : 'warn'}">${hwRatio.toFixed(1)}%</span></td>
                     <td><strong>${savingsEur.toFixed(2)} €</strong></td>
                 </tr>`;
@@ -790,18 +794,16 @@
             csvFinancialRows.push([
                 `"${name}"`,
                 `"${realKwh.toFixed(2)}"`,
-                `"${(estimatedSollWh / 1000).toFixed(2)}"`,
+                `"${sollKwh.toFixed(2)}"`,
                 `"${hwRatio.toFixed(1)}%"`,
                 `"${savingsEur.toFixed(2)}"`
             ]);
         });
 
-        financialHtml += `</tbody></table></div>`;
-
-        // Append financial report to the existing results container and push to global CSV rows
+        financialHtml += `</tbody></table></div></div>`;
         resultsDiv.innerHTML += financialHtml;
         
-        globalCsvRows.push([]); // Empty row separator in CSV
+        globalCsvRows.push([]); 
         csvFinancialRows.forEach(row => globalCsvRows.push(row));
     }
 
