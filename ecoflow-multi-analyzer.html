@@ -761,9 +761,9 @@
                 </thead>
                 <tbody>`;
 
-        let csvFinancialRows = [["--- FINANCIAL & HARDWARE EFFICIENCY SUMMARY ---"], ["Device Name", "Total Real (kWh)", "Total Soll (kWh)", "Hardware Efficiency Ratio (%)", "Savings (€)']"];
+        let csvFinancialRows = [["--- FINANCIAL & HARDWARE EFFICIENCY SUMMARY ---"], ["Device Name", "Total Real (kWh)", "Total Soll (kWh)", "Hardware Efficiency Ratio (%)", "Savings (€)"]];
 
-        serials.forEach(sn => {
+      serials.forEach(sn => {
             const name = customNames[sn] || sn;
             const stats = deviceStats[sn];
             
