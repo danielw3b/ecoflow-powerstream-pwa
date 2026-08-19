@@ -757,6 +757,23 @@
                     cssClass = "warn";
                     criticalCount++;
                 }
+                
+                // 3b. Connection Problem / Partial Outage during mixed weather
+                // Catch cases with critically low efficiency (e.g., ~2%) and yield < 50% of expectation, 
+                // despite having viable solar conditions (< 80% clouds, >= 4 sun hours, >= 500 maxPeak).
+                else if (
+                    target.efficiency <= 5 && 
+                    target.realYieldWh < (target.expectedYieldWh * 0.5) && 
+                    avgClouds < 80 && 
+                    sunHours >= 4 && 
+                    maxPeak >= 500
+                ) {
+                    explanation = "🔌 🔴"; 
+                    weatherTooltip = `Connection Problem: Critically low efficiency (${target.efficiency}%) and yield below 50% of expected, despite viable solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²).`;
+                    cssClass = "bad";
+                    criticalCount++;
+                }
+  
                 // 4. Heavy Rain / Extreme Clouds
                 else if (avgClouds > 90 && sunHours < 3) {
                     explanation = "🌧️ ☁️"; 
