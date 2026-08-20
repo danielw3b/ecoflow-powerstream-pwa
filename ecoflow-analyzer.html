@@ -518,7 +518,7 @@
         document.getElementById('runBtn').disabled = false;
     }
 
-    // Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
+// Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
         // 🚀 FIXED: All 6 core counters and tracking arrays grouped safely at the top scope
         let totalDaysAnalyzed = 0;
@@ -677,7 +677,7 @@
         if (anomalies.length > 0) {
             
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
-            globalCsvRows.push(["Date", "Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
+            globalCsvRows.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
 
             const resolvedAnomalies = [];
             const batchSize = 4;
@@ -735,10 +735,10 @@
                 let weatherTooltip = "Partly cloudy with mixed radiation.";
                 let cssClass = "text-dim"; 
 
-                // 1. Hardware Failure: Extreme case (0-100 Wh) despite solar radiation
-                if (target.realYieldWh <= 100 && maxPeak > 400) {
+                // 1. Hardware Failure: Extreme case (Yield < 5% of expectation) despite viable solar radiation
+                if (target.realYieldWh <= (target.expectedYieldWh * 0.05) && maxPeak > 400 && avgClouds < 85) {
                     explanation = "❌ 🔌";
-                    weatherTooltip = "Hardware Drop: Complete yield failure despite solar radiation. Check inverter or DC switch.";
+                    weatherTooltip = "Hardware Drop: Complete yield failure (< 5% of expected) despite viable solar radiation. Check inverter or DC switch.";
                     cssClass = "bad";
                     criticalCount++;
                 }
@@ -750,7 +750,6 @@
                     weatherCount++;
                 }
                 // 3. Technical / External Interruption (FIXED)
-                // If it's a beautifully sunny day but flagged as an anomaly, it MUST be an interruption/shadow
                 else if (avgClouds <= 35 && maxPeak > 600) {
                     explanation = "📶 ⚠️";
                     weatherTooltip = `Technical / Interruption: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired. Likely offline, shadows, or limiters.`;
@@ -759,8 +758,6 @@
                 }
                 
                 // 3b. Connection Problem / Partial Outage during mixed weather
-                // Catch cases with critically low efficiency (e.g., ~2%) and yield < 50% of expectation, 
-                // despite having viable solar conditions (< 80% clouds, >= 4 sun hours, >= 500 maxPeak).
                 else if (
                     target.efficiency <= 5 && 
                     target.realYieldWh < (target.expectedYieldWh * 0.5) && 
@@ -797,9 +794,13 @@
                     weatherCount++;
                 }
 
+                // Format Soll / Real kWh into a single combined cell
+                const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
+                const realKwh = (target.realYieldWh / 1000).toFixed(2);
+
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
-                    <td>${(target.realYieldWh/1000).toFixed(2)}</td>
+                    <td class="nowrap">${sollKwh} / ${realKwh}</td>
                     <td class="bad">${target.efficiency.toFixed(1)}%</td>
                     <td>${avgClouds}%</td>
                     <td>${sunHours} h</td>
@@ -809,10 +810,10 @@
                 
                 globalCsvRows.push([
                     `"${target.date}"`, 
-                    `"${(target.realYieldWh/1000).toFixed(2)}"`, 
-                    `"${target.efficiency.toFixed(1)}"`, 
+                    `"${sollKwh.replace('.',',')} / ${realKwh.replace('.',',')}"`, 
+                    `"${target.efficiency.toFixed(1).replace('.',',')}"`, 
                     `"${avgClouds}"`, 
-                    `"${sunHours.toString()}"`, 
+                    `"${sunHours.toString().replace('.',',').__proto__ ? sunHours.toString().replace('.',',') : sunHours}"`, 
                     `"${maxPeak}"`, 
                     `"${explanation}"`
                 ]);
@@ -827,7 +828,7 @@
             </h3>
             <div class="table-scroll-frame">
                 <table>
-                    <tr><th>Date</th><th>Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>
+                    <tr><th>Date</th><th>Soll / Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>
                     ${subTableRowsHtml}
                 </table>
             </div>`;
