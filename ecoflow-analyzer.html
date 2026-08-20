@@ -156,7 +156,7 @@
             box-shadow: inset 0 -1px 0 var(--border); 
         }
         tr:hover { background: rgba(255,255,255,0.02); }
-        table td:last-child, table th:last-child { text-align: center; }
+        table td:last-child, table th:last-child { /*text-align: center;*/ }
 
         @media (min-width: 600px) {
             th, td { padding: 10px; font-size: 0.9rem; }
@@ -735,8 +735,16 @@
                 let weatherTooltip = "Partly cloudy with mixed radiation.";
                 let cssClass = "text-dim"; 
 
-                // 1. Hardware Failure: Extreme case (Yield < 5% of expectation) despite viable solar radiation
-                if (target.realYieldWh <= (target.expectedYieldWh * 0.05) && maxPeak > 400 && avgClouds < 85) {
+                // 1. ABSOLUTE OUTAGE / COVERED PANEL: Overrides weather if yield is practically zero (<= 50 Wh),
+                // EXCEPT on pitch-black rainy days (>95% clouds & <3h sun) where ~40Wh is perfectly normal.
+                if (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3)) {
+                    explanation = "❌ 🔌";
+                    weatherTooltip = "Hardware Drop: System turned off, covered or completely disconnected.";
+                    cssClass = "bad";
+                    criticalCount++;
+                }
+                // 1b. HARDWARE FAILURE: Yield < 5% of expectation despite viable solar radiation
+                else if (target.realYieldWh <= (target.expectedYieldWh * 0.05) && maxPeak > 400 && avgClouds < 85) {
                     explanation = "❌ 🔌";
                     weatherTooltip = "Hardware Drop: Complete yield failure (< 5% of expected) despite viable solar radiation. Check inverter or DC switch.";
                     cssClass = "bad";
