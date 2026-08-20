@@ -662,7 +662,7 @@
                 <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)</span></h3>
                 <div class="table-scroll-frame">
                     <table>
-                        <tr><th>Date</th><th>Radiation</th><th>Expected Soll Yield</th><th>EcoFlow Real</th><th>Efficiency</th><th>Diagnosis</th></tr>
+                        <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
                         ${tableRowsHtml}
                     </table>
                 </div>`;
@@ -824,10 +824,10 @@
 
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
-                    <td class="nowrap">${sollKwh} / <b>${realKwh}</b></td>
-                    <td class="bad">${target.efficiency.toFixed(1)}%</td>
-                    <td>${avgClouds}%</td>
-                    <td>${sunHours} h</td>
+                    <td class="nowrap">${sollKwh} | <b>${realKwh}</b></td>
+                    <td class="bad">${target.efficiency.toFixed(1)}</td>
+                    <td>${avgClouds}</td>
+                    <td>${sunHours}</td>
                     <td>${maxPeak}</td>
                     <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
                 </tr>`;
@@ -852,7 +852,7 @@
             </h3>
             <div class="table-scroll-frame">
                 <table>
-                    <tr><th>Date</th><th>Soll / <b>Real</b> (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>
+                    <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Efficiency (%)</th><th>Clouds (%)</th><th>Sun (h)</th><th>MaxPeak (W/m²)</th><th>Context</th></tr>
                     ${subTableRowsHtml}
                 </table>
             </div>`;
@@ -923,7 +923,7 @@
         let html = `<div class="card" style="border-color: var(--accent); margin-top: 20px;">
             <h2 style="color: var(--accent);">💰 Financial & ROI Report</h2>
             <table>
-                <tr><th>Metric</th><th>Value</th><th>Context</th></tr>
+                <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td>Since current tariff start (${globalConfig.tariffStart})</td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td>Output generated under THIS tariff period</td></tr>
                 <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Saved since ${globalConfig.tariffStart}</td></tr>
