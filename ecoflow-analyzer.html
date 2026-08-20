@@ -924,14 +924,14 @@
             <h2 style="color: var(--accent);">💰 Financial & ROI Report</h2>
             <table>
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
-                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td>Since current tariff start (${globalConfig.tariffStart})</td></tr>
-                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td>Output generated under THIS tariff period</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td>Saved since ${globalConfig.tariffStart}</td></tr>
-                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td>Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
-                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td>Cash saved by this inverter</td></tr>
-                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td>Of ${cur}${investment} investment</td></tr>
+                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Since current tariff start (${globalConfig.tariffStart})</td></tr>
+                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated under THIS tariff period</td></tr>
+                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
+                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
+                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
+                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
                 <!-- Audited: Dynamic summary display row mapping -->
-                <tr><td>Hardware Efficiency Ratio</td><td class="${efficiencyClass}">${hwEfficiency.toFixed(0)}%</td><td>(${criticalCount} anomalies over ${totalDaysAnalyzed} days)</td></tr>
+                <tr><td>Hardware Efficiency Ratio</td><td class="${efficiencyClass}">${hwEfficiency.toFixed(0)}%</td><td style="text-align:left;">${criticalCount} anomalies over ${totalDaysAnalyzed} days</td></tr>
             </table>
         </div>`;
         
