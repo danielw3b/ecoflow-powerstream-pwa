@@ -773,8 +773,13 @@
                     cssClass = "warn";
                     criticalCount++;
                 }
-                // 3a. NEW: High Diffuse Light Override (Catches cases like 30.07.)
-                // Prevents false connection drop alarms if light was heavily diffuse (>65%)
+                // 4. Heavy Rain / Extreme Clouds (MOVED UP: Takes precedence over general diffuse override)
+                else if (avgClouds > 90 && sunHours < 3) {
+                    explanation = "🌧️ ☁️";
+                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
+                    weatherCount++;
+                }
+                // 3a. High Diffuse Light Override (Catches cases like 30.07. without stealing rainy days)
                 else if (realDiffuseShare >= 0.65 && avgClouds >= 40) {
                     explanation = "☁️ 🌫️";
                     weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% of the radiation was diffuse. Theoretical yield calculation was too high.`;
@@ -794,12 +799,6 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 4. Heavy Rain / Extreme Clouds
-                else if (avgClouds > 90 && sunHours < 3) {
-                    explanation = "🌧️ ☁️";
-                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
-                    weatherCount++;
-                }
                 // 5. Mostly Overcast with Sun Breaks
                 else if (avgClouds >= 80 && maxPeak >= 600) {
                     explanation = "☁️ ⛅";
@@ -814,16 +813,18 @@
                 }
                 // 7. Standard Mixed Weather (Fallback)
                 else {
+                    explanation = "⛅ ☀️";
+                    weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
                     weatherCount++;
                 }
-
+              
                 // Format Soll / Real kWh into a single combined cell
                 const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
                 const realKwh = (target.realYieldWh / 1000).toFixed(2);
 
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
-                    <td class="nowrap">${sollKwh} / ${realKwh}</td>
+                    <td class="nowrap">${sollKwh} / <b>${realKwh}</b></td>
                     <td class="bad">${target.efficiency.toFixed(1)}%</td>
                     <td>${avgClouds}%</td>
                     <td>${sunHours} h</td>
@@ -851,7 +852,7 @@
             </h3>
             <div class="table-scroll-frame">
                 <table>
-                    <tr><th>Date</th><th>Soll / Real (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>
+                    <tr><th>Date</th><th>Soll / <b>Real</b> (kWh)</th><th>Efficiency</th><th>Clouds (%)</th><th>Sun (h)</th><th>Max Peak (W/m²)</th><th>Context</th></tr>
                     ${subTableRowsHtml}
                 </table>
             </div>`;
