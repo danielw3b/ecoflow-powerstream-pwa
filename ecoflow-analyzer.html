@@ -818,16 +818,21 @@
                 let cssClass = "text-dim"; 
 
                 // 1. ABSOLUTE OUTAGE / COVERED PANEL
-                if (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3)) {
+                if (target.realYieldWh <= 50) {
                     explanation = "❌ 🔌";
                     weatherTooltip = "Hardware Drop: System turned off, covered or completely disconnected.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 1b. HARDWARE FAILURE
-                else if (target.realYieldWh <= (target.expectedYieldWh * 0.05) && maxPeak > 400 && avgClouds < 85) {
+                // 1b. HARDWARE FAILURE: Strict efficiency check (< 4%)
+                else if (
+                    target.efficiency < 4 && 
+                    target.realYieldWh <= (target.expectedYieldWh * 0.05) && 
+                    maxPeak > 400 && 
+                    avgClouds < 85
+                ) {
                     explanation = "❌ 🔌";
-                    weatherTooltip = "Hardware Drop: Complete yield failure (< 5% of expected) despite viable solar radiation. Check inverter or DC switch.";
+                    weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and complete yield failure (< 5% of expected) despite viable solar radiation.`;
                     cssClass = "bad";
                     criticalCount++;
                 }
@@ -838,15 +843,15 @@
                     cssClass = "warn";
                     weatherCount++;
                 }
-                // 3. Technical / External Interruption
+                // 3. Technical / External Interruption (Connection Drop)
                 else if (avgClouds <= 35 && maxPeak > 600) {
                     explanation = "📶 ⚠️";
-                    weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired. Likely offline, shadows, or limiters.`;
+                    weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired.`;
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 4. Heavy Rain / Extreme Clouds (Takes precedence)
-                else if (avgClouds > 90 && sunHours < 3) {
+                // 4. Heavy Rain / Extreme Clouds (Must take precedence over diffuse!)
+                else if (avgClouds > 90 && sunHours < 4) {
                     explanation = "🌧️ ☁️";
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
@@ -860,14 +865,14 @@
                     maxPeak >= 500
                 ) {
                     explanation = "❌ 🔌"; 
-                    weatherTooltip = `Hardware Drop: Critically low efficiency (${target.efficiency}%) and yield below 50% of expected, despite viable solar conditions (${sunHours}h sun, Peak ${maxPeak} W/m²).`;
+                    weatherTooltip = `Hardware Drop: Critically low efficiency (${target.efficiency}%) and yield below 50% of expected.`;
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3a. High Diffuse Light Override
-                else if (realDiffuseShare >= 0.65 && avgClouds >= 40) {
+                // 3a. High Diffuse Light Override (STRICT: Only when peak is low!)
+                else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500) {
                     explanation = "☁️ 🌫️";
-                    weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% of the radiation was diffuse. Theoretical yield calculation was too high.`;
+                    weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²).`;
                     cssClass = "text-dim";
                     weatherCount++;
                 }
