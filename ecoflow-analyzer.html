@@ -782,7 +782,7 @@
               cssClass = "bad";
               isCritical = true;
             } else if (maxTemp >= 33 && avgClouds <= 35) {
-              explanation = "🌡️ ☀️";
+              explanation = "🌡️ 🥵";
               weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
               cssClass = "warn";
               weatherCount++;
@@ -866,7 +866,7 @@
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
   
         let html = `<div class="card">
-                  <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
+                  <h2>📡 Inverter: ${friendlyName}</h2>
                   
                   <!-- Status & Indicator Ratios Summary Box -->
                   <div class="summary-card" style="margin: 15px 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px;">
@@ -876,7 +876,7 @@
                           <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                               <div>✅ <b>${optimalCount}</b> (${optPct}%)</div>
                               <div>🟢 <b>${normalCount}</b> (${normPct}%)</div>
-                              <span style="font-weight: bold; color: var(--text-dim);">Sum: ${sumOptNorm}%</span>
+                              <span style="font-weight: bold; color: var(--text-dim);">∑: ${sumOptNorm}%</span>
                           </div>
                       </div>
               
@@ -884,7 +884,7 @@
                           <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                               <div>🟠 <b>${lossCount}</b> (${lossPct}%)</div>
                               <div>❌ <b>${hardwareFailCount}</b> (${failPct}%)</div>
-                              <span style="font-weight: bold; color: var(--text-dim);">Sum: ${sumLossFail}%</span>
+                              <span style="font-weight: bold; color: var(--text-dim);">∑: ${sumLossFail}%</span>
                           </div>
                           <div style="color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
                               <span>Issues: <b>${criticalCount}</b></span>
@@ -897,7 +897,7 @@
                   </div>
               
                   <!-- Table 1: Daily Efficiency Tracker -->
-                  <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)</span></h3>
+                  <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${totalDaysAnalyzed} Days</span></h3>
                   <div class="table-scroll-frame">
                       <table>
                           <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
@@ -911,7 +911,7 @@
                   <h3 style="margin-top:30px; color:var(--warning);">
                       🔍 Daily Anomaly & Weather Context
                       <span style="float:right; font-size:0.85rem; color:var(--text-dim);">
-                          Issues: <span class="bad" style="font-weight:bold;">${criticalCount}</span> / <span style="color:var(--text-dim);">${weatherCount} Weather</span>
+                          Issues: <span class="bad" style="font-weight:bold;">${criticalCount}</span> | <span style="color:var(--text-dim);">${weatherCount} Weather</span>
                       </span>
                   </h3>
                   <div class="table-scroll-frame">
@@ -926,7 +926,8 @@
           globalCsvRows.push([
             `Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`,
             `Critical Issues: ${criticalCount}`,
-            `Weather Context: ${weatherCount}`
+            `Weather Context: ${weatherCount}`,
+            `Hardw. Efficiency: ${hwEfficiency}%`
           ]);
           globalCsvRows.push([]);
         }
@@ -934,7 +935,7 @@
         html += `
               <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px; margin-top: 15px; border-top: 1px solid var(--border);">
                   <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
-                  <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🌡️ Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
+                  <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
                   <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
                   <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (7.5%).
               </div></div>`;
