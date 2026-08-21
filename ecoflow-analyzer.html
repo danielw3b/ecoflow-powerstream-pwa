@@ -845,12 +845,11 @@
                 // 2. HARDWARE FAILURE: Strict efficiency check (< 4%)
                 else if (
                     target.efficiency < 4 && 
-                    target.realYieldWh <= (target.expectedYieldWh * 0.05) && 
                     maxPeak > 400 && 
                     avgClouds < 85
                 ) {
                     explanation = "❌ 🔌";
-                    weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and complete yield failure (< 5% of expected) despite viable solar radiation.`;
+                    weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and complete yield failure despite viable solar radiation.`;
                     cssClass = "bad";
                     criticalCount++;
                 }
