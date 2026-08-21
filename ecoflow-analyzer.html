@@ -716,22 +716,20 @@
 
         const hwEfficiency = totalDaysAnalyzed > 0 ? (100 - ((hardwareFailCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
-        //
+        //STATUS & INDICATOR RATIOS
         let html = `<div class="card">
             <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
             
-            <!-- STATUS & INDICATOR RATIOS (2-Row Layout) -->
+            <!-- STATUS & INDICATOR RATIOS (2-Row Layout, Preinstall removed) -->
             <div class="summary-card" style="margin: 15px 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px;">
                 <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">📊 Status & Indicator Ratios</h3>
                 
-                <!-- Row 1: Optimal & Normal states -->
+                <!-- Row 1: Optimal & Normal states + Combined Sum on the left -->
                 <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                         <div>✅ <b>${optimalCount}</b> (${optPct}%)</div>
                         <div>🟢 <b>${normalCount}</b> (${normPct}%)</div>
-                    </div>
-                    <div style="font-weight: bold; color: var(--text-dim);">
-                        = ${(optPct + normPct)}%
+                        <span style="font-weight: bold; color: var(--text-dim);">= ${Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100)}%</span>
                     </div>
                 </div>
         
@@ -741,7 +739,7 @@
                     <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                         <div>🟠 <b>${lossCount}</b> (${lossPct}%)</div>
                         <div>❌ <b>${hardwareFailCount}</b> (${failPct}%)</div>
-                        <span style="font-weight: bold; color: var(--text-dim);">Sum: ${(lossPct + failPct)}%</span>
+                        <span style="font-weight: bold; color: var(--text-dim);">Sum: ${Math.round(((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100)}%</span>
                     </div>
                     <!-- Right side: Compact counters for issues, weather, and hardware efficiency -->
                     <div style="color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
