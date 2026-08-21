@@ -544,7 +544,7 @@
         let tableRowsHtml = "";
         
         globalCsvRows.push([`DEVICE: ${sn} / ${friendlyName}`]);
-        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
+        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Indicator"]);
 
         // RESOLVE HARDWARE DEPLOYMENT BOUNDARIES ONCE PRIOR TO LOOP
         const validDates = Object.keys(deviceDaily).filter(d => deviceDaily[d] !== undefined);
@@ -931,18 +931,19 @@
                 <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
                 <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
                 <!-- Audited: Dynamic summary display row mapping -->
-                <tr><td>Hardware Efficiency Ratio</td><td class="${efficiencyClass}">${hwEfficiency.toFixed(0)}%</td><td style="text-align:left;">${criticalCount} anomalies over ${totalDaysAnalyzed} days</td></tr>
+                <tr><td>Hardware Efficiency Ratio</td><td class="${efficiencyClass}">${hwEfficiency.toFixed(0)}%</td><td style="text-align:left;">${criticalCount} issues over ${totalDaysAnalyzed} days</td></tr>
             </table>
         </div>`;
         
         document.getElementById('results').innerHTML += html;
         
-        globalCsvRows.push(["FINANCIAL REPORT"]);
+        globalCsvRows.push(["FINANCIAL REPORT:"]);
+        globalCsvRows.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
         globalCsvRows.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
         globalCsvRows.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
         globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
         globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
-        globalCsvRows.push(["Hardware Efficiency Ratio (%)", hwEfficiency.toFixed(0)]);
+        globalCsvRows.push([`Hardware Efficiency Ratio (${criticalCount}/${totalDaysAnalyzed}) (%)`, hwEfficiency.toFixed(0)]);
     }
 
 
