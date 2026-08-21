@@ -887,6 +887,8 @@
                               <span style="font-weight: bold; color: var(--text-dim);">∑: ${sumLossFail}%</span>
                           </div>
                           <div style="color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                              <span>Days: <b>${totalDaysAnalyzed}</b></span>
+                              <span>|</span>
                               <span>Issues: <b>${criticalCount}</b></span>
                               <span>|</span>
                               <span>Weather: <b>${weatherCount}</b></span>
@@ -897,7 +899,7 @@
                   </div>
               
                   <!-- Table 1: Daily Efficiency Tracker -->
-                  <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">${totalDaysAnalyzed} Days</span></h3>
+                  <h3>Daily Efficiency Tracker</h3>
                   <div class="table-scroll-frame">
                       <table>
                           <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
