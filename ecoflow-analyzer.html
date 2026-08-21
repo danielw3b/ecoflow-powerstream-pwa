@@ -716,33 +716,53 @@
 
         const hwEfficiency = totalDaysAnalyzed > 0 ? (100 - ((hardwareFailCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
-
+        //
         let html = `<div class="card">
             <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
             
-            <!-- NEW STATUS & INDICATOR RATIOS SUMMARY BOX (First Info) -->
+            <!-- STATUS & INDICATOR RATIOS (2-Row Layout) -->
             <div class="summary-card" style="margin: 15px 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px;">
                 <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">📊 Status & Indicator Ratios</h3>
-                <div style="display: flex; flex-wrap: wrap; gap: 15px; font-size: 0.95rem; margin-bottom: 12px;">
-                    <div>✅ <b>${optimalCount}</b> (${optPct}%)</div>
-                    <div>🟢 <b>${normalCount}</b> (${normPct}%)</div>
-                    <div>🟠 <b>${lossCount}</b> (${lossPct}%)</div>
-                    <div>❌ <b>${hardwareFailCount}</b> (${failPct}%)</div>
-                    <div>⏳ <b>${preInstallCount}</b> (${prePct}%)</div>
+                
+                <!-- Row 1: Optimal & Normal states -->
+                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div>✅ <b>${optimalCount}</b> (${optPct}%)</div>
+                        <div>🟢 <b>${normalCount}</b> (${normPct}%)</div>
+                    </div>
+                    <div style="font-weight: bold; color: var(--text-dim);">
+                        = ${(optPct + normPct)}%
+                    </div>
                 </div>
-                <div style="border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem;">
-                    <span>Hardware Efficiency Ratio:</span>
-                    <span class="${efficiencyClass}" style="font-weight: bold;">${hwEfficiency.toFixed(0)}% (${hardwareFailCount} issues / ${totalDaysAnalyzed} days)</span>
+        
+                <!-- Row 2: Warnings, Failures, Sum & Compact Metrics -->
+                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; flex-wrap: wrap; gap: 10px;">
+                    <!-- Left side: Losses, hardware failures and their combined percentage sum -->
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                        <div>🟠 <b>${lossCount}</b> (${lossPct}%)</div>
+                        <div>❌ <b>${hardwareFailCount}</b> (${failPct}%)</div>
+                        <span style="font-weight: bold; color: var(--text-dim);">Sum: ${(lossPct + failPct)}%</span>
+                    </div>
+                    <!-- Right side: Compact counters for issues, weather, and hardware efficiency -->
+                    <div style="color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                        <span>Issues: <b>${hardwareFailCount}</b></span>
+                        <span>|</span>
+                        <span>Weather: <b>${lossCount}</b></span>
+                        <span>|</span>
+                        <span>Hardw. Efficiency: <span class="${efficiencyClass}" style="font-weight: bold;">${hwEfficiency.toFixed(0)}%</span></span>
+                    </div>
                 </div>
             </div>
-
+        
+            <!-- Daily Evaluation & Table History -->
             <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)</span></h3>
             <div class="table-scroll-frame">
                 <table>
                     <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
                     ${tableRowsHtml}
                 </table>
-            </div>`;
+            </div>
+        </div>`;
 
         globalCsvRows.push([]);
         
@@ -817,14 +837,14 @@
                 let weatherTooltip = "Partly cloudy with mixed radiation.";
                 let cssClass = "text-dim"; 
 
-                // 1. ABSOLUTE OUTAGE / COVERED PANEL (True hardware shutdown)
+                // 1. ABSOLUTE OUTAGE / COVERED PANEL
                 if (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3)) {
                     explanation = "❌ 🔌";
                     weatherTooltip = "Hardware Drop: System turned off, covered or completely disconnected.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 2. HARDWARE FAILURE: Strict efficiency check (< 4%) under good conditions
+                // 2. HARDWARE FAILURE: Strict efficiency check (< 4%)
                 else if (
                     target.efficiency < 4 && 
                     target.realYieldWh <= (target.expectedYieldWh * 0.05) && 
@@ -850,7 +870,13 @@
                     cssClass = "warn";
                     weatherCount++;
                 }
-                // 5. CONNECTION PROBLEM / PARTIAL OUTAGE DURING MIXED WEATHER
+                // 5. HEAVY RAIN / EXTREME CLOUDS (Moved UP so rain days aren't stolen by diffuse/connection checks!)
+                else if (avgClouds > 90 && sunHours <= 3) {
+                    explanation = "🌧️ ☁️";
+                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
+                    weatherCount++;
+                }
+                // 6. CONNECTION PROBLEM / PARTIAL OUTAGE DURING MIXED WEATHER
                 else if (
                     target.efficiency <= 5 && 
                     target.realYieldWh < (target.expectedYieldWh * 0.5) && 
@@ -863,17 +889,12 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 6. HIGH DIFFUSE LIGHT OVERRIDE (Strictly limited to low peaks)
-                else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500) {
+                // 7. HIGH DIFFUSE LIGHT OVERRIDE (Strictly limited to low peaks & non-rain days)
+                // High Diffuse Light Override (Requires a minimum duration of diffuse sunshine)
+                else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500 && sunHours >= 3) {
                     explanation = "☁️ 🌫️";
-                    weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²).`;
+                    weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²) over ${sunHours}h sun duration.`;
                     cssClass = "text-dim";
-                    weatherCount++;
-                }
-                // 7. HEAVY RAIN / EXTREME CLOUDS (Placed safely in the middle so daytime sun isn't swallowed)
-                else if (avgClouds > 90 && sunHours <= 3) {
-                    explanation = "🌧️ ☁️";
-                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
                 }
                 // 8. MOSTLY OVERCAST WITH SUN BREAKS
@@ -882,7 +903,7 @@
                     weatherTooltip = "Mostly Overcast with Sun Breaks: Dense clouds overall, but intense short solar peaks.";
                     weatherCount++;
                 }
-                // 9. GENERAL OVERCAST / DIFFUSE (Here the 5. May lands naturally without false errors)
+                // 9. GENERAL OVERCAST / DIFFUSE
                 else if (avgClouds >= 70 || (avgClouds >= 60 && maxPeak < 600)) {
                     explanation = "☁️ ☁️";
                     weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted direct radiation.";
