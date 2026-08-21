@@ -850,71 +850,77 @@
     
         // 3. NOW build the final HTML layout (Summary Box is fully computed and placed above Table 1)
         const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-    
-        const optPct = totalDaysAnalyzed > 0 ? ((optimalCount / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-        const normPct = totalDaysAnalyzed > 0 ? ((normalCount / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-        const lossPct = totalDaysAnalyzed > 0 ? ((lossCount / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-        const failPct = totalDaysAnalyzed > 0 ? ((hardwareFailCount / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-    
-        const hwEfficiency = totalDaysAnalyzed > 0 ? (100 - ((hardwareFailCount / totalDaysAnalyzed) * 100)) : 100;
+  
+        // Indicator percentages for summary box (as integers to prevent rounding mismatches)
+        const optPct = totalDaysAnalyzed > 0 ? Math.round((optimalCount / totalDaysAnalyzed) * 100) : 0;
+        const normPct = totalDaysAnalyzed > 0 ? Math.round((normalCount / totalDaysAnalyzed) * 100) : 0;
+        const lossPct = totalDaysAnalyzed > 0 ? Math.round((lossCount / totalDaysAnalyzed) * 100) : 0;
+        const failPct = totalDaysAnalyzed > 0 ? Math.round((hardwareFailCount / totalDaysAnalyzed) * 100) : 0;
+  
+        // Direct sum of the displayed percentage values to guarantee consistency
+        const sumOptNorm = optPct + normPct;
+        const sumLossFail = lossPct + failPct;
+  
+        // Hardware efficiency calculated accurately based on real critical issues (criticalCount)
+        const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
-    
+  
         let html = `<div class="card">
-                      <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
-                      
-                      <!-- Status & Indicator Ratios Summary Box -->
-                      <div class="summary-card" style="margin: 15px 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px;">
-                          <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">📊 Status & Indicator Ratios</h3>
-                          
-                          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
-                              <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                                  <div>✅ <b>${optimalCount}</b> (${optPct}%)</div>
-                                  <div>🟢 <b>${normalCount}</b> (${normPct}%)</div>
-                                  <span style="font-weight: bold; color: var(--text-dim);">Sum: ${Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100)}%</span>
-                              </div>
-                          </div>
+                  <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
                   
-                          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; flex-wrap: wrap; gap: 10px;">
-                              <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                                  <div>🟠 <b>${lossCount}</b> (${lossPct}%)</div>
-                                  <div>❌ <b>${hardwareFailCount}</b> (${failPct}%)</div>
-                                  <span style="font-weight: bold; color: var(--text-dim);">Sum: ${Math.round(((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100)}%</span>
-                              </div>
-                              <div style="color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-                                  <span>Issues: <b>${criticalCount}</b></span>
-                                  <span>|</span>
-                                  <span>Weather: <b>${weatherCount}</b></span>
-                                  <span>|</span>
-                                  <span>Hardw. Efficiency: <span class="${efficiencyClass}" style="font-weight: bold;">${hwEfficiency.toFixed(0)}%</span></span>
-                              </div>
+                  <!-- Status & Indicator Ratios Summary Box -->
+                  <div class="summary-card" style="margin: 15px 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px;">
+                      <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">📊 Status & Indicator Ratios</h3>
+                      
+                      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+                          <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                              <div>✅ <b>${optimalCount}</b> (${optPct}%)</div>
+                              <div>🟢 <b>${normalCount}</b> (${normPct}%)</div>
+                              <span style="font-weight: bold; color: var(--text-dim);">Sum: ${sumOptNorm}%</span>
                           </div>
                       </div>
-                  
-                      <!-- Table 1: Daily Efficiency Tracker -->
-                      <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)</span></h3>
-                      <div class="table-scroll-frame">
-                          <table>
-                              <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
-                              ${tableRowsHtml}
-                          </table>
-                      </div>`;
-    
+              
+                      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; flex-wrap: wrap; gap: 10px;">
+                          <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                              <div>🟠 <b>${lossCount}</b> (${lossPct}%)</div>
+                              <div>❌ <b>${hardwareFailCount}</b> (${failPct}%)</div>
+                              <span style="font-weight: bold; color: var(--text-dim);">Sum: ${sumLossFail}%</span>
+                          </div>
+                          <div style="color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                              <span>Issues: <b>${criticalCount}</b></span>
+                              <span>|</span>
+                              <span>Weather: <b>${weatherCount}</b></span>
+                              <span>|</span>
+                              <span>Hardw. Efficiency: <span class="${efficiencyClass}" style="font-weight: bold;">${hwEfficiency}%</span></span>
+                          </div>
+                      </div>
+                  </div>
+              
+                  <!-- Table 1: Daily Efficiency Tracker -->
+                  <h3>Daily Efficiency Tracker <span style="float:right; font-size:0.85rem; color:var(--text-dim);">Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)</span></h3>
+                  <div class="table-scroll-frame">
+                      <table>
+                          <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
+                          ${tableRowsHtml}
+                      </table>
+                  </div>`;
+  
         // Table 2: Anomaly & Weather Context
         if (anomalies.length > 0) {
           html += `
-                      <h3 style="margin-top:30px; color:var(--warning);">
-                          🔍 Daily Anomaly & Weather Context
-                          <span style="float:right; font-size:0.85rem; color:var(--text-dim);">
-                              Issues: <span class="bad" style="font-weight:bold;">${criticalCount}</span> / <span style="color:var(--text-dim);">${weatherCount} Weather</span>
-                          </span>
-                      </h3>
-                      <div class="table-scroll-frame">
-                          <table>
-                              <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Efficiency (%)</th><th>Clouds (%)</th><th>Sun (h)</th><th>MaxPeak (W/m²)</th><th>Context</th></tr>
-                              ${subTableRowsHtml}
-                          </table>
-                      </div>`;
-    
+                  <h3 style="margin-top:30px; color:var(--warning);">
+                      🔍 Daily Anomaly & Weather Context
+                      <span style="float:right; font-size:0.85rem; color:var(--text-dim);">
+                          Issues: <span class="bad" style="font-weight:bold;">${criticalCount}</span> / <span style="color:var(--text-dim);">${weatherCount} Weather</span>
+                      </span>
+                  </h3>
+                  <div class="table-scroll-frame">
+                      <table>
+                          <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Efficiency (%)</th><th>Clouds (%)</th><th>Sun (h)</th><th>MaxPeak (W/m²)</th><th>Context</th></tr>
+                          ${subTableRowsHtml}
+                      </table>
+                  </div>`;
+  
           globalCsvRows.push([]);
           globalCsvRows.push(["OVERALL ANALYSIS SUMMARY"]);
           globalCsvRows.push([
@@ -924,23 +930,24 @@
           ]);
           globalCsvRows.push([]);
         }
-    
+  
         html += `
-                  <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px; margin-top: 15px; border-top: 1px solid var(--border);">
-                      <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
-                      <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🌡️ Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
-                      <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
-                      <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (7.5%).
-                  </div></div>`;
-    
+              <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px; margin-top: 15px; border-top: 1px solid var(--border);">
+                  <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
+                  <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🌡️ Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
+                  <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
+                  <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (7.5%).
+              </div></div>`;
+  
         resultsDiv.innerHTML = html;
         window.tariffDaysCounter = tariffDaysCounter;
-    
+  
         return {
           totalDaysAnalyzed: totalDaysAnalyzed,
           criticalCount: criticalCount
         };
     }
+
     // Generate dynamic ROI and financial summary based on individual inverter yield
     function renderFinancialReport(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}) {
         const selectedSn = document.getElementById('cfg_inverter').value;
