@@ -871,7 +871,7 @@
                     weatherCount++;
                 }
                 // 5. HEAVY RAIN / EXTREME CLOUDS (Moved UP so rain days aren't stolen by diffuse/connection checks!)
-                else if (avgClouds > 90 && sunHours <= 3) {
+                else if (avgClouds > 90 && sunHours < 4) {
                     explanation = "🌧️ ☁️";
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
@@ -891,7 +891,7 @@
                 }
                 // 7. HIGH DIFFUSE LIGHT OVERRIDE (Strictly limited to low peaks & non-rain days)
                 // High Diffuse Light Override (Requires a minimum duration of diffuse sunshine)
-                else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500 && sunHours >= 3) {
+                else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500 && sunHours > 4) {
                     explanation = "☁️ 🌫️";
                     weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²) over ${sunHours}h sun duration.`;
                     cssClass = "text-dim";
