@@ -562,9 +562,9 @@
         document.getElementById('runBtn').disabled = false;
     }
 
-// Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
+    // Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
-        // 🚀 FIXED: All core counters and tracking arrays grouped safely at the top scope
+        // Group all core counters and tracking arrays safely at the top scope
         let totalDaysAnalyzed = 0;
         let criticalCount = 0;
         let weatherCount = 0;
@@ -580,23 +580,23 @@
         let hardwareFailCount = 0;
         let preInstallCount = 0;
         
-        // Resolve the friendly custom name from ecoflow_names
+        // Resolve the friendly custom name from local storage or fallback to serial number
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const friendlyName = customNames[sn] || sn;
     
         const totalWp = globalConfig.totalWp || 900;
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60; 
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 7.5;
-
+    
         let tableRowsHtml = "";
         
         globalCsvRows.push([`DEVICE: ${sn} / ${friendlyName}`]);
         globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
-
-        // RESOLVE HARDWARE DEPLOYMENT BOUNDARIES ONCE PRIOR TO LOOP
+    
+        // Resolve hardware deployment boundaries once prior to the loop
         const validDates = Object.keys(deviceDaily).filter(d => deviceDaily[d] !== undefined);
         const firstActiveDate = validDates.length > 0 ? validDates.sort()[0] : null;
-
+    
         // 1. Loop through all historical daily records
         for (let i = 0; i < dates.length; i++) {
             const dateStr = dates[i];
@@ -604,8 +604,8 @@
     
             totalDaysAnalyzed++;
             let totalRadKwhM2 = radSumRaw[i] / 3.6;
-
-            // SCIENTIFIC APPROXIMATION: Liu-Jordan Empirical Clearness Index Model (1960)
+    
+            // Scientific approximation: Liu-Jordan empirical clearness index model (1960)
             let diffuseShare = 0.30;
             if (totalRadKwhM2 < 1.5) diffuseShare = 0.85; 
             else if (totalRadKwhM2 < 3.5) diffuseShare = 0.50;
@@ -615,7 +615,7 @@
             let diffKwhM2 = totalRadKwhM2 * diffuseShare;
         
             const dayTemp = maxTempRaw[i] || 25;
-
+    
             const expectedDirectWh = dirKwhM2 * totalWp;
             const expectedDiffuseWh = diffKwhM2 * totalWp * 0.45; 
             let calculatedSollWh = (expectedDirectWh + expectedDiffuseWh) * standardSystemEfficiency;
@@ -632,32 +632,32 @@
                 
             const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
             const isInstallationDay = firstActiveDate && dateStr === firstActiveDate;
-
+    
             let diagnosis = "🟢"; 
             let cssClass = "good";
             let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
             
             const dynamicThreshold = baseEfficiencyThreshold;
-
-            // 1. Intercept pre-installation days
+    
+            // Intercept pre-installation days
             if (isPreInstallation) {
                 diagnosis = "⏳";
                 cssClass = "text-dim";
                 fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
             }
-            // 2. Total Outage / Data Gap
+            // Total outage or data gap
             else if (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500) { 
                 diagnosis = "❌"; 
                 cssClass = "bad"; 
                 fullTextExplanation = "System / Data Outage: Significant generation gap compared to calculated potential (Soll).";
             }
-            // 3. Peak performance exceeding standard baseline (+3.5% threshold)
+            // Peak performance exceeding standard baseline (+3.5% threshold)
             else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
                 diagnosis = "✅"; 
                 cssClass = "good"; 
                 fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
             } 
-            // 4. Performance loss falling strictly below baseline
+            // Performance loss falling strictly below baseline
             else if (efficiency < dynamicThreshold && realYieldWh < expectedSollWh) {
                 diagnosis = "🟠"; 
                 cssClass = "warn"; 
@@ -670,7 +670,7 @@
             else if (diagnosis === "🟠") lossCount++;
             else if (diagnosis === "❌") hardwareFailCount++;
             else if (diagnosis === "⏳") preInstallCount++;
-
+    
             // Push non-pre-installation anomalies to array for Table 2 context processing
             if ((diagnosis === "❌" || diagnosis === "🟠") && !isPreInstallation) {
                 anomalies.push({ 
@@ -683,7 +683,7 @@
                     maxTemp: dayTemp
                 });
             }
-
+    
             tableRowsHtml += `<tr>
                 <td>${dateStr}</td>
                 <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
@@ -692,7 +692,7 @@
                 <td class="${cssClass}">${efficiency.toFixed(1)}%</td>
                 <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
             </tr>`;
-
+    
             globalCsvRows.push([
                 `"${dateStr}"`, 
                 `"${totalRadKwhM2.toFixed(2)}"`, 
@@ -703,8 +703,8 @@
                 `"${diagnosis}"`
             ]);
         }
-    
-        // 2. Build the main layout HTML container string
+        
+        // 2. Build the main layout HTML container string with summary metrics at the top
         const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
         
         // Indicator percentages for summary box
@@ -712,36 +712,33 @@
         const normPct = totalDaysAnalyzed > 0 ? ((normalCount / totalDaysAnalyzed) * 100).toFixed(0) : 0;
         const lossPct = totalDaysAnalyzed > 0 ? ((lossCount / totalDaysAnalyzed) * 100).toFixed(0) : 0;
         const failPct = totalDaysAnalyzed > 0 ? ((hardwareFailCount / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-        const prePct = totalDaysAnalyzed > 0 ? ((preInstallCount / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-
+    
         const hwEfficiency = totalDaysAnalyzed > 0 ? (100 - ((hardwareFailCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
-        //STATUS & INDICATOR RATIOS
+    
         let html = `<div class="card">
             <h2>📡 Inverter / Circuit: ${friendlyName}</h2>
             
-            <!-- STATUS & INDICATOR RATIOS (2-Row Layout, Preinstall removed) -->
+            <!-- Status & Indicator Ratios Summary Box -->
             <div class="summary-card" style="margin: 15px 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 15px;">
                 <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">📊 Status & Indicator Ratios</h3>
                 
-                <!-- Row 1: Optimal & Normal states + Combined Sum on the left -->
+                <!-- Row 1: Optimal & Normal states with combined sum -->
                 <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
                     <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                         <div>✅ <b>${optimalCount}</b> (${optPct}%)</div>
                         <div>🟢 <b>${normalCount}</b> (${normPct}%)</div>
-                        <span style="font-weight: bold; color: var(--text-dim);">= ${Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100)}%</span>
+                        <span style="font-weight: bold; color: var(--text-dim);">Sum: ${Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100)}%</span>
                     </div>
                 </div>
         
                 <!-- Row 2: Warnings, Failures, Sum & Compact Metrics -->
                 <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; flex-wrap: wrap; gap: 10px;">
-                    <!-- Left side: Losses, hardware failures and their combined percentage sum -->
                     <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
                         <div>🟠 <b>${lossCount}</b> (${lossPct}%)</div>
                         <div>❌ <b>${hardwareFailCount}</b> (${failPct}%)</div>
                         <span style="font-weight: bold; color: var(--text-dim);">Sum: ${Math.round(((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100)}%</span>
                     </div>
-                    <!-- Right side: Compact counters for issues, weather, and hardware efficiency -->
                     <div style="color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
                         <span>Issues: <b>${hardwareFailCount}</b></span>
                         <span>|</span>
@@ -761,23 +758,23 @@
                 </table>
             </div>
         </div>`;
-
+    
         globalCsvRows.push([]);
         
         // 3. Process anomaly sub-rows synchronously via secure inner loop execution
         if (anomalies.length > 0) {
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
-
+    
             const resolvedAnomalies = [];
             const batchSize = 4;
             const delayMs = 120;  
-
+    
             const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
+    
             for (let i = 0; i < anomalies.length; i += batchSize) {
                 const chunk = anomalies.slice(i, i + batchSize);
-
+    
                 const chunkPromises = chunk.map(async (target) => {
                     try {
                         const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration,diffuse_radiation&timezone=auto`;
@@ -792,24 +789,24 @@
                         return null;
                     }
                 });
-
+    
                 const chunkResults = await Promise.all(chunkPromises);
                 resolvedAnomalies.push(...chunkResults);
-
+    
                 if (i + batchSize < anomalies.length) {
                     await sleep(delayMs);
                 }
             }
-
+    
             for (const item of resolvedAnomalies) {
                 if (!item || !item.hData || !item.hData.hourly) continue;
-
+    
                 const target = item.target;
                 const hData = item.hData;
                 
                 let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
                 let totalRad = 0, totalDiffuse = 0; 
-
+    
                 for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
                     if (j >= 6 && j <= 20) {
                         cloudSum += hData.hourly.cloud_cover[j];
@@ -821,7 +818,7 @@
                         }
                     }
                     sunSeconds += hData.hourly.sunshine_duration[j];
-
+    
                     if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
                 }
                 
@@ -830,19 +827,19 @@
                 const maxTemp = parseFloat(target.maxTemp || 0);
                 
                 const realDiffuseShare = totalRad > 0 ? (totalDiffuse / totalRad) : 0;
-              
+            
                 let explanation = "⛅ ☀️"; 
                 let weatherTooltip = "Partly cloudy with mixed radiation.";
                 let cssClass = "text-dim"; 
-
-                // 1. ABSOLUTE OUTAGE / COVERED PANEL
+    
+                // 1. Absolute outage or covered panel check
                 if (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3)) {
                     explanation = "❌ 🔌";
                     weatherTooltip = "Hardware Drop: System turned off, covered or completely disconnected.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 2. HARDWARE FAILURE: Strict efficiency check (< 4%) under good conditions and limited sun hours
+                // 2. Hardware failure: Strict efficiency check under good conditions
                 else if (
                     target.efficiency < 4 && 
                     maxPeak > 400 && 
@@ -854,27 +851,27 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3. TECHNICAL / EXTERNAL INTERRUPTION (Connection Drop on sunny days)
+                // 3. Technical or external connection drop on sunny days
                 else if (avgClouds <= 35 && maxPeak > 600) {
                     explanation = "📶 ⚠️";
                     weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired.`;
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 4. EXTREME HEAT DERATING
+                // 4. Extreme heat derating
                 else if (maxTemp >= 33 && avgClouds <= 35) {
                     explanation = "🌡️ ☀️";
                     weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
                     cssClass = "warn";
                     weatherCount++;
                 }
-                // 5. HEAVY RAIN / EXTREME CLOUDS (Moved UP so rain days aren't stolen by diffuse/connection checks!)
+                // 5. Heavy rain or extreme clouds
                 else if (avgClouds > 90 && sunHours < 4) {
                     explanation = "🌧️ ☁️";
                     weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
                     weatherCount++;
                 }
-                // 6. CONNECTION PROBLEM / PARTIAL OUTAGE DURING MIXED WEATHER
+                // 6. Connection problem during mixed weather
                 else if (
                     target.efficiency < 4 &&
                     avgClouds < 80 && 
@@ -886,36 +883,35 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 7. HIGH DIFFUSE LIGHT OVERRIDE (Strictly limited to low peaks & non-rain days)
-                // High Diffuse Light Override (Requires a minimum duration of diffuse sunshine)
+                // 7. High diffuse light override
                 else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500 && sunHours > 4) {
                     explanation = "☁️ 🌫️";
                     weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²) over ${sunHours}h sun duration.`;
                     cssClass = "text-dim";
                     weatherCount++;
                 }
-                // 8. MOSTLY OVERCAST WITH SUN BREAKS
+                // 8. Mostly overcast with sun breaks
                 else if (avgClouds >= 80 && maxPeak >= 600) {
                     explanation = "☁️ ⛅";
                     weatherTooltip = "Mostly Overcast with Sun Breaks: Dense clouds overall, but intense short solar peaks.";
                     weatherCount++;
                 }
-                // 9. GENERAL OVERCAST / DIFFUSE
+                // 9. General overcast / diffuse
                 else if (avgClouds >= 70 || (avgClouds >= 60 && maxPeak < 600)) {
                     explanation = "☁️ ☁️";
                     weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted direct radiation.";
                     weatherCount++;
                 }
-                // 10. STANDARD MIXED WEATHER (Fallback)
+                // 10. Standard mixed weather fallback
                 else {
                     explanation = "⛅ ☀️";
                     weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
                     weatherCount++;
                 }
-              
+            
                 const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
                 const realKwh = (target.realYieldWh / 1000).toFixed(2);
-
+    
                 subTableRowsHtml += `<tr>
                     <td>${target.date}</td>
                     <td class="nowrap">${sollKwh} | <b>${realKwh}</b></td>
@@ -925,7 +921,7 @@
                     <td>${maxPeak}</td>
                     <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
                 </tr>`;
-
+    
                 globalCsvRows.push([
                     `"${target.date}"`, 
                     `"${sollKwh.replace('.',',')} / ${realKwh.replace('.',',')}"`, 
@@ -936,7 +932,7 @@
                     `"${explanation}"`
                 ]);
             }
-
+    
             html += `
             <h3 style="margin-top:30px; color:var(--warning);">
                 🔍 Daily Anomaly & Weather Context
@@ -950,7 +946,7 @@
                     ${subTableRowsHtml}
                 </table>
             </div>`;
-
+    
             globalCsvRows.push([]);
             globalCsvRows.push(["OVERALL ANALYSIS SUMMARY"]);
             globalCsvRows.push([
@@ -970,10 +966,10 @@
             <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> 
             Bifacial (14.0%+) & Standard Mono (7.5%).
         </div></div>`;
-
+    
         resultsDiv.innerHTML = html;
         window.tariffDaysCounter = tariffDaysCounter;
-
+    
         return {
             totalDaysAnalyzed: totalDaysAnalyzed,
             criticalCount: (typeof criticalCount !== 'undefined') ? criticalCount : 0
