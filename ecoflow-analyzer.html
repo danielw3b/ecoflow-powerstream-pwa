@@ -31,7 +31,7 @@
         h2 { font-size: 1.2rem; }
         h3 { 
             font-size: 0.9rem; 
-            border-bottom: 1px solid var(--border); 
+            /*border-bottom: 1px solid var(--border);*/
             padding-bottom: 5px; 
             margin-top: 20px; 
             color: var(--text-dim); 
@@ -164,9 +164,9 @@
         }
 
         /* Diagnostic States & Utility Elements */
-        .good { color: var(--accent); border: 1px solid var(--accent);}
-        .bad { color: var(--danger); border: 1px solid var(--danger);}
-        .warn { color: var(--warning); border: 1px solid var(--warning);}
+        .good { color: var(--accent);}
+        .bad { color: var(--danger);}
+        .warn { color: var(--warning);}
         
         .legend-box {
             margin-top: 20px;
@@ -869,7 +869,7 @@
                   <h2>📡 Inverter: ${friendlyName}</h2>
                   
                   <!-- Status & Indicator Ratios Summary Box -->
-                  <div class="summary-card ${efficiencyClass}" style="margin: 15px 0; background: var(--panel); /*border: 1px solid var(--border);*/ border-radius: 12px; padding: 15px;">
+                  <div class="summary-card" style="margin: 15px 0; background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; padding: 15px;">
                       <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">📊 Status & Indicator Ratios</h3>
                       
                       <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
