@@ -817,14 +817,14 @@
                 let weatherTooltip = "Partly cloudy with mixed radiation.";
                 let cssClass = "text-dim"; 
 
-                // 1. ABSOLUTE OUTAGE / COVERED PANEL
-                if (target.realYieldWh <= 50) {
+                // 1. ABSOLUTE OUTAGE / COVERED PANEL (True hardware shutdown)
+                if (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3)) {
                     explanation = "❌ 🔌";
                     weatherTooltip = "Hardware Drop: System turned off, covered or completely disconnected.";
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 1b. HARDWARE FAILURE: Strict efficiency check (< 4%)
+                // 2. HARDWARE FAILURE: Strict efficiency check (< 4%) under good conditions
                 else if (
                     target.efficiency < 4 && 
                     target.realYieldWh <= (target.expectedYieldWh * 0.05) && 
@@ -836,27 +836,21 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 2. Extreme Heat Derating
-                else if (maxTemp >= 33 && avgClouds <= 35) {
-                    explanation = "🌡️ ☀️";
-                    weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
-                    cssClass = "warn";
-                    weatherCount++;
-                }
-                // 3. Technical / External Interruption (Connection Drop)
+                // 3. TECHNICAL / EXTERNAL INTERRUPTION (Connection Drop on sunny days)
                 else if (avgClouds <= 35 && maxPeak > 600) {
                     explanation = "📶 ⚠️";
                     weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired.`;
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 4. Heavy Rain / Extreme Clouds (Must take precedence over diffuse!)
-                else if (avgClouds > 90 && sunHours < 4) {
-                    explanation = "🌧️ ☁️";
-                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
+                // 4. EXTREME HEAT DERATING
+                else if (maxTemp >= 33 && avgClouds <= 35) {
+                    explanation = "🌡️ ☀️";
+                    weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
+                    cssClass = "warn";
                     weatherCount++;
                 }
-                // 3b. Connection Problem / Partial Outage during mixed weather
+                // 5. CONNECTION PROBLEM / PARTIAL OUTAGE DURING MIXED WEATHER
                 else if (
                     target.efficiency <= 5 && 
                     target.realYieldWh < (target.expectedYieldWh * 0.5) && 
@@ -869,26 +863,32 @@
                     cssClass = "bad";
                     criticalCount++;
                 }
-                // 3a. High Diffuse Light Override (STRICT: Only when peak is low!)
+                // 6. HIGH DIFFUSE LIGHT OVERRIDE (Strictly limited to low peaks)
                 else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500) {
                     explanation = "☁️ 🌫️";
                     weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²).`;
                     cssClass = "text-dim";
                     weatherCount++;
                 }
-                // 5. Mostly Overcast with Sun Breaks
+                // 7. HEAVY RAIN / EXTREME CLOUDS (Placed safely in the middle so daytime sun isn't swallowed)
+                else if (avgClouds > 90 && sunHours <= 3) {
+                    explanation = "🌧️ ☁️";
+                    weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
+                    weatherCount++;
+                }
+                // 8. MOSTLY OVERCAST WITH SUN BREAKS
                 else if (avgClouds >= 80 && maxPeak >= 600) {
                     explanation = "☁️ ⛅";
                     weatherTooltip = "Mostly Overcast with Sun Breaks: Dense clouds overall, but intense short solar peaks.";
                     weatherCount++;
                 }
-                // 6. General Overcast / Diffuse
+                // 9. GENERAL OVERCAST / DIFFUSE (Here the 5. May lands naturally without false errors)
                 else if (avgClouds >= 70 || (avgClouds >= 60 && maxPeak < 600)) {
                     explanation = "☁️ ☁️";
                     weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted direct radiation.";
                     weatherCount++;
                 }
-                // 7. Standard Mixed Weather (Fallback)
+                // 10. STANDARD MIXED WEATHER (Fallback)
                 else {
                     explanation = "⛅ ☀️";
                     weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
