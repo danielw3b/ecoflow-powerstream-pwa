@@ -31,7 +31,6 @@
         h2 { font-size: 1.2rem; }
         h3 { 
             font-size: 0.9rem; 
-            /*border-bottom: 1px solid var(--border);*/
             padding-bottom: 5px; 
             margin-top: 20px; 
             color: var(--text-dim); 
@@ -60,7 +59,6 @@
             margin-top: 15px;
         }
         
-        /* Grid and Legacy Layout Layout Blocks */
         .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
@@ -72,7 +70,6 @@
         }
         
         .form-group { display: flex; flex-direction: column; }
-        .full-width-row { grid-column: span 2; }
         
         label { 
             font-size: 0.85rem; 
@@ -95,7 +92,6 @@
         }
         input:focus, select:focus { outline: 1px solid var(--accent); }
         
-        /* Button Elements */
         button {
             background: var(--accent); color: white; border: none; padding: 12px 20px;
             font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s;
@@ -106,18 +102,12 @@
         .btn-secondary:hover { background: #2980b9; }
         .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
 
-        .gps-input-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
         .btn-icon:hover {
             background: rgba(107, 138, 170, 0.25) !important;
             border-color: var(--accent) !important;
             cursor: pointer;
         }
 
-        /* Config Form Container Alignment */
         .config-row {
             display: grid;
             grid-template-columns: 1fr; 
@@ -132,7 +122,6 @@
             .config-row > div[style*="display: grid"] { grid-column: span 2; }
         }
 
-        /* Global Data Tables Styling */
         table { 
             width: 100%; 
             border-collapse: separate; 
@@ -163,7 +152,6 @@
             table td:last-child, table th:last-child { white-space: nowrap; }
         }
 
-        /* Diagnostic States & Utility Elements */
         .good { color: var(--accent);}
         .bad { color: var(--danger);}
         .warn { color: var(--warning);}
@@ -182,22 +170,14 @@
         .legend-box strong { color: #fff; }
         #results { margin-top: 30px; }
 
-        /* where the hell is .loader ? */
         .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
 
-        /* Dashboard Status Cards */
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        
         .summary-card {
             background: var(--panel);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 15px;
+            margin-bottom: 15px;
         }
         
         .summary-card h3 {
@@ -208,36 +188,16 @@
             letter-spacing: 0.05em;
         }
       
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 0.95rem;
-        }
-        
-        .summary-value {
-            font-weight: bold;
-            color: var(--text);
-        }
-        .sum-good {border: 1px solid var(--accent);}
-        .sum-warn {border: 1px solid var(--warning);}
-        .sum-bad {border: 1px solid var(--danger);}
-      
-        .status-highlight {
-            color: var(--accent);
-        }
-        
-        .status-danger {
-            color: var(--danger);
-        }
-
+        .sum-good { border: 1px solid var(--accent); }
+        .sum-warn { border: 1px solid var(--warning); }
+        .sum-bad { border: 1px solid var(--danger); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🌤️ Solar & Weather Analyzer</h1>
-    <p style="color: var(--text-dim)">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>
+    <p style="color: var(--text-dim)">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data[cite: 1].</p>
     <div class="card">
         <h2>⚙️ Configuration</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
@@ -260,11 +220,8 @@
                 </div>
             </div>
 
-            <!-- SECTION 2: Hardware Parameters -->
             <h3>🛠️ Hardware Parameters</h3>
             <div class="config-row">
-                
-                <!-- Group 1: Technology & Self-Consumption (Side-by-Side) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_panelType">Panel Tech</label>
@@ -279,7 +236,6 @@
                     </div>
                 </div>
 
-                <!-- Group 2: Area & Power Peak (Side-by-Side) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_moduleArea">Module Area (m²)</label>
@@ -292,10 +248,8 @@
                 </div>
             </div>
 
-            <!-- SECTION 3: Tariff & Investment -->
             <h3>💶 Tariff & Investment</h3>
             <div class="config-row">
-                <!-- Group 1: Currency & Investment (Side-by-Side) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_currency">Currency</label>
@@ -307,7 +261,6 @@
                     </div>
                 </div>
 
-                <!-- Group 2: Energy Price & Base Fee (Side-by-Side) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_energyPrice">Energy Price/kWh(Cent)</label>
@@ -320,11 +273,8 @@
                 </div>
             </div>
 
-            <!-- SECTION 4: Meter & Timeline -->
             <h3>📊 Meter & Timeline</h3>
             <div class="config-row">
-                
-                <!-- Group 1: Meter Trackers (Side-by-Side Sequence) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_meterTariffStart">Tariff Start Meter(kWh)</label>
@@ -336,17 +286,14 @@
                     </div>
                 </div>
 
-                <!-- Group 2: Base Consumption (Side-by-Side to maintain perfect vertical grid alignment) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_consumption">Ø kWh w/o Solar/Day</label>
                         <input type="number" step="0.1" id="cfg_consumption" required placeholder="e.g. 5">
                     </div>
-                    <!-- Empty placeholder div to preserve the 50/50 block width scaling on mobile -->
                     <div class="form-group"></div>
                 </div>
                 
-                <!-- Group 3: Timeline Dates (Side-by-Side) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_tariffStart">Tariff Start Date</label>
@@ -376,26 +323,20 @@
 <script>
     let globalCsvRows = [];
     let globalConfig = {};
-  
 
-    // Get storage key for specific inverter
     function getStorageKey() {
         const sn = document.getElementById('cfg_inverter')?.value;
         return sn ? `ecoflow_analyzer_config_${sn}` : 'ecoflow_analyzer_config_default';
     }
         
-    // Initialize or populate inverters dropdown list with custom user alias names
     function initInverters() {
         const select = document.getElementById('cfg_inverter');
         if (!select) return;
     
-        // Clear old default options
         select.innerHTML = '<option value="">-- Load from localStorage --</option>';
     
-        // Fetch both your raw PWA historical databases and your custom name dictionaries
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
-        
         const serials = Object.keys(dailyStorage);
     
         if (serials.length === 0) {
@@ -403,7 +344,6 @@
             return;
         }
         
-        // Dynamic Option Mapping Loop
         serials.forEach(sn => {
             const opt = document.createElement('option');
             opt.value = sn;
@@ -412,17 +352,15 @@
         });
 
         if (serials.length > 0) {
-            select.value = serials[0]; // Safely load the first index string reference
-            loadInverterConfig();      // Populates all fields like Wp, Area, Tariff dates immediately
+            select.value = serials[0];
+            loadInverterConfig();
         }
     }
     
-    // Load configuration for the selected inverter and resolve friendly custom names
     function loadInverterConfig() {
         const key = getStorageKey();
         const saved = localStorage.getItem(key);
     
-        // 1. Fetch custom name dictionaries to map real identities to the screen
         const selectedSn = document.getElementById('cfg_inverter')?.value;
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const friendlyName = customNames[selectedSn] || selectedSn;
@@ -434,15 +372,10 @@
                     const el = document.getElementById(`cfg_${key}`);
                     if (el && value !== undefined) el.value = value;
                 }
-    
-                const titleEl = document.getElementById('active_inverter_title');
-                if (titleEl && selectedSn) titleEl.textContent = `Active System: ${friendlyName}`;
-    
             } catch (e) {
                 console.error("Error parsing saved configuration:", e);
             }
         } else {
-            // Set default values if no configuration exists for this inverter
             document.getElementById('cfg_currency').value = "€";
             document.getElementById('cfg_investment').value = "0";
             document.getElementById('cfg_energyPrice').value = "29.89";
@@ -454,9 +387,7 @@
         }
     }
 
-    // Extract values from form safely with fallbacks to avoid null pointer reference errors
     function getUserConfig() {
-        // FIXED: All keys now perfectly align with the explicit physical HTML input element IDs
         const config = {
             inverter: document.getElementById('cfg_inverter')?.value || '',
             lat: parseFloat(document.getElementById('cfg_lat')?.value) || 0,
@@ -479,7 +410,6 @@
         return config;
     }
 
-    // Auto-detect GPS coordinates via browser API
     function detectLocation() {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(pos => {
@@ -493,7 +423,6 @@
         }
     }
 
-    // Main analysis workflow for the selected inverter
     async function runAnalysis() {
         const selectedSn = document.getElementById('cfg_inverter').value;
         if (!selectedSn) {
@@ -510,21 +439,16 @@
     
         globalConfig = getUserConfig();
     
-        // FIXED: Enforce local time shift to align midnight execution bounds perfectly with local timezone profiles
         const localNow = new Date();
-        // Shift time by the exact local minutes offset to move away from forced UTC midnight boundaries
         const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
         const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);
         
-        // Subtract 1 day to lock into local yesterday target accurately
         localTargetTime.setDate(localTargetTime.getDate() - 1);
         const endDate = localTargetTime.toISOString().split('T')[0];
     
-        // Retrieve stored energy data from PWA
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
         const deviceDaily = dailyStorage[selectedSn] || {};
     
-        // STABLE URL: Using native shortwave_radiation_sum and temperature_2m_max daily endpoints
         const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum,temperature_2m_max&timezone=auto`;
         
         try {
@@ -532,7 +456,6 @@
             if (!dailyResponse.ok) throw new Error(`Open-Meteo API Error: ${dailyResponse.status}`);
             const dailyData = await dailyResponse.json();
   
-            // Validate daily archive parameters
             if (!dailyData.daily || !dailyData.daily.shortwave_radiation_sum || !dailyData.daily.temperature_2m_max) {
               throw new Error("Missing required weather parameters in API response.");
             }
@@ -541,32 +464,25 @@
             let radSumRaw = dailyData.daily.shortwave_radiation_sum;
             let maxTempRaw = dailyData.daily.temperature_2m_max;
   
-            // FALLBACK PROTECTION: If yesterday's values are fetched as null right after midnight, safely drop the unfinished last day index entry
             if (dates.length > 0 && radSumRaw[radSumRaw.length - 1] === null) {
-                console.warn("Yesterday's weather metrics are still null at archive API source. Sliding data window back by 1 day.");
                 dates.pop();
                 radSumRaw.pop();
                 maxTempRaw.pop();
             }
 
-            // Audited: Catch the returned analytics counts directly from the device processor
-            const metrics = await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
-            
-            // Audited: Pipe the parameters straight into the financial dashboard generator (inkl. efficiencyClass)
-            renderFinancialReport(metrics.totalDaysAnalyzed, metrics.criticalCount, deviceDaily, metrics.efficiencyClass);
+            await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
             document.getElementById('csvBtn').style.display = 'block';
-
         
         } catch (error) {
             console.error(error);
             resultsDiv.innerHTML += `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
-          }
+        }
         
         document.getElementById('loading').style.display = 'none';
         document.getElementById('runBtn').disabled = false;
     }
 
-    // Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
+// Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
         // Group all core counters and tracking arrays safely at the top scope
         let totalDaysAnalyzed = 0;
@@ -601,8 +517,8 @@
         const validDates = Object.keys(deviceDaily).filter(d => deviceDaily[d] !== undefined);
         const firstActiveDate = validDates.length > 0 ? validDates.sort()[0] : null;
     
-        // 1. Loop through all historical daily records (Table 1 data)
-        for (let i = 0; i < dates.length; i++) {
+        // 1. Loop through historical daily records in REVERSE order (Newest date first)
+        for (let i = dates.length - 1; i >= 0; i--) {
           const dateStr = dates[i];
           if (radSumRaw[i] === null) continue;
     
@@ -703,8 +619,11 @@
     
         globalCsvRows.push([]);
     
-        // 2. Process anomaly sub-rows asynchronously (Table 2 weather analysis)
+        // 2. Process anomaly sub-rows asynchronously, ensuring newest dates come first
         if (anomalies.length > 0) {
+          // Sort anomalies explicitly descending by date (Newest first)
+          anomalies.sort((a, b) => b.date.localeCompare(a.date));
+
           globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
           globalCsvRows.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
     
@@ -769,7 +688,6 @@
             let cssClass = "text-dim"; 
             let isCritical = false;
     
-            // Evaluation branches
             if (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3)) {
               explanation = "❌ 🔌";
               weatherTooltip = "Hardware Drop: System turned off, covered or completely disconnected.";
@@ -847,32 +765,28 @@
           }
         }
     
-        // Failsafe guarantee: Weather count is always anomalies minus critical issues
         if (anomalies.length > 0) {
           weatherCount = Math.max(0, anomalies.length - criticalCount);
         }
     
-        // 3. NOW build the final HTML layout (Summary Box is fully computed and placed above Table 1)
         const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
   
-        // Indicator percentages for summary box (as integers to prevent rounding mismatches)
         const optPct = totalDaysAnalyzed > 0 ? Math.round((optimalCount / totalDaysAnalyzed) * 100) : 0;
         const normPct = totalDaysAnalyzed > 0 ? Math.round((normalCount / totalDaysAnalyzed) * 100) : 0;
         const lossPct = totalDaysAnalyzed > 0 ? Math.round((lossCount / totalDaysAnalyzed) * 100) : 0;
         const failPct = totalDaysAnalyzed > 0 ? Math.round((hardwareFailCount / totalDaysAnalyzed) * 100) : 0;
   
-        // Direct sum of the displayed percentage values to guarantee consistency
         const sumOptNorm = optPct + normPct;
         const sumLossFail = lossPct + failPct;
   
-        // Hardware efficiency calculated accurately based on real critical issues (criticalCount)
         const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
   
+        window.tariffDaysCounter = tariffDaysCounter;
+
         let html = `<div class="card">
                   <h2>📡 Inverter: ${friendlyName}</h2>
                   
-                  <!-- Status & Indicator Ratios Summary Box -->
                   <div class="summary-card sum-${efficiencyClass}">
                       <h3>📊 Status</h3>
                       
@@ -900,9 +814,13 @@
                               <span>Hardw. Efficiency: <span class="${efficiencyClass}" style="font-weight: bold;">${hwEfficiency}%</span></span>
                           </div>
                       </div>
-                  </div>
-              
-                  <!-- Table 1: Daily Efficiency Tracker -->
+                  </div>`;
+
+        // Financial & ROI Report (Kongruente Box)
+        html += renderFinancialReportHtml(totalDaysAnalyzed, criticalCount, deviceDaily, efficiencyClass);
+
+        // Table 1: Daily Efficiency Tracker (now newest date first)
+        html += `
                   <h3>Daily Efficiency Tracker</h3>
                   <div class="table-scroll-frame">
                       <table>
@@ -911,7 +829,7 @@
                       </table>
                   </div>`;
   
-        // Table 2: Anomaly & Weather Context
+        // Table 2: Anomaly & Weather Context (now newest date first)
         if (anomalies.length > 0) {
           html += `
                   <h3 style="margin-top:30px; color:var(--warning);">
@@ -947,19 +865,16 @@
               </div></div>`;
   
         resultsDiv.innerHTML = html;
-        window.tariffDaysCounter = tariffDaysCounter;
-  
+        
         return {
           totalDaysAnalyzed: totalDaysAnalyzed,
           criticalCount: criticalCount,
-          efficiencyClass : efficiencyClass
+          efficiencyClass: efficiencyClass
         };
     }
 
-    // Generate dynamic ROI and financial summary based on individual inverter yield
-    function renderFinancialReport(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}, efficiencyClass = 'good') {
-        const selectedSn = document.getElementById('cfg_inverter').value;
-        
+    // Generate dynamic ROI and financial summary HTML string (kongruent zur Status-Box)
+    function renderFinancialReportHtml(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}, efficiencyClass = 'good') {
         let totalGeneratedWh = 0;
         const tariffStartDate = new Date(globalConfig.tariffStart);
 
@@ -983,8 +898,15 @@
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
     
-        let html = `<div class="card sum-${efficiencyClass}">
-            <h2 class="${efficiencyClass}">💰 Financial & ROI Report</h2>
+        globalCsvRows.push(["FINANCIAL REPORT:"]);
+        globalCsvRows.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
+        globalCsvRows.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
+        globalCsvRows.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
+        globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
+        globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
+
+        return `<div class="summary-card sum-${efficiencyClass}" style="margin-top: 15px;">
+            <h3 class="${efficiencyClass}" style="margin: 0 0 10px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">💰 Financial & ROI Report</h3>
             <table>
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Since current tariff start (${globalConfig.tariffStart})</td></tr>
@@ -995,39 +917,24 @@
                 <tr><td>ROI Progress</td><td class="${efficiencyClass}">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
             </table>
         </div>`;
-        
-        document.getElementById('results').innerHTML += html;
-        
-        globalCsvRows.push(["FINANCIAL REPORT:"]);
-        globalCsvRows.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
-        globalCsvRows.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
-        globalCsvRows.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
-        globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
-        globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
     }
-
-    // Export generated data to CSV
+  
     function downloadCSV() {
-        // FEFF Byte-Order Mark ensures Excel loads UTF-8 character encoding signatures cleanly
         const csvContent = "\uFEFF" + globalCsvRows.map(e => e.join(";")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
         
-        // FIXED: Query DOM element directly to guarantee accurate file name parameters even if config is unmapped
         const inverterSelect = document.getElementById('cfg_inverter');
         const inverterName = inverterSelect && inverterSelect.value ? inverterSelect.value : "Unknown_Device";
         const startDateStr = globalConfig.startDate || "All_Time";
         
         link.download = `Solar_Analysis_${inverterName}_${startDateStr}.csv`;
         link.click();
-        
-        // Clean up the temporary object URL to free browser execution memory footprints
         URL.revokeObjectURL(url);
     }
 
-    // Initialize application on load
     window.addEventListener('DOMContentLoaded', initInverters);
 </script>
 </body>
