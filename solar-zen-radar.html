@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Zen Radar</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #060c1a;
+            color: #e0f0ff;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            text-align: center;
+            z-index: 10;
+        }
+        button {
+            background: #2ecc71;
+            color: #060c1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        button:hover {
+            background: #27ae60;
+            transform: scale(1.05);
+        }
+        canvas {
+            display: block;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+        #info {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #8b9eb3;
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <button id="startBtn">Start Meditative Radar</button>
+        <div id="info">Waiting to start...</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const startBtn = document.getElementById('startBtn');
+    const infoDiv = document.getElementById('info');
+
+    let width, height, cx, cy;
+    let data = [];
+    let isPlaying = false;
+    let audioCtx = null;
+    let currentAngle = 0;
+
+    // Pentatonic scale for harmonious (non-dissonant) ambient chords
+    const pentatonicScale = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        cx = width / 2;
+        cy = height / 2;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Load data from localStorage (compatible with PWA-EcoFlow-Monitor structure)
+    function loadData() {
+        try {
+            const raw = localStorage.getItem('ecoflow_wh');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                const sn = Object.keys(parsed)[0]; // Pick the first available inverter
+                if (sn && parsed[sn]) {
+                    const days = Object.keys(parsed[sn]).sort();
+                    data = days.map(d => ({ date: d, yield: parsed[sn][d] }));
+                    return;
+                }
+            }
+        } catch(e) { console.log("Error loading local data, using fallback generator."); }
+
+        // Fallback: Generate a smooth seasonal wave pattern if no local storage data is found
+        for(let i = 0; i < 365; i++) {
+            let base = Math.sin((i / 365) * Math.PI) * 2000; 
+            let noise = Math.random() * 500;
+            data.push({ date: `Day ${i}`, yield: Math.max(0, base + noise) });
+        }
+    }
+
+    // Initialize Web Audio API on user interaction
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    // Play a gentle ambient tone scaled by the daily energy yield
+    function playTone(yieldValue, maxYield) {
+        if (!audioCtx) return;
+
+        const normalizedYield = Math.min(1, yieldValue / maxYield);
+        
+        // Map yield to a frequency from the pentatonic scale
+        const noteIndex = Math.floor(normalizedYield * (pentatonicScale.length - 1));
+        const freq = pentatonicScale[noteIndex];
+
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        osc.type = 'sine'; // Soft sine wave
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        // Envelope for a gentle waterdrop / chime effect (CPU and battery friendly)
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.15 * normalizedYield, audioCtx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 1.5);
+    }
+
+    function draw() {
+        if (!isPlaying) return;
+
+        // Light clear with transparency for a smooth motion trail effect
+        ctx.fillStyle = 'rgba(6, 12, 26, 0.15)';
+        ctx.fillRect(0, 0, width, height);
+
+        const radius = Math.min(width, height) * 0.15; // Inner core radius
+        const maxRadius = Math.min(width, height) * 0.45; // Max outer reach
+        const maxYield = Math.max(...data.map(d => d.yield));
+
+        const totalPoints = data.length;
+        const angleStep = (Math.PI * 2) / totalPoints;
+
+        // Radar rotation speed
+        currentAngle += 0.015;
+        if (currentAngle > Math.PI * 2) currentAngle -= Math.PI * 2;
+
+        // Determine current index scanned by the radar sweep
+        let currentIndex = Math.floor((currentAngle / (Math.PI * 2)) * totalPoints);
+        
+        // Render data rays
+        data.forEach((point, i) => {
+            const angle = i * angleStep;
+            const length = radius + (point.yield / maxYield) * (maxRadius - radius);
+
+            const x1 = cx + Math.cos(angle) * radius;
+            const y1 = cy + Math.sin(angle) * radius;
+            const x2 = cx + Math.cos(angle) * length;
+            const y2 = cy + Math.sin(angle) * length;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            
+            // Highlight active ray hit by the radar sweep
+            if (i === currentIndex) {
+                ctx.strokeStyle = '#2ecc71';
+                ctx.lineWidth = 3;
+                
+                // Play audio cue once per day point transition
+                if (window.lastPlayedIndex !== currentIndex) {
+                    playTone(point.yield, maxYield);
+                    window.lastPlayedIndex = currentIndex;
+                    infoDiv.innerHTML = `${point.date} <br> <b>${(point.yield/1000).toFixed(2)} kWh</b>`;
+                }
+            } else {
+                // Color transition from blue (low/cold) to yellow/green (high/warm)
+                const hue = 200 - ((point.yield / maxYield) * 140);
+                ctx.strokeStyle = `hsla(${hue}, 80%, 50%, 0.4)`;
+                ctx.lineWidth = 2;
+            }
+            
+            ctx.stroke();
+        });
+
+        requestAnimationFrame(draw);
+    }
+
+    startBtn.addEventListener('click', () => {
+        loadData();
+        initAudio();
+        isPlaying = true;
+        startBtn.style.display = 'none';
+        infoDiv.innerHTML = 'Synchronizing orbit...';
+        draw();
+    });
+</script>
+
+</body>
+</html>
