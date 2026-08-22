@@ -696,9 +696,11 @@
             let cssClass = "text-dim"; 
             let isCritical = false;
     
-            if (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3)) {
+            // Fix: realYieldWh === 0 forces a hardware drop immediately, 
+            // bypassing the weather exception meant only for days with actual low yield.
+            if (target.realYieldWh === 0 || (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3))) {
               explanation = "❌ 🔌";
-              weatherTooltip = "Hardware Drop: System turned off, covered or completely disconnected.";
+              weatherTooltip = "Hardware Drop: System turned off, missing local data or completely disconnected.";
               cssClass = "bad";
               isCritical = true;
             } else if (target.efficiency < 4 && maxPeak > 400 && avgClouds < 85 && sunHours < 10) {
@@ -747,7 +749,7 @@
             if (isCritical) {
               criticalCount++;
             }
-    
+            
             const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
             const realKwh = (target.realYieldWh / 1000).toFixed(2);
     
