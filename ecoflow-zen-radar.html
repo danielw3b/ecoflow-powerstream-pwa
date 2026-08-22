@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar Zen Radar</title>
+    <title>EcoFlow Solar Zen Radar</title>
     <style>
         body {
             margin: 0;
@@ -76,7 +76,7 @@
             <select id="inverterSelect">
                 <option value="combined">🌐 Total Property (Combined)</option>
             </select>
-            <button id="startBtn" class="primary">Start Zen Radar</button>
+            <button id="startBtn" class="primary">☀️🎧 Start Zen Radar</button>
         </div>
         <div id="info">Select mode and start radar...</div>
     </div>
@@ -301,14 +301,29 @@
 
     loadData();
 
-    startBtn.addEventListener('click', () => {
-        initAudio();
-        selectDataset(inverterSelect.value);
-        isPlaying = true;
-        inverterSelect.disabled = true;
-        startBtn.style.display = 'none';
-        infoDiv.innerHTML = 'Synchronizing radar orbit...';
-        draw();
+startBtn.addEventListener('click', () => {
+        if (!isPlaying) {
+            initAudio();
+            selectDataset(inverterSelect.value);
+            isPlaying = true;
+            startBtn.textContent = 'Stop / Reset';
+            startBtn.style.background = '#e74c3c'; // Rot für Stop
+            infoDiv.innerHTML = 'Synchronizing radar orbit...';
+            draw();
+        } else {
+            isPlaying = false;
+            startBtn.textContent = 'Start Zen Radar';
+            startBtn.style.background = '#2ecc71'; // Grün für Start
+            inverterSelect.disabled = false;
+            infoDiv.innerHTML = 'Radar paused.';
+        }
+    });
+
+    // Im Dropdown-Change dataset switch
+    inverterSelect.addEventListener('change', () => {
+        if (isPlaying) {
+            selectDataset(inverterSelect.value);
+        }
     });
 </script>
 
