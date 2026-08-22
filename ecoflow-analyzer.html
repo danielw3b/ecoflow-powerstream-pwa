@@ -551,9 +551,9 @@
 
             // Audited: Catch the returned analytics counts directly from the device processor
             const metrics = await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
-  
-            // Audited: Pipe the parameters straight into the financial dashboard generator
-            renderFinancialReport(metrics.totalDaysAnalyzed, metrics.criticalCount, deviceDaily);
+            
+            // Audited: Pipe the parameters straight into the financial dashboard generator (inkl. efficiencyClass)
+            renderFinancialReport(metrics.totalDaysAnalyzed, metrics.criticalCount, deviceDaily, metrics.efficiencyClass);
             document.getElementById('csvBtn').style.display = 'block';
 
         
@@ -957,7 +957,7 @@
     }
 
     // Generate dynamic ROI and financial summary based on individual inverter yield
-    function renderFinancialReport(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}) {
+    function renderFinancialReport(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}, efficiencyClass = 'good') {
         const selectedSn = document.getElementById('cfg_inverter').value;
         
         let totalGeneratedWh = 0;
