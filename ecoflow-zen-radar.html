@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoFlow Zen Radar</title>
+    <title>EcoFlow Solar Zen Radar</title>
     <style>
         body {
             margin: 0;
@@ -215,30 +215,47 @@
         }
     }
 
+    // Play a gentle ambient tone with parallel octaves for a rich singing bowl resonance
     function playTone(yieldValue, maxYield) {
         if (!audioCtx) return;
         const normalizedYield = Math.min(1, yieldValue / maxYield);
         const noteIndex = Math.floor(normalizedYield * (pentatonicScale.length - 1));
-        const freq = pentatonicScale[noteIndex];
-    
-        const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-    
-        osc.type = 'sine'; // Soft sine wave mimicking a bowl
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    
-        // Longer envelope for singing bowl / sound bath resonance
-        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.2 * normalizedYield, audioCtx.currentTime + 0.2); // Slower attack
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 4.0); // Long, smooth decay
-    
-        osc.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-    
-        osc.start();
-        osc.stop(audioCtx.currentTime + 4.0);
-    }
+        const baseFreq = pentatonicScale[noteIndex];
 
+        // Master gain envelope for a long, meditative sound bath decay (4 seconds)
+        const masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        masterGain.gain.linearRampToValueAtTime(0.2 * normalizedYield, audioCtx.currentTime + 0.2);
+        masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 4.0);
+        masterGain.connect(audioCtx.destination);
+
+        // Oscillator 1: Root frequency (fundamental tone)
+        const osc1 = audioCtx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+        osc1.connect(masterGain);
+
+        // Oscillator 2: Parallel octave above (adds shimmer and acoustic depth)
+        const octaveGain = audioCtx.createGain();
+        octaveGain.gain.setValueAtTime(0.4, audioCtx.currentTime); // Octave is softer to balance the mix
+        octaveGain.connect(masterGain);
+
+        const osc2 = audioCtx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(baseFreq * 2, audioCtx.currentTime); // Exactly one octave higher
+        osc2.connect(octaveGain);
+
+        // Start both oscillators simultaneously
+        const startTime = audioCtx.currentTime;
+        const stopTime = startTime + 4.0;
+
+        osc1.start(startTime);
+        osc2.start(startTime);
+        
+        osc1.stop(stopTime);
+        osc2.stop(stopTime);
+    }
+  
     function draw() {
         if (!isPlaying) return;
 
