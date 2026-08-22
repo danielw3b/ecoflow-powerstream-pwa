@@ -177,6 +177,7 @@
             font-size: 0.82rem;
             color: var(--text-dim);
             line-height: 1.6;
+            display: inline-grid;
         }
         .legend-box strong { color: #fff; }
         #results { margin-top: 30px; }
@@ -206,7 +207,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        
+      
         .summary-row {
             display: flex;
             justify-content: space-between;
@@ -218,7 +219,10 @@
             font-weight: bold;
             color: var(--text);
         }
-        
+        .sum-good {border: 1px solid var(--accent);}
+        .sum-warn {border: 1px solid var(--warning);}
+        .sum-bad {border: 1px solid var(--danger);}
+      
         .status-highlight {
             color: var(--accent);
         }
@@ -586,7 +590,7 @@
     
         const totalWp = globalConfig.totalWp || 900;
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60; 
-        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 7.5;
+        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 8;
     
         let tableRowsHtml = "";
     
@@ -869,8 +873,8 @@
                   <h2>📡 Inverter: ${friendlyName}</h2>
                   
                   <!-- Status & Indicator Ratios Summary Box -->
-                  <div class="summary-card" style="margin: 15px 0; background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; padding: 15px;">
-                      <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">📊 Status & Indicator Ratios</h3>
+                  <div class="summary-card sum-${efficiencyClass}">
+                      <h3>📊 Status</h3>
                       
                       <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
                           <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
@@ -935,11 +939,11 @@
         }
   
         html += `
-              <div class="legend-box" style="line-height: 1.5; font-size: 0.9rem; padding: 12px; margin-top: 15px; border-top: 1px solid var(--border);">
+              <div class="legend-box">
                   <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
                   <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
                   <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
-                  <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (7.5%).
+                  <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
               </div></div>`;
   
         resultsDiv.innerHTML = html;
