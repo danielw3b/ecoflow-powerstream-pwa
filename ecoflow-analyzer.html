@@ -183,7 +183,7 @@
         .summary-card h3 {
             margin: 0 0 10px 0;
             font-size: 0.9rem;
-            color: var(--text-dim);
+            /*color: var(--text-dim);*/
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -788,7 +788,7 @@
                   <h2>📡 Inverter: ${friendlyName}</h2>
                   
                   <div class="summary-card sum-${efficiencyClass}">
-                      <h3>📊 Status</h3>
+                      <h3 class="${efficiencyClass}">📊 Status</h3>
                       
                       <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
                           <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
@@ -906,7 +906,7 @@
         globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
 
         return `<div class="summary-card sum-${efficiencyClass}" style="margin-top: 15px;">
-            <h3 class="${efficiencyClass}" style="margin: 0 0 10px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">💰 Financial & ROI Report</h3>
+            <h3 class="${efficiencyClass}">💰 Financial & ROI Report</h3>
             <table>
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Since current tariff start (${globalConfig.tariffStart})</td></tr>
