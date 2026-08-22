@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoFlow Solar Zen Radar</title>
+    <title>EcoFlow Zen Radar</title>
     <style>
         body {
             margin: 0;
@@ -220,22 +220,23 @@
         const normalizedYield = Math.min(1, yieldValue / maxYield);
         const noteIndex = Math.floor(normalizedYield * (pentatonicScale.length - 1));
         const freq = pentatonicScale[noteIndex];
-
+    
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-
-        osc.type = 'sine';
+    
+        osc.type = 'sine'; // Soft sine wave mimicking a bowl
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
+    
+        // Longer envelope for singing bowl / sound bath resonance
         gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.15 * normalizedYield, audioCtx.currentTime + 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
-
+        gainNode.gain.linearRampToValueAtTime(0.2 * normalizedYield, audioCtx.currentTime + 0.2); // Slower attack
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 4.0); // Long, smooth decay
+    
         osc.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-
+    
         osc.start();
-        osc.stop(audioCtx.currentTime + 1.5);
+        osc.stop(audioCtx.currentTime + 4.0);
     }
 
     function draw() {
@@ -253,7 +254,9 @@
         const totalPoints = currentDataset.length;
         const angleStep = (Math.PI * 2) / totalPoints;
 
-        currentAngle += 0.015;
+        //currentAngle += 0.015;
+        // Much slower rotation for a meditative sound bath feeling
+        currentAngle += 0.004;
         
         if (currentAngle > Math.PI * 2) {
             currentAngle -= Math.PI * 2;
