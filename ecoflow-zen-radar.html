@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoFlow Solar Zen Radar</title>
+    <title>Solar Zen Radar</title>
     <style>
         body {
             margin: 0;
@@ -23,21 +23,38 @@
             top: 20px;
             text-align: center;
             z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
-        button {
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        select, button {
+            background: #0d182b;
+            color: #e0f0ff;
+            border: 1px solid rgba(107, 138, 170, 0.3);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button.primary {
             background: #2ecc71;
             color: #060c1a;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 24px;
-            font-size: 1rem;
             font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
+            border: none;
         }
-        button:hover {
+        button.primary:hover {
             background: #27ae60;
             transform: scale(1.05);
+        }
+        select:focus, button:focus {
+            outline: 1px solid #2ecc71;
         }
         canvas {
             display: block;
@@ -45,18 +62,23 @@
             max-height: 100vh;
         }
         #info {
-            margin-top: 10px;
             font-size: 0.9rem;
             color: #8b9eb3;
             font-variant-numeric: tabular-nums;
+            min-height: 2.2em;
         }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <button id="startBtn">Start Meditative Radar</button>
-        <div id="info">Waiting to start...</div>
+        <div class="controls" id="controlPanel">
+            <select id="inverterSelect">
+                <option value="combined">🌐 Total Property (Combined)</option>
+            </select>
+            <button id="startBtn" class="primary">Start Zen Radar</button>
+        </div>
+        <div id="info">Select mode and start radar...</div>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -65,15 +87,19 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const startBtn = document.getElementById('startBtn');
+    const inverterSelect = document.getElementById('inverterSelect');
     const infoDiv = document.getElementById('info');
 
     let width, height, cx, cy;
-    let data = [];
+    let allInvertersData = {};
+    let currentDataset = [];
+    let currentDatasetName = '';
     let isPlaying = false;
     let audioCtx = null;
     let currentAngle = 0;
+    let playlistKeys = [];
+    let playlistIndex = 0;
 
-    // Pentatonic scale for harmonious (non-dissonant) ambient chords
     const pentatonicScale = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
 
     function resize() {
@@ -87,30 +113,99 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // Load data from localStorage (compatible with PWA-EcoFlow-Monitor structure)
+    // Load all inverters from localStorage
     function loadData() {
-        try {
-            const raw = localStorage.getItem('ecoflow_wh');
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                const sn = Object.keys(parsed)[0]; // Pick the first available inverter
-                if (sn && parsed[sn]) {
-                    const days = Object.keys(parsed[sn]).sort();
-                    data = days.map(d => ({ date: d, yield: parsed[sn][d] }));
-                    return;
-                }
-            }
-        } catch(e) { console.log("Error loading local data, using fallback generator."); }
+        allInvertersData = {};
+        let rawStorage = null;
+        let customNames = {};
 
-        // Fallback: Generate a smooth seasonal wave pattern if no local storage data is found
-        for(let i = 0; i < 365; i++) {
-            let base = Math.sin((i / 365) * Math.PI) * 2000; 
-            let noise = Math.random() * 500;
-            data.push({ date: `Day ${i}`, yield: Math.max(0, base + noise) });
+        try {
+            rawStorage = localStorage.getItem('ecoflow_wh');
+            customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
+        } catch(e) { console.log("Error reading localStorage"); }
+
+        if (rawStorage) {
+            try {
+                const parsed = JSON.parse(rawStorage);
+                const serials = Object.keys(parsed);
+                
+                if (serials.length > 0) {
+                    serials.forEach(sn => {
+                        const name = customNames[sn] || `Inverter (${sn.substring(0, 6)}...)`;
+                        const daysObj = parsed[sn];
+                        const days = Object.keys(daysObj).sort();
+                        allInvertersData[sn] = {
+                            name: name,
+                            data: days.map(d => ({ date: d, yield: daysObj[d] }))
+                        };
+                    });
+                }
+            } catch(e) { console.error("Parsing error", e); }
         }
+
+        // Fallback if no data is found in localStorage
+        if (Object.keys(allInvertersData).length === 0) {
+            let mockData = [];
+            for(let i = 0; i < 365; i++) {
+                let base = Math.sin((i / 365) * Math.PI) * 1500;
+                mockData.push({ date: `Day ${i}`, yield: Math.max(0, base + Math.random() * 400) });
+            }
+            allInvertersData['mock_1'] = { name: 'Simulator A', data: mockData };
+            let mockData2 = [];
+            for(let i = 0; i < 365; i++) {
+                let base = Math.sin((i / 365) * Math.PI) * 1200;
+                mockData2.push({ date: `Day ${i}`, yield: Math.max(0, base + Math.random() * 300) });
+            }
+            allInvertersData['mock_2'] = { name: 'Simulator B', data: mockData2 };
+        }
+
+        // Populate Dropdown cleanly
+        inverterSelect.innerHTML = '<option value="combined">🌐 Total Property (Combined)</option>';
+        inverterSelect.innerHTML += '<option value="playlist">🔄 Sequential Playlist (All Devices)</option>';
+        
+        Object.keys(allInvertersData).forEach(sn => {
+            const opt = document.createElement('option');
+            opt.value = sn;
+            opt.textContent = `⚡ ${allInvertersData[sn].name}`;
+            inverterSelect.appendChild(opt);
+        });
     }
 
-    // Initialize Web Audio API on user interaction
+    function getCombinedData() {
+        const dateMap = {};
+        Object.keys(allInvertersData).forEach(sn => {
+            allInvertersData[sn].data.forEach(item => {
+                dateMap[item.date] = (dateMap[item.date] || 0) + item.yield;
+            });
+        });
+        const sortedDates = Object.keys(dateMap).sort();
+        return sortedDates.map(d => ({ date: d, yield: dateMap[d] }));
+    }
+
+    function selectDataset(key) {
+        if (key === 'combined') {
+            currentDataset = getCombinedData();
+            currentDatasetName = 'Total Property';
+        } else if (key === 'playlist') {
+            playlistKeys = Object.keys(allInvertersData);
+            playlistIndex = 0;
+            loadPlaylistCurrent();
+            return;
+        } else {
+            currentDataset = allInvertersData[key].data;
+            currentDatasetName = allInvertersData[key].name;
+        }
+        window.lastPlayedIndex = -1;
+    }
+
+    function loadPlaylistCurrent() {
+        if (playlistKeys.length === 0) return;
+        const sn = playlistKeys[playlistIndex];
+        currentDataset = allInvertersData[sn].data;
+        currentDatasetName = `[${playlistIndex + 1}/${playlistKeys.length}] ${allInvertersData[sn].name}`;
+        window.lastPlayedIndex = -1;
+    }
+
     function initAudio() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -120,23 +215,18 @@
         }
     }
 
-    // Play a gentle ambient tone scaled by the daily energy yield
     function playTone(yieldValue, maxYield) {
         if (!audioCtx) return;
-
         const normalizedYield = Math.min(1, yieldValue / maxYield);
-        
-        // Map yield to a frequency from the pentatonic scale
         const noteIndex = Math.floor(normalizedYield * (pentatonicScale.length - 1));
         const freq = pentatonicScale[noteIndex];
 
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
 
-        osc.type = 'sine'; // Soft sine wave
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
-        // Envelope for a gentle waterdrop / chime effect (CPU and battery friendly)
         gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
         gainNode.gain.linearRampToValueAtTime(0.15 * normalizedYield, audioCtx.currentTime + 0.05);
         gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
@@ -151,26 +241,31 @@
     function draw() {
         if (!isPlaying) return;
 
-        // Light clear with transparency for a smooth motion trail effect
         ctx.fillStyle = 'rgba(6, 12, 26, 0.15)';
         ctx.fillRect(0, 0, width, height);
 
-        const radius = Math.min(width, height) * 0.15; // Inner core radius
-        const maxRadius = Math.min(width, height) * 0.45; // Max outer reach
-        const maxYield = Math.max(...data.map(d => d.yield));
+        const radius = Math.min(width, height) * 0.15;
+        const maxRadius = Math.min(width, height) * 0.45;
+        
+        if (!currentDataset || currentDataset.length === 0) return;
+        const maxYield = Math.max(...currentDataset.map(d => d.yield)) || 1;
 
-        const totalPoints = data.length;
+        const totalPoints = currentDataset.length;
         const angleStep = (Math.PI * 2) / totalPoints;
 
-        // Radar rotation speed
         currentAngle += 0.015;
-        if (currentAngle > Math.PI * 2) currentAngle -= Math.PI * 2;
+        
+        if (currentAngle > Math.PI * 2) {
+            currentAngle -= Math.PI * 2;
+            if (inverterSelect.value === 'playlist' && playlistKeys.length > 1) {
+                playlistIndex = (playlistIndex + 1) % playlistKeys.length;
+                loadPlaylistCurrent();
+            }
+        }
 
-        // Determine current index scanned by the radar sweep
         let currentIndex = Math.floor((currentAngle / (Math.PI * 2)) * totalPoints);
         
-        // Render data rays
-        data.forEach((point, i) => {
+        currentDataset.forEach((point, i) => {
             const angle = i * angleStep;
             const length = radius + (point.yield / maxYield) * (maxRadius - radius);
 
@@ -183,19 +278,16 @@
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             
-            // Highlight active ray hit by the radar sweep
             if (i === currentIndex) {
                 ctx.strokeStyle = '#2ecc71';
                 ctx.lineWidth = 3;
                 
-                // Play audio cue once per day point transition
                 if (window.lastPlayedIndex !== currentIndex) {
                     playTone(point.yield, maxYield);
                     window.lastPlayedIndex = currentIndex;
-                    infoDiv.innerHTML = `${point.date} <br> <b>${(point.yield/1000).toFixed(2)} kWh</b>`;
+                    infoDiv.innerHTML = `<b>${currentDatasetName}</b><br>${point.date} — <b>${(point.yield/1000).toFixed(2)} kWh</b>`;
                 }
             } else {
-                // Color transition from blue (low/cold) to yellow/green (high/warm)
                 const hue = 200 - ((point.yield / maxYield) * 140);
                 ctx.strokeStyle = `hsla(${hue}, 80%, 50%, 0.4)`;
                 ctx.lineWidth = 2;
@@ -207,12 +299,15 @@
         requestAnimationFrame(draw);
     }
 
+    loadData();
+
     startBtn.addEventListener('click', () => {
-        loadData();
         initAudio();
+        selectDataset(inverterSelect.value);
         isPlaying = true;
+        inverterSelect.disabled = true;
         startBtn.style.display = 'none';
-        infoDiv.innerHTML = 'Synchronizing orbit...';
+        infoDiv.innerHTML = 'Synchronizing radar orbit...';
         draw();
     });
 </script>
