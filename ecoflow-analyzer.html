@@ -571,10 +571,10 @@
             cssClass = "text-dim";
             fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
           }
-          else if (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500) { 
+          else if (realYieldWh === 0 || (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500)) { 
             diagnosis = "❌"; 
             cssClass = "bad"; 
-            fullTextExplanation = "System / Data Outage: Significant generation gap compared to calculated potential (Soll).";
+            fullTextExplanation = "System / Data Outage: Missing data or significant generation gap.";
           }
           else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
             diagnosis = "✅"; 
