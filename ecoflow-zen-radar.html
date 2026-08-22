@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoFlow Solar Zen Radar</title>
+    <title>Solar Zen Radar - Sound Bath</title>
     <style>
         body {
             margin: 0;
@@ -32,6 +32,8 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         select, button {
             background: #0d182b;
@@ -50,7 +52,6 @@
             border: none;
         }
         button.primary:hover {
-            background: #27ae60;
             transform: scale(1.05);
         }
         select:focus, button:focus {
@@ -76,9 +77,14 @@
             <select id="inverterSelect">
                 <option value="combined">🌐 Total Property (Combined)</option>
             </select>
-            <button id="startBtn" class="primary">☀️🎧 Start Zen Radar</button>
+            <select id="soundModeSelect">
+                <option value="subterra">🧘 Sub-Terra (Deepest Sub-Bass)</option>
+                <option value="bowl">🥣 Singing Bowl (Warm & Earthy)</option>
+                <option value="chimes">✨ Solar Chimes (Bright)</option>
+            </select>
+            <button id="startBtn" class="primary">Start Sound Bath</button>
         </div>
-        <div id="info">Select mode and start radar...</div>
+        <div id="info">Select settings and start meditation...</div>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -88,6 +94,7 @@
     const ctx = canvas.getContext('2d');
     const startBtn = document.getElementById('startBtn');
     const inverterSelect = document.getElementById('inverterSelect');
+    const soundModeSelect = document.getElementById('soundModeSelect');
     const infoDiv = document.getElementById('info');
 
     let width, height, cx, cy;
@@ -100,7 +107,22 @@
     let playlistKeys = [];
     let playlistIndex = 0;
 
-    const pentatonicScale = [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+    // ==========================================
+    // ACOUSTIC SCALES & SOUND BATH MODES
+    // ==========================================
+    const scales = {
+        // 1. Sub-Terra: Extremely deep sub-bass starting at 55Hz. Heavy temple-bowl vibe, 
+        // designed for deep physical grounding, late-night listening, and falling asleep.
+        subterra: [55.00, 65.41, 73.42, 82.41, 98.00, 110.00, 123.47, 146.83, 164.81, 196.00],
+
+        // 2. Singing Bowl: Warm, earthy, medium-deep acoustic singing bowl resonance. 
+        // Strikes a balanced meditative tone for general relaxation.
+        bowl:     [98.00, 110.00, 123.47, 146.83, 164.81, 196.00, 220.00, 246.94, 293.66, 329.63],
+
+        // 3. Solar Chimes: Original bright, higher-register pentatonic scale. 
+        // Clearer and more uplifting for a more alert ambient mood.
+        chimes:   [196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25]
+    };
 
     function resize() {
         width = window.innerWidth;
@@ -113,7 +135,7 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // Load all inverters from localStorage
+    // Load all inverters from localStorage (compatible with EcoFlow local data structure)
     function loadData() {
         allInvertersData = {};
         let rawStorage = null;
@@ -143,7 +165,7 @@
             } catch(e) { console.error("Parsing error", e); }
         }
 
-        // Fallback if no data is found in localStorage
+        // Fallback simulator data if no localStorage entries are found
         if (Object.keys(allInvertersData).length === 0) {
             let mockData = [];
             for(let i = 0; i < 365; i++) {
@@ -151,15 +173,9 @@
                 mockData.push({ date: `Day ${i}`, yield: Math.max(0, base + Math.random() * 400) });
             }
             allInvertersData['mock_1'] = { name: 'Simulator A', data: mockData };
-            let mockData2 = [];
-            for(let i = 0; i < 365; i++) {
-                let base = Math.sin((i / 365) * Math.PI) * 1200;
-                mockData2.push({ date: `Day ${i}`, yield: Math.max(0, base + Math.random() * 300) });
-            }
-            allInvertersData['mock_2'] = { name: 'Simulator B', data: mockData2 };
         }
 
-        // Populate Dropdown cleanly
+        // Populate Inverter Dropdown selection UI
         inverterSelect.innerHTML = '<option value="combined">🌐 Total Property (Combined)</option>';
         inverterSelect.innerHTML += '<option value="playlist">🔄 Sequential Playlist (All Devices)</option>';
         
@@ -215,37 +231,40 @@
         }
     }
 
-    // Play a gentle ambient tone with parallel octaves for a rich singing bowl resonance
+    // Synthesize a meditative sound bath tone with parallel octaves and long acoustic decay
     function playTone(yieldValue, maxYield) {
         if (!audioCtx) return;
         const normalizedYield = Math.min(1, yieldValue / maxYield);
-        const noteIndex = Math.floor(normalizedYield * (pentatonicScale.length - 1));
-        const baseFreq = pentatonicScale[noteIndex];
+        
+        const selectedScaleKey = soundModeSelect.value;
+        const currentScale = scales[selectedScaleKey] || scales.bowl;
+        
+        const noteIndex = Math.floor(normalizedYield * (currentScale.length - 1));
+        const baseFreq = currentScale[noteIndex];
 
-        // Master gain envelope for a long, meditative sound bath decay (4 seconds)
+        // Master gain envelope for a smooth, long 4-second meditative decay
         const masterGain = audioCtx.createGain();
         masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
-        masterGain.gain.linearRampToValueAtTime(0.2 * normalizedYield, audioCtx.currentTime + 0.2);
+        masterGain.gain.linearRampToValueAtTime(0.25 * normalizedYield, audioCtx.currentTime + 0.2);
         masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 4.0);
         masterGain.connect(audioCtx.destination);
 
-        // Oscillator 1: Root frequency (fundamental tone)
+        // Oscillator 1: Fundamental deep tone
         const osc1 = audioCtx.createOscillator();
         osc1.type = 'sine';
         osc1.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
         osc1.connect(masterGain);
 
-        // Oscillator 2: Parallel octave above (adds shimmer and acoustic depth)
+        // Oscillator 2: Parallel octave above for rich singing bowl overtone shimmer
         const octaveGain = audioCtx.createGain();
-        octaveGain.gain.setValueAtTime(0.4, audioCtx.currentTime); // Octave is softer to balance the mix
+        octaveGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
         octaveGain.connect(masterGain);
 
         const osc2 = audioCtx.createOscillator();
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(baseFreq * 2, audioCtx.currentTime); // Exactly one octave higher
+        osc2.frequency.setValueAtTime(baseFreq * 2, audioCtx.currentTime);
         osc2.connect(octaveGain);
 
-        // Start both oscillators simultaneously
         const startTime = audioCtx.currentTime;
         const stopTime = startTime + 4.0;
 
@@ -255,7 +274,7 @@
         osc1.stop(stopTime);
         osc2.stop(stopTime);
     }
-  
+
     function draw() {
         if (!isPlaying) return;
 
@@ -271,8 +290,7 @@
         const totalPoints = currentDataset.length;
         const angleStep = (Math.PI * 2) / totalPoints;
 
-        //currentAngle += 0.015;
-        // Much slower rotation for a meditative sound bath feeling
+        // Ultra-slow, meditative radar sweep rotation speed
         currentAngle += 0.004;
         
         if (currentAngle > Math.PI * 2) {
@@ -321,25 +339,24 @@
 
     loadData();
 
-startBtn.addEventListener('click', () => {
+    startBtn.addEventListener('click', () => {
         if (!isPlaying) {
             initAudio();
             selectDataset(inverterSelect.value);
             isPlaying = true;
             startBtn.textContent = 'Stop / Reset';
-            startBtn.style.background = '#e74c3c'; // Rot für Stop
+            startBtn.style.background = '#e74c3c';
             infoDiv.innerHTML = 'Synchronizing radar orbit...';
             draw();
         } else {
             isPlaying = false;
-            startBtn.textContent = 'Start Zen Radar';
-            startBtn.style.background = '#2ecc71'; // Grün für Start
+            startBtn.textContent = 'Start Sound Bath';
+            startBtn.style.background = '#2ecc71';
             inverterSelect.disabled = false;
-            infoDiv.innerHTML = 'Radar paused.';
+            infoDiv.innerHTML = 'Sound bath paused.';
         }
     });
 
-    // Im Dropdown-Change dataset switch
     inverterSelect.addEventListener('change', () => {
         if (isPlaying) {
             selectDataset(inverterSelect.value);
