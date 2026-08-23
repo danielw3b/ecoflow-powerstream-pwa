@@ -883,11 +883,20 @@
         };
     }
 
-    // Generate dynamic ROI and financial summary HTML string (kongruent zur Status-Box)
+    // Generate dynamic ROI and financial summary HTML string (congruent to status box)
     function renderFinancialReportHtml(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}, efficiencyClass = 'good') {
         let totalGeneratedWh = 0;
         const tariffStartDate = new Date(globalConfig.tariffStart);
-
+    
+        // Set end date to yesterday, since analysis data and logs only extend up to yesterday (current day completes at midnight)
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() - 1);
+    
+        // Calculate precise calendar days elapsed from tariff start up to yesterday
+        const diffTime = endDate - tariffStartDate;
+        window.tariffDaysCounter = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    
+        // Sum generated energy for all available daily records on or after the tariff start date
         for (const [dateStr, wh] of Object.entries(deviceDaily)) {
             if (new Date(dateStr) >= tariffStartDate) {
                 totalGeneratedWh += wh;
@@ -904,6 +913,7 @@
         const cur = globalConfig.currency || '€';
     
         const savingsNet = savedKwh * (energyPrice / 100);
+        // Theory demand based on actual tracked tariff days up to yesterday
         const theoryDemand = window.tariffDaysCounter * consumption;
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
@@ -914,12 +924,12 @@
         globalCsvRows.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
         globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
         globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
-
+    
         return `<div class="summary-card sum-${efficiencyClass}" style="margin-top: 15px;">
             <h3 class="${efficiencyClass}">💰 Financial & ROI Report</h3>
             <table>
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
-                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Since current tariff start (${globalConfig.tariffStart})</td></tr>
+                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Since current tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated since tariff start</td></tr>
                 <tr><td>Solar Energy Used Directly</td><td class="${efficiencyClass}">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
                 <tr><td>Est. House Autarky Rate</td><td class="${efficiencyClass}">${autarkyRate.toFixed(1)}%</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
@@ -928,7 +938,7 @@
             </table>
         </div>`;
     }
-  
+
     function downloadCSV() {
         const csvContent = "\uFEFF" + globalCsvRows.map(e => e.join(";")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
