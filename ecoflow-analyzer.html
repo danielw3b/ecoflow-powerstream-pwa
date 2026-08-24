@@ -929,7 +929,7 @@
             <h3 class="${efficiencyClass}">💰 Financial & ROI Report</h3>
             <table>
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
-                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Since current tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
+                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated since tariff start</td></tr>
                 <tr><td>Solar Energy Used Directly</td><td class="${efficiencyClass}">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
                 <tr><td>Est. House Autarky Rate</td><td class="${efficiencyClass}">${autarkyRate.toFixed(1)}%</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
