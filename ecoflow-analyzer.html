@@ -497,7 +497,7 @@
         let criticalCount = 0;
         let weatherCount = 0;
         const anomalies = [];
-        let tariffDaysCounter = 0;
+        //let tariffDaysCounter = 0;
         let subTableRowsHtml = "";  
         const resultsDiv = document.getElementById('results');
     
@@ -553,9 +553,9 @@
     
           let rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
           let efficiency = Math.round(rawEfficiency * 10) / 10;
-          if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
+          /*if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
             tariffDaysCounter++;
-          }
+          }*/
     
           const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
           const isInstallationDay = firstActiveDate && dateStr === firstActiveDate;
@@ -792,7 +792,7 @@
         const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
   
-        window.tariffDaysCounter = tariffDaysCounter;
+        //window.tariffDaysCounter = tariffDaysCounter;
 
         let html = `<div class="card">
                   <h2>📡 Inverter: ${friendlyName}</h2>
