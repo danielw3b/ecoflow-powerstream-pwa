@@ -1,5 +1,5 @@
 <div align="center">
-<img src="screenshot-energy-history.png" alt="Energy history screenshot" width="720">
+<img src="screenshot-energy-history.png" alt="Energy history screenshot" width="720"><br><sub><b>Energy History</b> — Charts, CSV Export</sub>
 <!--<img src="screenshot-mobile.png" alt="Mobile screenshot" width="400">
 <img src="screenshot.png" alt="Desktop screenshot" width="720">-->
 
@@ -13,13 +13,13 @@ No server required — runs entirely in your browser.
 
 <table>
 <tr>
-<td align="center"><img src="screenshot1.png" alt="Home" width="230"><br><sub><b>Setup</b> — Accesskey+Secretkey</sub></td>
-<td align="center"><img src="screenshot2.png" alt="Workout" width="230"><br><sub><b>Real-Time</b> — tracking mqtt</sub></td>
-<td align="center"><img src="screenshot3.png" alt="Stats" width="230"><br><sub><b>Energy History</b> — charts, csv</sub></td>
+<td align="center"><img src="screenshot1.png" alt="Setup" width="230"><br><sub><b>Setup</b> — Accesskey+Secretkey</sub></td>
+<td align="center"><img src="screenshot2.png" alt="Real-Time Tracking" width="230"><br><sub><b>Real-Time</b> — tracking mqtt</sub></td>
+<td align="center"><img src="screenshot3.png" alt="Energy History" width="230"><br><sub><b>Energy History</b> — charts, csv</sub></td>
 </tr>
 </table>
 <br><br>
-<img src="screenshot-tablet.png" alt="Tablet screenshot" width="720">
+<img src="screenshot-tablet.png" alt="Tablet screenshot" width="720"><br><sub><b>Tablet View</b> — More than Two inverter support</sub>
 </div>
 
 ## Features
