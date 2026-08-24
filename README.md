@@ -7,6 +7,8 @@ No server required — runs entirely in your browser.
 <!--<img src="screenshot-mobile.png" alt="Mobile screenshot" width="400">
 <img src="screenshot.png" alt="Desktop screenshot" width="720">-->
 
+[▶ Try the live demo](https://danielw3b.github.io/ecoflow-powerstream-pwa/)
+
 ## Features
 
 - **Real-time monitoring** — live solar power, grid feed-in, battery state via MQTT over WebSocket
