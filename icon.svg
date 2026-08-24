@@ -1,19 +1,25 @@
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+<svg version="1.1" xmlns="http://w3.org" viewBox="0 0 500 500" width="500" height="500">
   <style>
     .bg { fill: #060c1a; }
-    .logo { fill: #ffffff; fill-rule: evenodd; }
+    .logo { fill: #ffb42c; }
   </style>
-  <!-- Hintergrund-Box -->
-  <path class="bg" d="M109.4 0h281.2c60.4 0 109.4 49 109.4 109.4v281.2c0 60.4-49 109.4-109.4 109.4h-281.2c-60.4 0-109.4-49-109.4-109.4v-281.2c0-60.4 49-109.4 109.4-109.4z"/>
   
-  <!-- Das echte vektorisierte Logo (Zentriert) -->
-  <g transform="translate(100, 160)">
-    <path class="logo" d="M3.2,12.7 C1.1,23.4 0,38.1 0,55.9 C0,111.4 22.8,142.1 68.3,148 C69.9,148.2 72.8,148.4 77.2,148.4 C117.8,148.4 141.4,124.6 148.1,76.9 C151,56.5 150.3,39.1 146,24.8 C139,1.7 114.7,0 75.3,0 C32,0 8,4.2 3.2,12.7 Z M119.5,41.9 C123.3,55.6 122.9,71.2 118.2,88.7 C113.8,105 101,114.8 79.9,118 C78.9,118.1 77.4,118.2 75.3,118.2 C48.4,118.2 33.4,103.5 30.5,74.1 C29.4,63 30.3,52.9 33.1,43.7 C37.5,29.3 49.3,22.1 68.5,22.1 C96.3,22.1 113.3,28.7 119.5,41.9 Z"/>
-    <path class="logo" d="M188.7,46 C183.1,62.8 171.1,104.9 152.9,172.5 L191.6,172.5 C197.8,146.5 204.6,117.3 212.1,84.9 C219.7,117.3 226.7,146.5 233.1,148.4 C234,148.4 235.3,148.4 237,148.4 L300,148.4 L281.8,76.9 L237.3,76.9 L225.8,24.8 L188.7,46 Z"/>
+  <!-- Perfekt abgerundeter Hintergrund (App-Icon-Stil) -->
+  <rect class="bg" width="500" height="500" rx="109.4" ry="109.4" />
+  
+  <!-- Das exakt ausgerichtete geometrische EF-Logo -->
+  <g class="logo" transform="translate(100, 156)">
+    <!-- E-Balken (Links) -->
+    <rect x="0" y="0" width="143" height="34" />
+    <rect x="0" y="76" width="143" height="34" />
+    <rect x="0" y="152" width="143" height="34" />
+    
+    <!-- F-Balken (Rechts) -->
+    <rect x="159" y="0" width="141" height="34" />
+    <!-- Der abgewinkelte F-Haken (Kombination aus horizontalem und vertikalem Balken) -->
+    <path d="M 159,76 H 300 V 110 H 201 V 186 H 159 Z" />
   </g>
 </svg>
-
-
 
 
 
