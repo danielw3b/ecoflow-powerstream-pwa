@@ -1,31 +1,18 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-  <style>
-    .bg { fill: #060c1a; }
-    .logo { fill: #ffb42c; }
-  </style>
-  
-  <!-- Perfekt abgerundeter Hintergrund (App-Icon-Stil) -->
-  <rect class="bg" width="500" height="500" rx="109.4" ry="109.4" />
-  
-  <!-- Das exakt ausgerichtete geometrische EF-Logo -->
-  <g class="logo" transform="translate(100, 156)">
-    <!-- E-Balken (Links) -->
+  <!-- Perfectly rounded background box (App icon style) -->
+  <rect fill="#060c1a" width="500" height="500" rx="109.4" ry="109.4" />
+  <!-- Precisely aligned geometric EF logo -->
+  <g fill="#ffb42c" transform="translate(100, 156)">
+    <!-- E-bars (Left side) -->
     <rect x="0" y="0" width="143" height="34" />
     <rect x="0" y="76" width="143" height="34" />
     <rect x="0" y="152" width="143" height="34" />
-    
-    <!-- F-Balken (Rechts) -->
+    <!-- F-bars (Right side) -->
     <rect x="159" y="0" width="141" height="34" />
-    <!-- Der abgewinkelte F-Haken (Kombination aus horizontalem und vertikalem Balken) -->
+    <!-- Angled F-hook (Combination of horizontal and vertical bars) -->
     <path d="M 159,76 H 300 V 110 H 201 V 186 H 159 Z" />
   </g>
 </svg>
-
-
-
-
-
-
 
 <!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/>
   <polygon points="300,40 120,260 250,260 212,472 392,252 262,252" fill="#ffb830"/>
