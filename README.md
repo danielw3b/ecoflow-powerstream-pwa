@@ -1,12 +1,24 @@
+<div align="center">
+
+<img src="banner.png" alt="Energy History" width="720">
+<br>
+
 # EcoFlow PowerStream Monitor PWA
 
-A single-file Progressive Web App for monitoring EcoFlow PowerStream MicroInverter devices (STREAM series) in real time. No server required — runs entirely in your browser.
+**A single-file Progressive Web App** for monitoring EcoFlow PowerStream MicroInverter devices (STREAM series) in real time.
+No server required — runs entirely in your browser.
+
+<table>
+<tr>
+<td align="center"><img src="screenshot-mobile.png" alt="Mobile" width="230"><br><sub><b>Mobile</b></td>
+<td align="center"><img src="screenshot.png" alt="Desktop" width="460"><br><sub><b>Desktop</b></td>
+</tr>
+</table>
+</div>
 
 https://danielw3b.github.io/ecoflow-powerstream-pwa/
 
 ![EcoFlow Monitor Screenshot](screenshot-mobile.png)
-
-
 ![EcoFlow Monitor Screenshot](screenshot.png)
 
 ## Features
@@ -123,8 +135,7 @@ This project was built collaboratively with **Claude** (Anthropic) over an exten
 
 Claude's assistance was instrumental in navigating undocumented API behaviour and building a production-quality app from scratch. Model used: Claude Sonnet (claude.ai).
 
-At the end also Gemini, Google’s primary conversational and agentic AI assistant was involved 
-to recover the strange disappearance of code fragments in the last build. :)
+At the end also **Gemini**, Google’s primary conversational and agentic AI assistant was involved.
 
 ## License
 
