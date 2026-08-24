@@ -191,7 +191,7 @@
         .summary-card h3 {
             margin: 0 0 10px 0;
             font-size: 0.9rem;
-            /*color: var(--text-dim);*/
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -826,8 +826,9 @@
                       </div>
                   </div>`;
 
-        // Financial & ROI Report (Kongruente Box)
-        html += renderFinancialReportHtml(totalDaysAnalyzed, criticalCount, deviceDaily, efficiencyClass);
+        // Financial & ROI Report
+        //html += renderFinancialReportHtml(totalDaysAnalyzed, criticalCount, deviceDaily, efficiencyClass);
+        html += renderFinancialReportHtml(deviceDaily);
 
         // Table 1: Daily Efficiency Tracker (now newest date first)
         html += `
@@ -876,15 +877,16 @@
   
         resultsDiv.innerHTML = html;
         
-        return {
+        /*return {
           totalDaysAnalyzed: totalDaysAnalyzed,
           criticalCount: criticalCount,
           efficiencyClass: efficiencyClass
-        };
+        };*/
     }
 
     // Generate dynamic ROI and financial summary HTML string (congruent to status box)
-    function renderFinancialReportHtml(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}, efficiencyClass = 'good') {
+    //function renderFinancialReportHtml(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}, efficiencyClass = 'good') {
+    function renderFinancialReportHtml(deviceDaily = {}) {
         let totalGeneratedWh = 0;
         const tariffStartDate = new Date(globalConfig.tariffStart);
     
@@ -925,16 +927,16 @@
         globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
         globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
     
-        return `<div class="summary-card sum-${efficiencyClass}" style="margin-top: 15px;">
-            <h3 class="${efficiencyClass}">💰 Financial & ROI Report</h3>
+        return `<div class="summary-card" style="margin-top: 15px;">
+            <h3>💰 Financial & ROI Report</h3>
             <table>
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated since tariff start</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="${efficiencyClass}">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
-                <tr><td>Est. House Autarky Rate</td><td class="${efficiencyClass}">${autarkyRate.toFixed(1)}%</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
-                <tr><td>Total Savings (Net)</td><td class="${efficiencyClass}">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
-                <tr><td>ROI Progress</td><td class="${efficiencyClass}">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
+                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
+                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
+                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
+                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
             </table>
         </div>`;
     }
