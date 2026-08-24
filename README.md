@@ -18,6 +18,8 @@ No server required — runs entirely in your browser.
 <td align="center"><img src="screenshot3.png" alt="Stats" width="230"><br><sub><b>Energy History</b> — charts, csv</sub></td>
 </tr>
 </table>
+<br><br>
+<img src="screenshot-tablet.png" alt="Tablet screenshot" width="720">
 </div>
 
 ## Features
