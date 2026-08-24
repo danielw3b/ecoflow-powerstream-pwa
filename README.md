@@ -1,12 +1,11 @@
-<img src="screenshot-energy-history.png" alt="energy-history" width="720">
-
 # EcoFlow PowerStream Monitor PWA
 
 **A single-file Progressive Web App** for monitoring EcoFlow PowerStream MicroInverter devices (STREAM series) in real time.
 No server required — runs entirely in your browser.
 
-<img src="screenshot-mobile.png" alt="Mobile" width="400">
-<img src="screenshot.png" alt="Desktop" width="400">
+<img src="screenshot-energy-history.png" alt="Energy history screenshot" width="720">
+<!--<img src="screenshot-mobile.png" alt="Mobile screenshot" width="400">
+<img src="screenshot.png" alt="Desktop screenshot" width="720">-->
 
 ## Features
 
