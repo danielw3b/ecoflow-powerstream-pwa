@@ -187,19 +187,21 @@ canvas{width:100%;display:block;}
 
 <header>
   <div class="logo">
-    <svg id="wakeLockIcon" title="Screen lock inactive" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <svg id="wakeLockIcon" title="Screen lock inactive" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
       <!-- Rounded background box (App icon style) -->
-      <rect fill="#060c1a" width="100" height="100" rx="22" ry="22" />  
-      <!-- EF Logo perfectly scaled to match the original lightning bolt boundaries -->
+      <rect fill="#060c1a" width="100" height="100" rx="22" ry="22" />
+      
+      <!-- EF Logo aligned to the lightning bolt boundaries (x: 25 to 75, y: 5 to 95) -->
       <g fill="#ffb830" transform="translate(25, 5)">
         <!-- E-bars (Left side) -->
-        <rect x="0" y="0" width="24" height="17" />
-        <rect x="0" y="36.5" width="24" height="17" />
-        <rect x="0" y="73" width="24" height="17" />      
+        <rect x="0" y="0" width="22" height="8" />
+        <rect x="0" y="41" width="22" height="8" />
+        <rect x="0" y="82" width="22" height="8" />
+        
         <!-- F-bars (Right side) -->
-        <rect x="26" y="0" width="24" height="17" />
-        <!-- Angled F-hook -->
-        <path d="M 26,36.5 H 50 V 53.5 H 43 V 90 H 26 Z" />
+        <rect x="28" y="0" width="22" height="8" />
+        <!-- Angled F-hook (Balanced line thickness and spacious gap) -->
+        <path d="M 28,41 H 50 V 49 H 36 V 90 H 28 Z" />
       </g>
     </svg>
 
