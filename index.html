@@ -191,17 +191,17 @@ canvas{width:100%;display:block;}
       <!-- Rounded background box (App icon style) -->
       <rect fill="#060c1a" width="100" height="100" rx="22" ry="22" />
       
-      <!-- EF Logo aligned to the lightning bolt boundaries (x: 25 to 75, y: 5 to 95) -->
-      <g fill="#ffb830" transform="translate(25, 5)">
+      <!-- Upscaled by 25% and mathematically centered (X: 12.5px padding, Y: 26.5px padding) -->
+      <g fill="#ffb42c" transform="translate(12.5, 26.5)">
         <!-- E-bars (Left side) -->
-        <rect x="0" y="0" width="22" height="8" />
-        <rect x="0" y="41" width="22" height="8" />
-        <rect x="0" y="82" width="22" height="8" />
+        <rect x="0" y="0" width="36.25" height="8.75" />
+        <rect x="0" y="18.75" width="36.25" height="8.75" />
+        <rect x="0" y="37.5" width="36.25" height="8.75" />
         
         <!-- F-bars (Right side) -->
-        <rect x="28" y="0" width="22" height="8" />
-        <!-- Angled F-hook (Balanced line thickness and spacious gap) -->
-        <path d="M 28,41 H 50 V 49 H 36 V 90 H 28 Z" />
+        <rect x="40" y="0" width="35" height="8.75" />
+        <!-- Angled F-hook (Proportionally scaled) -->
+        <path d="M 40,18.75 H 75 V 27.5 H 50 V 46.25 H 40 Z" />
       </g>
     </svg>
 
