@@ -30,8 +30,8 @@
     <!-- Angled F-hook (Combination of horizontal and vertical bars) -->
     <path d="M 159,76 H 300 V 110 H 201 V 186 H 159 Z" />
   </g>
-</svg>-->
+</svg>
 
-<!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#060c1a"/>
   <polygon points="300,40 120,260 250,260 212,472 392,252 262,252" fill="#ffb830"/>
 </svg>-->
