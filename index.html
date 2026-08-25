@@ -10,11 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="EcoFlow Monitor">
 <title>EcoFlow Monitor</title>
-<!--
 <link rel="manifest" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/manifest.json">
 <link rel="apple-touch-icon" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg">
 <link rel="icon" href="https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg">
--->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
 :root {
@@ -1708,7 +1706,7 @@ window.addEventListener("resize", () => {
 }, { passive: true });
 
 // ── PWA — service worker for installability ─────────────────────────────────
-/*if ("serviceWorker" in navigator && location.protocol !== "file:") {
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const sw = 'self.addEventListener("install",()=>self.skipWaiting());' +
     'self.addEventListener("activate",()=>clients.claim());' +
     'self.addEventListener("fetch",e=>{if(e.request.mode==="navigate")' +
@@ -1731,136 +1729,6 @@ window.addEventListener("appinstalled", () => {
 });
 function installPwa() {
   if (!_installPrompt) return;
-  _installPrompt.prompt();
-  _installPrompt.userChoice.then(() => { _installPrompt = null; });
-}
-*/
-
-/**
- * PWA Single-File Core Engine
- * Dynamically mounts the manifest, valid W3C icons, and data-URI service worker.
- * Logo: EcoFlow Geometric EF Brand Icon
- */
-(function initMainPWA() {
-  // ==========================================================================
-  // 1. VALID W3C VECTOR GRAPHIC (Your Original EcoFlow EF Logo)
-  // ==========================================================================
-  const pwaIconSvg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-    <!-- Perfectly rounded background box (App icon style) -->
-    <rect fill="#060c1a" width="500" height="500" rx="109.4" ry="109.4" />
-    <!-- Precisely aligned geometric EF logo -->
-    <g fill="#ffb42c" transform="translate(100, 156)">
-      <!-- E-bars (Left side) -->
-      <rect x="0" y="0" width="143" height="34" />
-      <rect x="0" y="76" width="143" height="34" />
-      <rect x="0" y="152" width="143" height="34" />
-      <!-- F-bars (Right side) -->
-      <rect x="159" y="0" width="141" height="34" />
-      <!-- Angled F-hook (Combination of horizontal and vertical bars) -->
-      <path d="M 159,76 H 300 V 110 H 201 V 186 H 159 Z" />
-    </g>
-  </svg>`;
-
-  // Generate local system path pointer in RAM
-  const svgBlob = new Blob([pwaIconSvg], { type: 'image/svg+xml' });
-  const svgObjectUrl = URL.createObjectURL(svgBlob);
-
-  // ==========================================================================
-  // 2. DYNAMIC MANIFEST DECLARATION (Satisfies Chromium & Lighthouse)
-  // ==========================================================================
-  const manifestObject = {
-    "name": "EcoFlow PowerStream PWA",
-    "short_name": "PowerStream",
-    "start_url": window.location.href, // Synchronizes dynamically with main URL
-    "display": "standalone",
-    "background_color": "#060c1a",     // Matches your beautiful dark logo background
-    "theme_color": "#ffb42c",          // Matches your amber brand color
-    "icons": [
-      {
-        "src": svgObjectUrl, // Ram pointer bypasses hard structural string blocks
-        "sizes": "500x500",
-        "type": "image/svg+xml",
-        "purpose": "any"
-      }
-    ]
-  };
-
-  const manifestBlob = new Blob([JSON.stringify(manifestObject)], { type: 'application/json' });
-  const manifestObjectUrl = URL.createObjectURL(manifestBlob);
-
-  // ==========================================================================
-  // 3. INJECT HEAD LINK ELEMENT HEADERS
-  // ==========================================================================
-  const linkManifest = document.createElement('link');
-  linkManifest.rel = 'manifest';
-  linkManifest.href = manifestObjectUrl;
-  document.head.appendChild(linkManifest);
-
-  const linkFavicon = document.createElement('link');
-  linkFavicon.rel = 'icon';
-  linkFavicon.type = 'image/svg+xml';
-  linkFavicon.href = svgObjectUrl;
-  document.head.appendChild(linkFavicon);
-
-  const linkApple = document.createElement('link');
-  linkApple.rel = 'apple-touch-icon';
-  linkApple.href = svgObjectUrl;
-  document.head.appendChild(linkApple);
-
-  // ==========================================================================
-  // 4. ATTACH INLINE BASE64 DATA-URI SERVICE WORKER (Bypasses Blob Security Block)
-  // ==========================================================================
-  if ("serviceWorker" in navigator && window.location.protocol === "https:") {
-    const swCode = `
-      self.addEventListener("install", (e) => self.skipWaiting());
-      self.addEventListener("activate", (e) => e.waitUntil(clients.claim()));
-      self.addEventListener("fetch", (e) => {
-        if (e.request.mode === "navigate") {
-          e.respondWith(fetch(e.request).catch(() => fetch(e.request)));
-        }
-      });
-    `;
-    
-    // Convert code block directly into a base64 encoded string data-URI
-    const swDataUrl = "data:application/javascript;base64," + btoa(unescape(encodeURIComponent(swCode)));
-    
-    navigator.serviceWorker.register(swDataUrl, { scope: "./" })
-      .then(() => console.log("PWA: Background processing unit attached safely."))
-      .catch((err) => console.warn("PWA: Service worker context deferred.", err));
-  }
-})();
-
-// ==========================================================================
-// 5. DEFERRED INTERFACE INTERCEPT FOR THE INSTALL TRIGGERS
-// ==========================================================================
-let _installPrompt = null;
-
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault(); 
-  _installPrompt = e;
-  
-  // UI Hook: Makes your custom install button visible inside the PWA layout
-  const btn = document.getElementById("installBtn");
-  if (btn) {
-    btn.removeAttribute("hidden");
-    btn.style.display = "inline-flex";
-  }
-});
-
-window.addEventListener("appinstalled", () => {
-  _installPrompt = null;
-  const btn = document.getElementById("installBtn");
-  if (btn) {
-    btn.style.display = "none";
-    btn.setAttribute("hidden", "true");
-  }
-});
-
-function installPwa() {
-  if (!_installPrompt) {
-    console.info("PWA: Prompt is unavailable. Already installed or running on iOS Safari.");
-    return;
-  }
   _installPrompt.prompt();
   _installPrompt.userChoice.then(() => { _installPrompt = null; });
 }
