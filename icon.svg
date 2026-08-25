@@ -9,10 +9,11 @@
     <rect x="0" y="190" width="179" height="43" />
     <!-- F-bars (Right side) -->
     <rect x="199" y="0" width="176" height="43" />
-    <!-- Angled F-hook (Clean whole numbers) -->
+    <!-- Angled F-hook (Perfect connection on the grid) -->
     <path d="M 199,95 H 375 V 138 H 251 V 233 H 199 Z" />
   </g>
 </svg>
+
 
 
 
