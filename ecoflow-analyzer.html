@@ -10,10 +10,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="EcoFlow Solar & Weather Analyzer">
     <title>EcoFlow Solar & Weather Analyzer</title>
-    <!--
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCI+PHRleHQgeT0iODUiIGZvbnQtc2l6ZT0iODUiPvCfjKTvuI88L3RleHQ+PC9zdmc+" />
     <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCI+PHRleHQgeT0iODUiIGZvbnQtc2l6ZT0iODUiPvCfjKTvuI88L3RleHQ+PC9zdmc+" />
-    -->
+
     <style>
         :root {
             --bg: #060c1a;
@@ -963,7 +962,7 @@
     * PWA Single-File Initialization
     * Generates the manifest and icons dynamically without physical files.
     */
-    (function initDynamicPWA() {
+    /*(function initDynamicPWA() {
     // 1. Raw SVG vector data of the 🌤️ Emoticon (500x500px format for GitHub)
     const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="500" height="500"><text y="85" font-size="85">🌤️</text></svg>`;
     
@@ -1016,7 +1015,7 @@
     document.head.appendChild(appleIconLink);
     
     console.log("PWA Assets successfully injected via Data-URIs.");
-    })();
+    })();*/
 
     window.addEventListener('DOMContentLoaded', initInverters);
 </script>
