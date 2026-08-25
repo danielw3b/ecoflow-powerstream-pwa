@@ -1,7 +1,7 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
   <!-- Perfectly rounded background box (App icon style) -->
   <rect fill="#060c1a" width="500" height="500" rx="109.4" ry="109.4" />
-  <!-- Scaled natively inside coordinate math and centered mathematically -->
+  <!-- Precisely aligned geometric EF logo scaled up by 25% -->
   <g fill="#ffb42c" transform="translate(62.5, 133.75)">
     <!-- E-bars (Left side) -->
     <rect x="0" y="0" width="178.75" height="42.5" />
@@ -9,10 +9,11 @@
     <rect x="0" y="190" width="178.75" height="42.5" />
     <!-- F-bars (Right side) -->
     <rect x="198.75" y="0" width="176.25" height="42.5" />
-    <!-- Angled F-hook -->
+    <!-- Angled F-hook (Combination of horizontal and vertical bars) -->
     <path d="M 198.75,95 H 375 V 137.5 H 251.25 V 232.5 H 198.75 Z" />
   </g>
 </svg>
+
 
 
 
