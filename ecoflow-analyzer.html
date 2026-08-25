@@ -8,11 +8,12 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="EcoFlow Monitor">
+    <meta name="apple-mobile-web-app-title" content="EcoFlow Solar & Weather Analyzer">
     <title>EcoFlow Solar & Weather Analyzer</title>
-    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAACXBIWXMAAAsTAAALEwEAmpwYAAAKT2lDQ1BQaG90b3Nob3AgSUNDIHByb2ZpbGUAAHjanVNnVFPpFj333vRCS4iAlEtvUhUIIFJCi4AUkSYqIQkQSoghodkVUcERRUUEG8igiAooMhQRK7Hr3nYcHJZlhSgixVMwd3wOP5576837U97xr8vO/BcAAAYwURQIgTEhgA6mShAwarKyAsW9AwiIWDoxBNEIwANWiGA6AAsQeXN76yGQAJ3N2+W8UOwM7G85GMLN2f8AsIEAhEUMDgDg8WCEB88FIgAQAOCmQPAMQAIOEA8AclAIgABEAA8wQBMQAEAABCwASTAEJAAEQAEPAEkQAJQgAnEQgIygAnEAjIADiCDyIABIwAEwAIwAAtAPSAAhQAbwADmABA6CADMAEQ4EAh4QAwTABOIAIgAO4AAyAAsAAFiADEAETIADIwET8ADwAAsQALQAAFiADAwETAALMAEQ8ADwAA8QALMAEdAEfAA9wAd8AOfwAN8A/+8QMRvAAsgAC8wATsACrAAEwABMAETgALgAAEwABMAEXAADwABMAEXgAPYAAeAAHQAAn8AC/wAL/AAbwADbAAO8ABuwAG4AAsgABIAAS8AA7AATsABvAAE8ACXwALfAAu8AE8wAHvAA9wAHfAAd8AD8wAHzABfMAD8QAn4ACdgAF2AAXwADfAAbwADbAAG8AAHwADXwAHXAAdfAAO8AD3wAHzAAd8AD3wAHfAAdwAHXwAPXAAdfAAe8AD3wAPXAAXfAAt8ADXwAOvAAsMAA7wADvAAd8AD3wAHfgAvfgAt+ACF+AAX8AD/gAb+ADX4ALvgAD/AAO/AAt+AD9wAD7AAH6AAfeAAf4AD9wAf/gAn8AB/4ADfgAX/gAn+AC/4AFfgAP9wAfrwAf9gAj/gASDwAED4ADX4AHz4ANwQAPggA/AgA+EAB8IAB9IAB8gAD5AAPmAB88ADw4AFw4AHPgAB+gADfgAf8AAn+ADf8AH4gAFgwAAAwAAgBAAiBwAgIQAIAEAEAIAI=" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCI+PHRleHQgeT0iODUiIGZvbnQtc2l6ZT0iODUiPsSym788L3RleHQ+PC9zdmc+" />
-
+    <!--
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCI+PHRleHQgeT0iODUiIGZvbnQtc2l6ZT0iODUiPvCfjKTvuI88L3RleHQ+PC9zdmc+" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCI+PHRleHQgeT0iODUiIGZvbnQtc2l6ZT0iODUiPvCfjKTvuI88L3RleHQ+PC9zdmc+" />
+    -->
     <style>
         :root {
             --bg: #060c1a;
@@ -957,6 +958,65 @@
         link.click();
         URL.revokeObjectURL(url);
     }
+    
+    /**
+    * PWA Single-File Initialization
+    * Generates the manifest and icons dynamically without physical files.
+    */
+    (function initDynamicPWA() {
+    // 1. Raw SVG vector data of the 🌤️ Emoticon (500x500px format for GitHub)
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="500" height="500"><text y="85" font-size="85">🌤️</text></svg>`;
+    
+    // 2. Convert the SVG content into a safe Base64 Data URI
+    const base64Svg = btoa(unescape(encodeURIComponent(svgContent)));
+    const svgDataUri = `data:image/svg+xml;base64,${base64Svg}`;
+    
+    // 3. Define the full PWA Manifest structure entirely in memory
+    const manifestObject = {
+      "name": "EcoFlow Solar & Weather Analyzer",
+      "short_name": "Solar Analyzer",
+      "start_url": window.location.href, // Automatically matches the current subpage URL
+      "display": "standalone",
+      "background_color": "#060c1a",
+      "theme_color": "#060c1a",
+      "icons": [
+        {
+          "src": svgDataUri,
+          "sizes": "500x500",
+          "type": "image/svg+xml",
+          "purpose": "any"
+        }
+      ]
+    };
+    
+    // 4. Convert Manifest Object to Base64 to bypass strict Lighthouse blob-blocking
+    const manifestString = JSON.stringify(manifestObject);
+    const base64Manifest = btoa(unescape(encodeURIComponent(manifestString)));
+    const manifestDataUri = `data:application/json;base64,${base64Manifest}`;
+    
+    // 5. Inject the generated elements into the document head dynamically
+    
+    // Inject PWA Manifest
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = manifestDataUri;
+    document.head.appendChild(manifestLink);
+    
+    // Inject Standard Favicon (For Desktop & Chrome Browsers)
+    const faviconLink = document.createElement('link');
+    faviconLink.rel = 'icon';
+    faviconLink.type = 'image/svg+xml';
+    faviconLink.href = svgDataUri;
+    document.head.appendChild(faviconLink);
+    
+    // Inject Apple Touch Icon Fallback (Uses the SVG, Safari handles text-based vectors now)
+    const appleIconLink = document.createElement('link');
+    appleIconLink.rel = 'apple-touch-icon';
+    appleIconLink.href = svgDataUri;
+    document.head.appendChild(appleIconLink);
+    
+    console.log("PWA Assets successfully injected via Data-URIs.");
+    })();
 
     window.addEventListener('DOMContentLoaded', initInverters);
 </script>
