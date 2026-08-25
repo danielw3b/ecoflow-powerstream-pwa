@@ -611,7 +611,7 @@
                           <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
                           <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
                           <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
-                          <td class="${cssClass}">${efficiency.toFixed(1)}%</td>
+                          <td class="${cssClass}">${efficiency.toFixed(1)} %</td>
                           <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
                       </tr>`;
     
@@ -859,12 +859,10 @@
   
           globalCsvRows.push([]);
           globalCsvRows.push(["OVERALL ANALYSIS SUMMARY"]);
-          globalCsvRows.push([
-            `Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`,
-            `Critical Issues: ${criticalCount}`,
-            `Weather Context: ${weatherCount}`,
-            `Hardw. Efficiency: ${hwEfficiency}%`
-          ]);
+          globalCsvRows.push([`Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`]);
+          globalCsvRows.push([`Issues: ${criticalCount}`]);
+          globalCsvRows.push([`Weather: ${weatherCount}`]);
+          globalCsvRows.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
           globalCsvRows.push([]);
         }
   
