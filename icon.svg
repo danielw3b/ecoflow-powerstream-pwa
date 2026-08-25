@@ -1,18 +1,19 @@
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+<svg version="1.1" xmlns="http://w3.org" viewBox="50 50 400 400" width="500" height="500">
   <!-- Perfectly rounded background box (App icon style) -->
-  <rect fill="#060c1a" width="500" height="500" rx="109" ry="109" />
-  <!-- Centered geometric EF logo scaled up by 25% using pure whole integers -->
-  <g fill="#ffb42c" transform="translate(63, 134)">
+  <rect fill="#060c1a" width="500" height="500" rx="109.4" ry="109.4" />
+  <!-- Precisely aligned geometric EF logo (YOUR EXACT SUCCESSFUL CODE) -->
+  <g fill="#ffb42c" transform="translate(100, 156)">
     <!-- E-bars (Left side) -->
-    <rect x="0" y="0" width="179" height="43" />
-    <rect x="0" y="95" width="179" height="43" />
-    <rect x="0" y="190" width="179" height="43" />
+    <rect x="0" y="0" width="143" height="34" />
+    <rect x="0" y="76" width="143" height="34" />
+    <rect x="0" y="152" width="143" height="34" />
     <!-- F-bars (Right side) -->
-    <rect x="199" y="0" width="176" height="43" />
-    <!-- Angled F-hook (Perfect connection on the grid) -->
-    <path d="M 199,95 H 375 V 138 H 251 V 233 H 199 Z" />
+    <rect x="159" y="0" width="141" height="34" />
+    <!-- Angled F-hook (Combination of horizontal and vertical bars) -->
+    <path d="M 159,76 H 300 V 110 H 201 V 186 H 159 Z" />
   </g>
 </svg>
+
 
 
 
