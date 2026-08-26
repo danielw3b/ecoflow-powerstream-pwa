@@ -1,9 +1,9 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-  <!-- Solid dark background fill -->
-  <rect width="500" height="500" fill="#060c1a" />
+  <!-- Solid dark background fill with standard app-icon rounded corners -->
+  <rect width="500" height="500" rx="109" ry="109" fill="#060c1a" />
 
-  <!-- Outer Master Ring: Radius reduced by 10px (from 238 to 228) -->
-  <circle cx="250" cy="250" r="228" fill="none" stroke="#ffb42c" stroke-width="24" />
+  <!-- Outer Master Ring: Thickness expanded to 29px, shifted inward to appear visually bigger -->
+  <circle cx="250" cy="250" r="230.5" fill="none" stroke="#ffb42c" stroke-width="29" />
   
   <!-- Inner Ring framing the center -->
   <circle cx="250" cy="250" r="125" fill="none" stroke="#ffb42c" stroke-width="4" />
@@ -11,6 +11,7 @@
   <!-- Centered lightning bolt element -->
   <polygon points="269.1,40 116.4,288.2 221.4,288.2 234.7,460 383.6,192.7 278.6,192.7" fill="#ffb42c" />
 </svg>
+
 
 <!--
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
