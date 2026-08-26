@@ -755,23 +755,24 @@
         globalCsvRows.push([`Issues: ${hardwareFailCount}`, `Weather: ${lossCount}`, `Hardw. Efficiency: ${hwEfficiency.toFixed(0)}%`]);
         globalCsvRows.push([]);
     
-        // 2. Financial & ROI Report
-        html += renderFinancialReportHtml(deviceDaily);
+        // 2. Financial Report pushed before tables (CSV rows)
+        renderFinancialReportHtml(deviceDaily);
     
-        // 3. Table 1: Daily Efficiency Tracker
+        // 3. Table 1: Daily Efficiency Tracker (CSV rows)
         globalCsvRows.push(["DAILY EFFICIENCY TRACKER"]);
         globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
         globalCsvRows.push(...dailyCsvData);
         globalCsvRows.push([]);
     
-        // 4. Table 2: Daily Anomaly & Weather Context
+        // 4. Table 2: Daily Anomaly & Weather Context (CSV rows)
         if (subTableCsvRows.length > 0) {
             globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
             globalCsvRows.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
             globalCsvRows.push(...subTableCsvRows);
             globalCsvRows.push([]);
         }
-
+    
+        // === HTML RENDERING BLOCK (Declared safely here) ===
         let html = `<div class="card">
                   <h2>📡 Inverter: ${friendlyName}</h2>
                   
@@ -803,11 +804,11 @@
                           </div>
                       </div>
                   </div>`;
-
-        // Financial & ROI Report
+    
+        // Append Financial & ROI Report HTML
         html += renderFinancialReportHtml(deviceDaily);
-
-        // Table 1: Daily Efficiency Tracker (now newest date first)
+    
+        // Append Table 1: Daily Efficiency Tracker HTML
         html += `
                   <h3>Daily Efficiency Tracker</h3>
                   <div class="table-scroll-frame">
@@ -816,8 +817,8 @@
                           ${tableRowsHtml}
                       </table>
                   </div>`;
-  
-        // Table 2: Anomaly & Weather Context (now newest date first)
+    
+        // Append Table 2: Anomaly & Weather Context HTML
         if (anomalies.length > 0) {
           html += `
                   <h3 style="margin-top:30px; color:var(--warning);">
@@ -832,16 +833,8 @@
                           ${subTableRowsHtml}
                       </table>
                   </div>`;
-  
-          /*globalCsvRows.push([]);
-          globalCsvRows.push(["OVERALL ANALYSIS SUMMARY"]);
-          globalCsvRows.push([`Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`]);
-          globalCsvRows.push([`Issues: ${criticalCount}`]);
-          globalCsvRows.push([`Weather: ${weatherCount}`]);
-          globalCsvRows.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
-          globalCsvRows.push([]);*/
         }
-  
+    
         html += `
               <div class="legend-box">
                   <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
@@ -849,7 +842,7 @@
                   <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
                   <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
               </div></div>`;
-  
+    
         resultsDiv.innerHTML = html;
         
         /*return {
