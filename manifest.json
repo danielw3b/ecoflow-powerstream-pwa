@@ -1,6 +1,6 @@
 {
   "name": "EcoFlow Monitor",
-  "short_name": "EcoFlow Monitor",
+  "short_name": "EcoFlow",
   "description": "Real-time monitoring for EcoFlow PowerStream MicroInverter devices",
   "start_url": "./",
   "id": "/ecoflow-powerstream-pwa/",
@@ -11,9 +11,15 @@
   "icons": [
     {
       "src": "https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg",
-      "sizes": "any",
+      "sizes": "48x48 72x72 96x96 128x128 192x192 256x256 512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://danielw3b.github.io/ecoflow-powerstream-pwa/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }
