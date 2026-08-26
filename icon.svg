@@ -1,16 +1,17 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-  <!-- Outer Ring: 500px diameter (Radius 250) -->
-  <circle cx="250" cy="250" r="250" fill="none" stroke="#ffb42c" stroke-width="4" />
+  <!-- Outer Ring: 480px diameter (Radius 240) - 3x thickness (12px) -->
+  <circle cx="250" cy="250" r="240" fill="none" stroke="#ffb42c" stroke-width="12" />
   
-  <!-- Second Ring: 480px diameter (Radius 240) -->
-  <circle cx="250" cy="250" r="240" fill="none" stroke="#ffb42c" stroke-width="4" />
+  <!-- Second Ring: 450px diameter (Radius 225) - 2x thickness (8px) -->
+  <circle cx="250" cy="250" r="225" fill="none" stroke="#ffb42c" stroke-width="8" />
   
-  <!-- Inner Ring to frame the bolt: 250px diameter (Radius 125) -->
+  <!-- Inner Ring framing the bolt: 250px diameter (Radius 125) - standard thickness (4px) -->
   <circle cx="250" cy="250" r="125" fill="none" stroke="#ffb42c" stroke-width="4" />
   
   <!-- Centered lightning bolt element -->
   <polygon points="260,150 180,280 235,280 242,370 320,230 265,230" fill="#ffb42c" />
 </svg>
+
 
 
 
