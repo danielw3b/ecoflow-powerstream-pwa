@@ -188,26 +188,32 @@ canvas{width:100%;display:block;}
 <header>
   <div class="logo">
     <svg id="wakeLockIcon" title="Screen lock inactive" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-      <!-- Rounded background box (App icon style) -->
-      <rect fill="#060c1a" width="100" height="100" rx="22" ry="22" />
+      <!-- Outer Master Ring: 100px diameter boundary - Scaled stroke thickness (4.8px) -->
+      <circle cx="50" cy="50" r="47.6" fill="none" stroke="#ffb42c" stroke-width="4.8" />
       
-      <!-- Upscaled by 25% and mathematically centered (X: 12.5px padding, Y: 26.5px padding) -->
+      <!-- Inner Ring framing the center: 50px diameter (Radius 25) - Scaled thickness (0.8px) -->
+      <circle cx="50" cy="50" r="25" fill="none" stroke="#ffb42c" stroke-width="0.8" />
+      
+      <!-- Centered lightning bolt element mathematically balanced at the canvas midpoint (Y=50) -->
+      <!-- Top tip starts at Y=8, bottom tip ends at Y=92 (Total height: 84px) -->
+      <polygon points="53.82,8 23.28,57.64 44.28,57.64 46.94,92 76.72,38.54 55.72,38.54" fill="#ffb42c" />
+    </svg>
+    
+    <!--<svg id="wakeLockIcon" title="Screen lock inactive" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+      <rect fill="#060c1a" width="100" height="100" rx="22" ry="22" />
       <g fill="#ffb42c" transform="translate(12.5, 26.5)">
-        <!-- E-bars (Left side) -->
         <rect x="0" y="0" width="36.25" height="8.75" />
         <rect x="0" y="18.75" width="36.25" height="8.75" />
         <rect x="0" y="37.5" width="36.25" height="8.75" />
-        
-        <!-- F-bars (Right side) -->
         <rect x="40" y="0" width="35" height="8.75" />
-        <!-- Angled F-hook (Proportionally scaled) -->
         <path d="M 40,18.75 H 75 V 27.5 H 50 V 46.25 H 40 Z" />
       </g>
-    </svg>
+    </svg>-->
 
     <!--<svg id="wakeLockIcon" title="Screen lock inactive" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <polygon points="60,5 25,55 50,55 40,95 75,45 50,45" fill="#ffb830"/>
     </svg>-->
+    
     <div class="logo-titles">
       <span class="logo-main">EcoFlow Monitor</span>
       <span class="logo-sub">PowerStream MicroInverter</span>
