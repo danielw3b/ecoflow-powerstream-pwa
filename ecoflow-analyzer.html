@@ -859,7 +859,7 @@
         };*/
     }
 
-    // Generate dynamic ROI, financial summary, and meter tracking report
+    // Generate dynamic ROI, financial summary, meter tracking, and hardware efficiency report
     function renderFinancialReportHtml(deviceDaily = {}) {
         let totalGeneratedWh = 0;
         const tariffStartDate = new Date(globalConfig.tariffStart);
@@ -898,7 +898,7 @@
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
     
-        // Push financial report data to CSV rows with emoji indicators where applicable
+        // Push financial report data to CSV rows with matching emoji indicator symbols
         globalCsvRows.push(["FINANCIAL REPORT:"]);
         globalCsvRows.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
         globalCsvRows.push(["Meter Tariff Start (kWh)", meterTariffStart, "Current Meter (kWh)", meterCurrent, `Difference: ${meterDifference.toFixed(1)} kWh`]);
@@ -908,7 +908,7 @@
         globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
         globalCsvRows.push([]);
     
-        // HTML Table output featuring the meter row right below tariff days
+        // HTML Table output featuring the meter row right on the second row
         return `<div class="summary-card" style="margin-top: 15px;">
             <h3>💰 Financial & ROI Report</h3>
             <table>
@@ -916,14 +916,14 @@
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter} days</td><td style="text-align:left;">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
                 <tr><td>Utility Meter Readings</td><td>${meterTariffStart} ➡️ ${meterCurrent} kWh</td><td style="text-align:left;">Total grid meter delta: <b>${meterDifference.toFixed(1)} kWh</b></td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated since tariff start</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="good">✅ ${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
-                <tr><td>Est. House Autarky Rate</td><td class="good">🟢 ${autarkyRate.toFixed(1)}%</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
-                <tr><td>Total Savings (Net)</td><td class="good">✅ ${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
-                <tr><td>ROI Progress</td><td class="good">📈 ${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
+                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
+                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
+                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
+                <tr><td>ROI Progress</td><td class="good">📈 ${roiPercent.toFixed(1)} %</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
             </table>
         </div>`;
     }
-  
+
     function downloadCSV() {
         const csvContent = "\uFEFF" + globalCsvRows.map(e => e.join(";")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
