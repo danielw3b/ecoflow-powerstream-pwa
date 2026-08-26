@@ -1,10 +1,11 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
   <g fill="#FDB833" fill-rule="evenodd">
-    <!-- Geometrically calculated sun with 12 rays and an inner circle cutout -->
+    <!-- Geometrisch perfekt berechnete Sonne mit 12 Strahlen und Innenring -->
     <path d="M 250.00 10.00 L 295.30 63.14 L 370.00 30.00 L 378.18 108.97 L 455.69 84.31 L 433.01 157.50 L 490.00 211.24 L 441.20 267.14 L 467.42 339.71 L 398.91 367.50 L 398.91 445.41 L 329.71 445.41 L 295.30 499.71 L 232.86 471.42 L 170.00 490.00 L 151.09 414.31 L 76.41 411.09 L 81.09 334.31 L 10.00 306.91 L 44.59 239.71 L 10.00 172.50 L 76.41 165.69 L 76.41 88.91 L 145.41 92.18 L 170.00 16.99 L 232.86 38.59 Z M 250 125 A 125 125 0 1 0 250 375 A 125 125 0 1 0 250 125 Z" />
-    <!-- Centered lightning bolt symbol -->
+    <!-- Der zentrierte Blitz -->
     <polygon points="260,150 180,280 235,280 242,370 320,230 265,230" />
   </g>
 </svg>
+
 
 
