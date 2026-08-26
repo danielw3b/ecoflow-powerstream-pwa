@@ -742,6 +742,10 @@
         const normPct = totalDaysAnalyzed > 0 ? Math.round((normalCount / totalDaysAnalyzed) * 100) : 0;
         const lossPct = totalDaysAnalyzed > 0 ? Math.round((lossCount / totalDaysAnalyzed) * 100) : 0;
         const failPct = totalDaysAnalyzed > 0 ? Math.round((hardwareFailCount / totalDaysAnalyzed) * 100) : 0;
+
+        const sumOptNorm = optPct + normPct;
+        const sumLossFail = lossPct + failPct;
+        
         const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
     
