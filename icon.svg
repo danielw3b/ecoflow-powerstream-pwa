@@ -1,14 +1,15 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-  <!-- Outer Master Ring: 500px diameter (Radius 250) - Heavy stroke thickness (12px) -->
-  <circle cx="250" cy="250" r="244" fill="none" stroke="#ffb42c" stroke-width="12" />
+  <!-- Outer Master Ring: 500px diameter boundary - Doubled stroke thickness (24px) -->
+  <circle cx="250" cy="250" r="238" fill="none" stroke="#ffb42c" stroke-width="24" />
   
   <!-- Inner Ring framing the center: 250px diameter (Radius 125) - Standard thickness (4px) -->
   <circle cx="250" cy="250" r="125" fill="none" stroke="#ffb42c" stroke-width="4" />
   
-  <!-- Centered lightning bolt element shifted upward for perfect vertical balance -->
-  <!-- Top tip starts at Y=16, bottom tip ends at Y=436 (Total height: 420px) -->
-  <polygon points="269.1,16 116.4,264.2 221.4,264.2 234.7,436 383.6,168.7 278.6,168.7" fill="#ffb42c" />
+  <!-- Centered lightning bolt element mathematically balanced at the canvas midpoint (Y=250) -->
+  <!-- Top tip starts at Y=40, bottom tip ends at Y=460 (Total height: 420px) -->
+  <polygon points="269.1,40 116.4,288.2 221.4,288.2 234.7,460 383.6,192.7 278.6,192.7" fill="#ffb42c" />
 </svg>
+
 
 
 
