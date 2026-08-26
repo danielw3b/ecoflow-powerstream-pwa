@@ -1,6 +1,6 @@
 {
   "name": "EcoFlow Monitor",
-  "short_name": "EcoFlow",
+  "short_name": "EcoFlow Monitor",
   "description": "Real-time monitoring for EcoFlow PowerStream MicroInverter devices",
   "start_url": "./",
   "id": "/ecoflow-powerstream-pwa/",
