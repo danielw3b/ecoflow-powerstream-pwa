@@ -755,8 +755,8 @@
         globalCsvRows.push([`Issues: ${hardwareFailCount}`, `Weather: ${lossCount}`, `Hardw. Efficiency: ${hwEfficiency.toFixed(0)}%`]);
         globalCsvRows.push([]);
     
-        // 2. Financial Report pushed before tables
-        renderFinancialReportCsv(); // Appends FINANCIAL REPORT rows to globalCsvRows
+        // 2. Financial & ROI Report
+        html += renderFinancialReportHtml(deviceDaily);
     
         // 3. Table 1: Daily Efficiency Tracker
         globalCsvRows.push(["DAILY EFFICIENCY TRACKER"]);
