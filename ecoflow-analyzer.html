@@ -491,14 +491,12 @@
         document.getElementById('runBtn').disabled = false;
     }
 
-// Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
+    // Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
-        // Group all core counters and tracking arrays safely at the top scope
         let totalDaysAnalyzed = 0;
         let criticalCount = 0;
         let weatherCount = 0;
         const anomalies = [];
-        //let tariffDaysCounter = 0;
         let subTableRowsHtml = "";  
         const resultsDiv = document.getElementById('results');
     
@@ -509,6 +507,13 @@
         let hardwareFailCount = 0;
         let preInstallCount = 0;
     
+        // CSV Blocks for structured export
+        const csvHeader = [];
+        const csvSummary = [];
+        const csvFinancial = [];
+        const csvDaily = [];
+        const csvAnomalies = [];
+
         // Resolve the friendly custom name from local storage or fallback to serial number
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const friendlyName = customNames[sn] || sn;
@@ -519,8 +524,13 @@
     
         let tableRowsHtml = "";
     
-        globalCsvRows.push([`DEVICE: ${sn} / ${friendlyName}`]);
-        globalCsvRows.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
+        // Populate Header Block
+        csvHeader.push([`DEVICE: ${sn} / ${friendlyName}`]);
+        csvHeader.push([]);
+
+        // Populate Daily Block Header
+        csvDaily.push(["DAILY EFFICIENCY TRACKER"]);
+        csvDaily.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
     
         // Resolve hardware deployment boundaries once prior to the loop
         const validDates = Object.keys(deviceDaily).filter(d => deviceDaily[d] !== undefined);
@@ -554,9 +564,6 @@
     
           let rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
           let efficiency = Math.round(rawEfficiency * 10) / 10;
-          /*if (new Date(dateStr) >= new Date(globalConfig.tariffStart)) {
-            tariffDaysCounter++;
-          }*/
     
           const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
           const isInstallationDay = firstActiveDate && dateStr === firstActiveDate;
@@ -615,7 +622,7 @@
                           <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
                       </tr>`;
     
-          globalCsvRows.push([
+          csvDaily.push([
             `"${dateStr}"`, 
             `"${totalRadKwhM2.toFixed(2)}"`, 
             `"${dayTemp.toFixed(1)}"`,
@@ -626,15 +633,12 @@
           ]);
         }
     
-        globalCsvRows.push([]);
-    
         // 2. Process anomaly sub-rows asynchronously, ensuring newest dates come first
         if (anomalies.length > 0) {
-          // Sort anomalies explicitly descending by date (Newest first)
           anomalies.sort((a, b) => b.date.localeCompare(a.date));
 
-          globalCsvRows.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
-          globalCsvRows.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
+          csvAnomalies.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
+          csvAnomalies.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
     
           const resolvedAnomalies = [];
           const batchSize = 4;
@@ -697,8 +701,6 @@
             let cssClass = "text-dim"; 
             let isCritical = false;
     
-            // Fix: realYieldWh === 0 forces a hardware drop immediately, 
-            // bypassing the weather exception meant only for days with actual low yield.
             if (target.realYieldWh === 0 || (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3))) {
               explanation = "❌ 🔌";
               weatherTooltip = "Hardware Drop: System turned off, missing local data or completely disconnected.";
@@ -764,7 +766,7 @@
                               <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
                           </tr>`;
     
-            globalCsvRows.push([
+            csvAnomalies.push([
               `"${target.date}"`, 
               `"${sollKwh.replace('.',',')} / ${realKwh.replace('.',',')}"`, 
               `"${target.efficiency.toFixed(1).replace('.',',')}"`, 
@@ -775,7 +777,6 @@
             ]);
           }
         }
-        globalCsvRows.push([]);
         
         if (anomalies.length > 0) {
           weatherCount = Math.max(0, anomalies.length - criticalCount);
@@ -794,8 +795,15 @@
         const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
   
-        //window.tariffDaysCounter = tariffDaysCounter;
+        // Populate Summary Block for CSV
+        csvSummary.push(["OVERALL ANALYSIS SUMMARY"]);
+        csvSummary.push([`Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`]);
+        csvSummary.push([`Issues: ${criticalCount}`]);
+        csvSummary.push([`Weather: ${weatherCount}`]);
+        csvSummary.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
+        csvSummary.push([]);
 
+        // Build HTML
         let html = `<div class="card">
                   <h2>📡 Inverter: ${friendlyName}</h2>
                   
@@ -828,11 +836,10 @@
                       </div>
                   </div>`;
 
-        // Financial & ROI Report
-        //html += renderFinancialReportHtml(totalDaysAnalyzed, criticalCount, deviceDaily, efficiencyClass);
-        html += renderFinancialReportHtml(deviceDaily);
+        // Financial & ROI Report (generates HTML and pushes to csvFinancial Block)
+        html += renderFinancialReportHtml(deviceDaily, csvFinancial);
 
-        // Table 1: Daily Efficiency Tracker (now newest date first)
+        // Table 1: Daily Efficiency Tracker
         html += `
                   <h3>Daily Efficiency Tracker</h3>
                   <div class="table-scroll-frame">
@@ -842,7 +849,7 @@
                       </table>
                   </div>`;
   
-        // Table 2: Anomaly & Weather Context (now newest date first)
+        // Table 2: Anomaly & Weather Context
         if (anomalies.length > 0) {
           html += `
                   <h3 style="margin-top:30px; color:var(--warning);">
@@ -857,14 +864,6 @@
                           ${subTableRowsHtml}
                       </table>
                   </div>`;
-  
-          globalCsvRows.push([]);
-          globalCsvRows.push(["OVERALL ANALYSIS SUMMARY"]);
-          globalCsvRows.push([`Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`]);
-          globalCsvRows.push([`Issues: ${criticalCount}`]);
-          globalCsvRows.push([`Weather: ${weatherCount}`]);
-          globalCsvRows.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
-          globalCsvRows.push([]);
         }
   
         html += `
@@ -875,22 +874,25 @@
                   <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
               </div></div>`;
   
+        // Final Assembly of CSV Rows in correct order
+        globalCsvRows = [
+            ...csvHeader,
+            ...csvSummary,
+            ...csvFinancial,
+            ...csvDaily,
+            [], // Empty spacer row
+            ...csvAnomalies
+        ];
+
         resultsDiv.innerHTML = html;
-        
-        /*return {
-          totalDaysAnalyzed: totalDaysAnalyzed,
-          criticalCount: criticalCount,
-          efficiencyClass: efficiencyClass
-        };*/
     }
 
-    // Generate dynamic ROI and financial summary HTML string (congruent to status box)
-    //function renderFinancialReportHtml(totalDaysAnalyzed = 0, criticalCount = 0, deviceDaily = {}, efficiencyClass = 'good') {
-    function renderFinancialReportHtml(deviceDaily = {}) {
+    // Generate dynamic ROI and financial summary HTML string, and fill the CSV Block
+    function renderFinancialReportHtml(deviceDaily = {}, csvFinancialBlock = []) {
         let totalGeneratedWh = 0;
         const tariffStartDate = new Date(globalConfig.tariffStart);
     
-        // Set end date to yesterday, since analysis data and logs only extend up to yesterday (current day completes at midnight)
+        // Set end date to yesterday, since analysis data and logs only extend up to yesterday
         const endDate = new Date();
         endDate.setDate(endDate.getDate() - 1);
     
@@ -915,23 +917,32 @@
         const cur = globalConfig.currency || '€';
     
         const savingsNet = savedKwh * (energyPrice / 100);
-        // Theory demand based on actual tracked tariff days up to yesterday
         const theoryDemand = window.tariffDaysCounter * consumption;
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
+
+        const meterStart = globalConfig.meterTariffStart || 0;
+        const meterCurrent = globalConfig.meterCurrent || 0;
+        const meterDelta = meterCurrent - meterStart;
     
-        globalCsvRows.push(["FINANCIAL REPORT:"]);
-        globalCsvRows.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
-        globalCsvRows.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
-        globalCsvRows.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
-        globalCsvRows.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
-        globalCsvRows.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
+        // Populating the Financial CSV Block
+        csvFinancialBlock.push(["FINANCIAL REPORT:"]);
+        csvFinancialBlock.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
+        csvFinancialBlock.push(["Meter Tariff Start (kWh)", meterStart.toFixed(1).replace('.',',')]);
+        csvFinancialBlock.push(["Meter Current (kWh)", meterCurrent.toFixed(1).replace('.',',')]);
+        csvFinancialBlock.push(["Meter Delta (kWh)", meterDelta.toFixed(1).replace('.',',')]);
+        csvFinancialBlock.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
+        csvFinancialBlock.push([]); // Spacer row
     
         return `<div class="summary-card" style="margin-top: 15px;">
             <h3>💰 Financial & ROI Report</h3>
             <table>
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
+                <tr><td>Meter Delta (Grid)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td style="text-align:left;">Difference: Current (${meterCurrent}) - Start (${meterStart})</td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated since tariff start</td></tr>
                 <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
                 <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
@@ -957,65 +968,6 @@
         URL.revokeObjectURL(url);
     }
     
-    /**
-    * PWA Single-File Initialization
-    * Generates the manifest and icons dynamically without physical files.
-    */
-    /*(function initDynamicPWA() {
-    // 1. Raw SVG vector data of the 🌤️ Emoticon (500x500px format for GitHub)
-    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="500" height="500"><text y="85" font-size="85">🌤️</text></svg>`;
-    
-    // 2. Convert the SVG content into a safe Base64 Data URI
-    const base64Svg = btoa(unescape(encodeURIComponent(svgContent)));
-    const svgDataUri = `data:image/svg+xml;base64,${base64Svg}`;
-    
-    // 3. Define the full PWA Manifest structure entirely in memory
-    const manifestObject = {
-      "name": "EcoFlow Solar & Weather Analyzer",
-      "short_name": "Solar Analyzer",
-      "start_url": window.location.href, // Automatically matches the current subpage URL
-      "display": "standalone",
-      "background_color": "#060c1a",
-      "theme_color": "#060c1a",
-      "icons": [
-        {
-          "src": svgDataUri,
-          "sizes": "500x500",
-          "type": "image/svg+xml",
-          "purpose": "any"
-        }
-      ]
-    };
-    
-    // 4. Convert Manifest Object to Base64 to bypass strict Lighthouse blob-blocking
-    const manifestString = JSON.stringify(manifestObject);
-    const base64Manifest = btoa(unescape(encodeURIComponent(manifestString)));
-    const manifestDataUri = `data:application/json;base64,${base64Manifest}`;
-    
-    // 5. Inject the generated elements into the document head dynamically
-    
-    // Inject PWA Manifest
-    const manifestLink = document.createElement('link');
-    manifestLink.rel = 'manifest';
-    manifestLink.href = manifestDataUri;
-    document.head.appendChild(manifestLink);
-    
-    // Inject Standard Favicon (For Desktop & Chrome Browsers)
-    const faviconLink = document.createElement('link');
-    faviconLink.rel = 'icon';
-    faviconLink.type = 'image/svg+xml';
-    faviconLink.href = svgDataUri;
-    document.head.appendChild(faviconLink);
-    
-    // Inject Apple Touch Icon Fallback (Uses the SVG, Safari handles text-based vectors now)
-    const appleIconLink = document.createElement('link');
-    appleIconLink.rel = 'apple-touch-icon';
-    appleIconLink.href = svgDataUri;
-    document.head.appendChild(appleIconLink);
-    
-    console.log("PWA Assets successfully injected via Data-URIs.");
-    })();*/
-
     window.addEventListener('DOMContentLoaded', initInverters);
 </script>
 </body>
