@@ -188,16 +188,17 @@ canvas{width:100%;display:block;}
 <header>
   <div class="logo">
     <svg id="wakeLockIcon" title="Screen lock inactive" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-      <!-- Outer Master Ring: 100px diameter boundary - Scaled stroke thickness (4.8px) -->
-      <circle cx="50" cy="50" r="47.6" fill="none" stroke="#ffb42c" stroke-width="4.8" />
-      
-      <!-- Inner Ring framing the center: 50px diameter (Radius 25) - Scaled thickness (0.8px) -->
+      <rect width="100" height="100" rx="21.8" ry="21.8" fill="#060c1a" />
+      <circle cx="50" cy="50" r="46.1" fill="none" stroke="#ffb42c" stroke-width="5.8" />
       <circle cx="50" cy="50" r="25" fill="none" stroke="#ffb42c" stroke-width="0.8" />
-      
-      <!-- Centered lightning bolt element mathematically balanced at the canvas midpoint (Y=50) -->
-      <!-- Top tip starts at Y=8, bottom tip ends at Y=92 (Total height: 84px) -->
       <polygon points="53.82,8 23.28,57.64 44.28,57.64 46.94,92 76.72,38.54 55.72,38.54" fill="#ffb42c" />
     </svg>
+
+    <!--<svg id="wakeLockIcon" title="Screen lock inactive" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+      <circle cx="50" cy="50" r="47.6" fill="none" stroke="#ffb42c" stroke-width="4.8" />
+      <circle cx="50" cy="50" r="25" fill="none" stroke="#ffb42c" stroke-width="0.8" />
+      <polygon points="53.82,8 23.28,57.64 44.28,57.64 46.94,92 76.72,38.54 55.72,38.54" fill="#ffb42c" />
+    </svg>-->
     
     <!--<svg id="wakeLockIcon" title="Screen lock inactive" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
       <rect fill="#060c1a" width="100" height="100" rx="22" ry="22" />
