@@ -5,12 +5,13 @@
   <!-- Second Ring: 450px diameter (Radius 225) - 2x thickness (8px) -->
   <circle cx="250" cy="250" r="225" fill="none" stroke="#ffb42c" stroke-width="8" />
   
-  <!-- Inner Ring framing the bolt: 250px diameter (Radius 125) - standard thickness (4px) -->
+  <!-- Inner Ring framing the center: 250px diameter (Radius 125) - standard thickness (4px) -->
   <circle cx="250" cy="250" r="125" fill="none" stroke="#ffb42c" stroke-width="4" />
   
-  <!-- Centered lightning bolt element -->
-  <polygon points="260,150 180,280 235,280 242,370 320,230 265,230" fill="#ffb42c" />
+  <!-- Centered lightning bolt element scaled up to exactly 420px height -->
+  <polygon points="269.1,59.1 116.4,307.3 221.4,307.3 234.7,479.1 383.6,211.8 278.6,211.8" fill="#ffb42c" />
 </svg>
+
 
 
 
