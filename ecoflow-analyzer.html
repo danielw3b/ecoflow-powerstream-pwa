@@ -924,7 +924,7 @@
         const meterStart = globalConfig.meterTariffStart || 0;
         const meterCurrent = globalConfig.meterCurrent || 0;
         const meterDelta = meterCurrent - meterStart;
-        const meterDay = meterDelta / window.tariffDaysCounter : 0;
+        const meterDay = meterDelta / window.tariffDaysCounter || 0;
     
         // Populating the Financial CSV Block
         csvFinancialBlock.push(["FINANCIAL REPORT:"]);
