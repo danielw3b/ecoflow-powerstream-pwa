@@ -924,15 +924,18 @@
         const meterStart = globalConfig.meterTariffStart || 0;
         const meterCurrent = globalConfig.meterCurrent || 0;
         const meterDelta = meterCurrent - meterStart;
+        const meterDay = meterDelta / window.tariffDaysCounter : 0;
     
         // Populating the Financial CSV Block
         csvFinancialBlock.push(["FINANCIAL REPORT:"]);
         csvFinancialBlock.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
         csvFinancialBlock.push(["Meter Tariff Start (kWh)", meterStart.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push(["Meter Current (kWh)", meterCurrent.toFixed(1).replace('.',',')]);
-        csvFinancialBlock.push(["Meter Delta (kWh)", meterDelta.toFixed(1).replace('.',',')]);
+        csvFinancialBlock.push(["Power Consumption (Grid) (kWh)", meterDelta.toFixed(1).replace('.',',')]);
+        csvFinancialBlock.push(["Average Daily Consumption (Grid) (kWh)", meterDay.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
         csvFinancialBlock.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push(["Est. House Autarky Rate %", autarkyRate.toFixed(1).replace('.',','), "Contribution to kWh Total Demand:", theoryDemand.toFixed(0) ]);
         csvFinancialBlock.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
         csvFinancialBlock.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push([]); // Spacer row
@@ -942,10 +945,11 @@
             <table>
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
-                <tr><td>Meter Delta (Grid)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td style="text-align:left;">Difference: Current (${meterCurrent}) - Start (${meterStart})</td></tr>
+                <tr><td>Power Consumption (Grid)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td style="text-align:left;">Power Consumption (Grid): (${meterCurrent} - ${meterStart})</td></tr>
+                <tr><td>Average Daily Consumption (Grid)</td><td class="warn">${meterDay.toFixed(1)} kWh</td><td style="text-align:left;">Tariff Days / Power Consumtion</td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated since tariff start</td></tr>
                 <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
-                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
+                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh Total Demand</td></tr>
                 <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
                 <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
             </table>
