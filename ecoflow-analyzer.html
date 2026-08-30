@@ -957,8 +957,8 @@
                 <tr><td>Consumption (Grid)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td style="text-align:left;">Consumption (Grid): (${meterCurrent} - ${meterStart})</td></tr>
                 <tr><td>Avg. Daily Usage <b class="good">+</b> Solar</td><td class="good">${meterDay.toFixed(2)} kWh</td><td style="text-align:left;">Consumption / Days</td></tr>
                 <tr><td>Avg. Daily Usage <b class="warn">-</b> Solar</td><td class="warn">${consumption.toFixed(2)} kWh</td><td style="text-align:left;">Consumption + Saved / Days</td></tr>
-                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated since tariff start</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">${selfConsumptionRate}(%) Saved since ${globalConfig.tariffStart}</td></tr>
+                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Energy generated since tariff start</td></tr>
+                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">${selfConsumptionRate}% of Energy saved since tariff start</td></tr>
                 <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh Total Demand</td></tr>
                 <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
                 <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
