@@ -294,15 +294,15 @@
                         <input type="number" step="0.1" id="cfg_meterCurrent" required placeholder="e.g. 46473">
                     </div>
                 </div>
-                <!--
+                
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
-                        <label for="cfg_consumption">Ø kWh w/o Solar/Day</label>
-                        <input type="number" step="0.1" id="cfg_consumption" required placeholder="e.g. 5">
+                        <!--<label for="cfg_consumption">Ø kWh w/o Solar/Day</label>
+                        <input type="number" step="0.1" id="cfg_consumption" required placeholder="e.g. 5">-->
                     </div>
                     <div class="form-group"></div>
                 </div>
-                -->
+                
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div class="form-group">
                         <label for="cfg_tariffStart">Tariff Start Date</label>
@@ -924,7 +924,7 @@
         //const theoryDemand = window.tariffDaysCounter * consumption;
         // We dont need globalConfig.consumption for theoryDemand
         const theoryDemand = meterDelta + savedKwh || 0;
-        //Avg. Daily Usage w/out Solar, without globalConfig.consumption
+        //Avg. Daily Usage w/out Solar, without globalConfig.consumption estimation
         const consumption = theoryDemand / window.tariffDaysCounter || 0;
         
         const cur = globalConfig.currency || '€';
@@ -940,8 +940,8 @@
         csvFinancialBlock.push(["Meter Tariff Start (kWh)", meterStart.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push(["Meter Current (kWh)", meterCurrent.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push(["Consumption (Grid) (kWh)", meterDelta.toFixed(1).replace('.',',')]);
-        csvFinancialBlock.push(["Avg. Daily Usage + Solar (Grid) (kWh)", meterDay.toFixed(2).replace('.',',')]);
-        csvFinancialBlock.push(["Avg. Daily Usage - Solar (Grid) (kWh)", consumption.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push(["Avg. Daily Usage + Solar (kWh)", meterDay.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push(["Avg. Daily Usage - Solar (kWh)", consumption.toFixed(2).replace('.',',')]);
         csvFinancialBlock.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
         csvFinancialBlock.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
         csvFinancialBlock.push(["Est. House Autarky Rate (%)", autarkyRate.toFixed(1).replace('.',','), "Contribution to kWh Total Demand:", theoryDemand.toFixed(0) ]);
@@ -958,7 +958,7 @@
                 <tr><td>Avg. Daily Usage <b class="good">+</b> Solar</td><td class="good">${meterDay.toFixed(2)} kWh</td><td style="text-align:left;">Consumption / Days</td></tr>
                 <tr><td>Avg. Daily Usage <b class="warn">-</b> Solar</td><td class="warn">${consumption.toFixed(2)} kWh</td><td style="text-align:left;">Consumption + Saved / Days</td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Output generated since tariff start</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Saved since ${globalConfig.tariffStart}</td></tr>
+                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">${selfConsumptionRate}(%) Saved since ${globalConfig.tariffStart}</td></tr>
                 <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh Total Demand</td></tr>
                 <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
                 <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
