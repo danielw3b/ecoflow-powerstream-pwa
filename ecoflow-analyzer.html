@@ -893,11 +893,28 @@
         const tariffStartDate = new Date(globalConfig.tariffStart);
     
         // Set end date to yesterday, since analysis data and logs only extend up to yesterday
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() - 1);
+        //const endDate = new Date();
+        //endDate.setDate(endDate.getDate() - 1);
+        
+        // Get current local time
+        const localNow = new Date();
+        
+        // Calculate the timezone offset in milliseconds to prevent UTC date shifting
+        const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
+        
+        // Adjust to local time and step back exactly 24 hours to represent "yesterday"
+        const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);     
+        localTargetTime.setDate(localTargetTime.getDate() - 1);
+        
+        // Format yesterday's date as a YYYY-MM-DD string for safe logging
+        const endDateStr = localTargetTime.toISOString().split('T')[0];
     
-        // Calculate precise calendar days elapsed from tariff start up to yesterday
-        const diffTime = endDate - tariffStartDate;
+        // Parse the string back to a Date object to ensure a clean midnight-to-midnight calculation
+        // Calculate the elapsed milliseconds between the tariff start date and yesterday
+        const diffTime = new Date(endDateStr) - tariffStartDate; 
+        
+        // Convert elapsed milliseconds to full calendar days (add 1 to include the start day itself)
+        // Math.max ensures the counter never drops below 1 day
         window.tariffDaysCounter = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
     
         // Sum generated energy for all available daily records on or after the tariff start date
