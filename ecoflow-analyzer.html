@@ -887,37 +887,64 @@
         resultsDiv.innerHTML = html;
     }
 
-    // Generate dynamic ROI and financial summary HTML string, and fill the CSV Block
+    // Relative Seasonal Load Profile (Normalized around 1.00 base average per day)
+    // Based on typical household electricity load profiles (SLP H0 / DIN standards)
+    const RELATIVE_SEASONAL_PROFILE = {
+        0:  1.20, // January   (Winter peak)
+        1:  1.15, // February
+        2:  1.05, // March
+        3:  0.95, // April
+        4:  0.88, // May
+        5:  0.82, // June      (Summer low)
+        6:  0.80, // July
+        7:  0.85, // August
+        8:  0.92, // September
+        9:  1.02, // October
+        10: 1.12, // November
+        11: 1.24  // December
+    };
+    
+    /**
+     * Calculates cumulative seasonal weight points for a date range
+     * @param {Date} startDate 
+     * @param {Date} endDate 
+     * @returns {number} Cumulative seasonal factor weight
+     */
+    function getPeriodSeasonalWeight(startDate, endDate) {
+        let cumulativeWeight = 0;
+        let currentDate = new Date(startDate);
+    
+        while (currentDate <= endDate) {
+            const monthIndex = currentDate.getMonth();
+            cumulativeWeight += (RELATIVE_SEASONAL_PROFILE[monthIndex] || 1.0);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+    
+        return cumulativeWeight;
+    }
+    
+    // Generate dynamic ROI, financial summary HTML string, and fill the CSV Block
     function renderFinancialReportHtml(deviceDaily = {}, csvFinancialBlock = []) {
         let totalGeneratedWh = 0;
         const tariffStartDate = new Date(globalConfig.tariffStart);
     
-        // Set end date to yesterday, since analysis data and logs only extend up to yesterday
-        //const endDate = new Date();
-        //endDate.setDate(endDate.getDate() - 1);
-        
-        // Get current local time
+        // Get current local time and offset to accurately step back 24h to "yesterday"
         const localNow = new Date();
-        
-        // Calculate the timezone offset in milliseconds to prevent UTC date shifting
         const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
-        
-        // Adjust to local time and step back exactly 24 hours to represent "yesterday"
         const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);     
         localTargetTime.setDate(localTargetTime.getDate() - 1);
         
-        // Format yesterday's date as a YYYY-MM-DD string for safe logging
+        // Format yesterday's date string (YYYY-MM-DD)
         const endDateStr = localTargetTime.toISOString().split('T')[0];
     
-        // Parse the string back to a Date object to ensure a clean midnight-to-midnight calculation
-        // Calculate the elapsed milliseconds between the tariff start date and yesterday
-        const diffTime = new Date(endDateStr) - tariffStartDate; 
+        // Parse back to Date object to ensure midnight-to-midnight accuracy
+        const endDateObj = new Date(endDateStr);
+        const diffTime = endDateObj - tariffStartDate; 
         
-        // Convert elapsed milliseconds to full calendar days (add 1 to include the start day itself)
-        // Math.max ensures the counter never drops below 1 day
+        // Compute total elapsed calendar days up to yesterday
         window.tariffDaysCounter = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
     
-        // Sum generated energy for all available daily records on or after the tariff start date
+        // Sum total generated energy from active tariff start date onwards
         for (const [dateStr, wh] of Object.entries(deviceDaily)) {
             if (new Date(dateStr) >= tariffStartDate) {
                 totalGeneratedWh += wh;
@@ -930,38 +957,44 @@
         
         const energyPrice = globalConfig.energyPrice || 0;
         const investment = globalConfig.investment || 0;
-
+    
         const meterStart = globalConfig.meterTariffStart || 0;
         const meterCurrent = globalConfig.meterCurrent || 0;
-        const meterDelta = meterCurrent - meterStart || 0;
+        const meterDelta = Math.max(0, meterCurrent - meterStart);
         
-        //Avg. Daily Usage with Solar
+        // Average daily grid usage since tariff start
         const meterDay = meterDelta / window.tariffDaysCounter || 0;
-        //const consumption = globalConfig.consumption || 0;
-        //const theoryDemand = window.tariffDaysCounter * consumption;
-        // We dont need globalConfig.consumption for theoryDemand
+    
+        // Total measured demand so far (Grid import + Direct solar usage)
         const theoryDemand = meterDelta + savedKwh || 0;
-        //Avg. Daily Usage w/out Solar, without globalConfig.consumption estimation
-        const consumption = theoryDemand / window.tariffDaysCounter || 0;
+    
+        // Raw unadjusted daily demand average
+        const rawDailyConsumption = theoryDemand / window.tariffDaysCounter || 0;
+    
+        // Seasonal weighting adjustments
+        const totalSeasonalWeight = getPeriodSeasonalWeight(tariffStartDate, endDateObj);
+        const baseDailyDemand = totalSeasonalWeight > 0 ? (theoryDemand / totalSeasonalWeight) : rawDailyConsumption;
+        const estimatedAnnualDemand = baseDailyDemand * 365;
         
         const cur = globalConfig.currency || '€';
     
         const savingsNet = savedKwh * (energyPrice / 100);
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
-
     
-        // Populating the Financial CSV Block
+        // Populating the Financial CSV Block (Synchronized with HTML presentation)
         csvFinancialBlock.push(["FINANCIAL REPORT:"]);
         csvFinancialBlock.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
         csvFinancialBlock.push(["Meter Tariff Start (kWh)", meterStart.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push(["Meter Current (kWh)", meterCurrent.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push(["Consumption (Grid) (kWh)", meterDelta.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push(["Avg. Daily Usage + Solar (kWh)", meterDay.toFixed(2).replace('.',',')]);
-        csvFinancialBlock.push(["Avg. Daily Usage - Solar (kWh)", consumption.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push(["Avg. Daily Usage - Solar (kWh)", rawDailyConsumption.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push(["Norm. Base Daily Usage (kWh)", baseDailyDemand.toFixed(2).replace('.',',')]);
+        csvFinancialBlock.push(["Est. Annual Household Demand (kWh)", estimatedAnnualDemand.toFixed(0)]);
         csvFinancialBlock.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
         csvFinancialBlock.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
-        csvFinancialBlock.push(["Est. House Autarky Rate (%)", autarkyRate.toFixed(1).replace('.',','), "Contribution to kWh Total Demand:", theoryDemand.toFixed(0) ]);
+        csvFinancialBlock.push(["Est. House Autarky Rate (%)", autarkyRate.toFixed(1).replace('.',','), "Contribution to kWh Total Demand:", theoryDemand.toFixed(0)]);
         csvFinancialBlock.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
         csvFinancialBlock.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push([]); // Spacer row
@@ -972,8 +1005,10 @@
                 <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
                 <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
                 <tr><td>Consumption (Grid)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td style="text-align:left;">Consumption (Grid): (${meterCurrent} - ${meterStart})</td></tr>
-                <tr><td>Avg. Daily Usage <b class="good">+</b> Solar</td><td class="good">${meterDay.toFixed(2)} kWh</td><td style="text-align:left;">Consumption / Days</td></tr>
-                <tr><td>Avg. Daily Usage <b class="warn">-</b> Solar</td><td class="warn">${consumption.toFixed(2)} kWh</td><td style="text-align:left;">Consumption + Saved / Days</td></tr>
+                <tr><td>Avg. Daily Usage <b class="good">+</b> Solar</td><td class="good">${meterDay.toFixed(2)} kWh</td><td style="text-align:left;">Grid import / Days</td></tr>
+                <tr><td>Avg. Daily Usage <b class="warn">-</b> Solar</td><td class="warn">${rawDailyConsumption.toFixed(2)} kWh</td><td style="text-align:left;">(Grid + Saved) / Days</td></tr>
+                <tr><td>Norm. Base Daily Usage</td><td>${baseDailyDemand.toFixed(2)} kWh</td><td style="text-align:left;">Seasonally adjusted annual daily base</td></tr>
+                <tr><td>Est. Annual House Demand</td><td><b>${estimatedAnnualDemand.toFixed(0)} kWh</b></td><td style="text-align:left;">Extrapolated annual total (SLP H0 profile)</td></tr>
                 <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Energy generated since tariff start</td></tr>
                 <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">${selfConsumptionRate}% of Energy saved since tariff start</td></tr>
                 <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh Total Demand</td></tr>
