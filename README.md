@@ -7,10 +7,9 @@
 <img src="screenshot.png" alt="Desktop screenshot" width="720">-->
 
 **A single-file Progressive Web App** for monitoring EcoFlow PowerStream MicroInverter devices (STREAM series) in real time.
-No server required — runs entirely in your browser.
+No server required — runs entirely in your browser. (Requirements: EcoFlow Developer API)
 
-[▶ Try the live demo](https://danielw3b.github.io/ecoflow-powerstream-pwa/)
-
+[▶ Try with your keys directly live](https://danielw3b.github.io/ecoflow-powerstream-pwa/)
 
 <table>
 <tr>
@@ -43,6 +42,8 @@ No server required — runs entirely in your browser.
   → Register at [developer-eu.ecoflow.com](https://developer-eu.ecoflow.com) (EU) or [developer.ecoflow.com](https://developer.ecoflow.com)
 - EcoFlow PowerStream MicroInverter (STREAM series, 600W or 800W)
 - Modern browser (Chrome 84+, Edge, Brave)
+
+[▶ Try directly live](https://danielw3b.github.io/ecoflow-powerstream-pwa/)
 
 ## Quick Start
 
