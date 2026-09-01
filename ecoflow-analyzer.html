@@ -944,12 +944,14 @@
         // Compute total elapsed calendar days up to yesterday
         window.tariffDaysCounter = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
     
-        // Sum total generated energy from active tariff start date onwards
+        // Sum total generated energy from active tariff start date to yesterday
         for (const [dateStr, wh] of Object.entries(deviceDaily)) {
-            if (new Date(dateStr) >= tariffStartDate) {
+            const entryDate = new Date(dateStr);
+            if (entryDate >= tariffStartDate && entryDate <= endDateObj) {
                 totalGeneratedWh += wh;
             }
         }
+        
         const totalGeneratedKwh = totalGeneratedWh / 1000;
     
         const selfConsumptionRate = globalConfig.selfConsumptionRate !== undefined ? globalConfig.selfConsumptionRate : 75;
