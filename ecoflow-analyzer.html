@@ -229,7 +229,7 @@
             gap: 18px;
             flex-wrap: wrap;
             align-items: center;
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: bold;
             margin-bottom: 12px;
             padding-bottom: 10px;
@@ -336,30 +336,41 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
+            
+            /* Hidden state with subtle downward offset */
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease, background-color 0.2s ease;
+            transform: translateY(12px);
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
             z-index: 1000;
         }
-
+        
+        /* Visible state triggered by scroll threshold */
         #scrollToTopBtn.show {
             opacity: 1;
             visibility: visible;
+            transform: translateY(0);
         }
-
+        
+        /* Interactive hover state */
         #scrollToTopBtn:hover {
-            transform: scale(1.08);
+            transform: translateY(0) scale(1.08);
             color: var(--text);
             background-color: rgba(20, 35, 60, 0.95);
         }
-
+        
+        /* SVG icon styling and scaling */
         #scrollToTopBtn svg {
             width: 22px;
             height: 22px;
+            fill: none;
             stroke: #8b9eb3;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
             transition: stroke 0.2s ease;
         }
-
+        
         #scrollToTopBtn:hover svg {
             stroke: var(--text);
         }
@@ -1232,26 +1243,33 @@
         URL.revokeObjectURL(url);
     }
 
-    // Toggle scroll-to-top button visibility on scroll
-    window.addEventListener('scroll', () => {
-        const btn = document.getElementById('scrollToTopBtn');
-        if (btn) {
-            if (window.scrollY > 300) {
-                btn.classList.add('show');
-            } else {
-                btn.classList.remove('show');
-            }
+    // Cache DOM element once to prevent repeated queries during scroll events
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    
+    // Toggle scroll-to-top button visibility based on dynamic threshold
+    const handleScroll = () => {
+        if (!scrollToTopBtn) return;
+    
+        // Dynamic threshold clamped between 400px (mobile/landscape) and 600px (desktop)
+        const threshold = Math.min(Math.max(window.innerHeight, 400), 600);
+    
+        if (window.scrollY > threshold) {
+            scrollToTopBtn.classList.add('show');
+        } else {
+            scrollToTopBtn.classList.remove('show');
         }
-    });
-
+    };
+    
+    // Passive scroll listener for maximum scrolling performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
     // Smooth scroll back to top
     function scrollToTop() {
         window.scrollTo({
             top: 0,
             behavior: 'smooth'
         });
-    }
-    
+    }    
     window.addEventListener('DOMContentLoaded', initInverters);
 </script>
 </body>
