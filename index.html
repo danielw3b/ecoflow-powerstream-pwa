@@ -800,7 +800,7 @@ function cardHtml(sn, s) {
     <div class="offline-msg">
       <div class="offline-icon">🌙</div>
       <div class="offline-text">Device offline - No solar input</div>
-      <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "No data"} | ${todaysYieldText}</div>
+      <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "Not seen"} | ${todaysYieldText ? todaysYieldText : "0 Wh"}</div>
     </div>
     <!--<div class="metrics-footer">
       <div></div>
