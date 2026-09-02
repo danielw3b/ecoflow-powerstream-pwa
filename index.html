@@ -800,13 +800,13 @@ function cardHtml(sn, s) {
     <div class="offline-msg">
       <div class="offline-icon">🌙</div>
       <div class="offline-text">Device offline - No solar input</div>
-      <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "No data"}</div>
+      <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "No data"} | ${todaysYieldText}</div>
     </div>
-    <div class="metrics-footer">
+    <!--<div class="metrics-footer">
       <div></div>
       <div class="card-today" title="Today's yield">${todaysYieldText}</div>
       <div class="card-time">${s.lastSeen ? fmtTime(new Date(s.lastSeen)) : ""}</div>
-    </div>`];
+    </div>-->`];
 
   if (s.status === "waiting") return [`device-card`, `
     <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
