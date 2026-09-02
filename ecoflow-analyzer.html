@@ -200,6 +200,33 @@
         .sum-good { border: 1px solid var(--accent); }
         .sum-warn { border: 1px solid var(--warning); }
         .sum-bad { border: 1px solid var(--danger); }
+
+        /* Hide extra table rows initially */
+        tr.hidden-row {
+            display: none !important;
+        }
+        
+        /* Pagination / Expand button styling */
+        .show-more-btn {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
+            transition: background-color 0.2s ease;
+        }
+        
+        .show-more-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
     </style>
 </head>
 <body>
@@ -499,61 +526,62 @@
         const anomalies = [];
         let subTableRowsHtml = "";  
         const resultsDiv = document.getElementById('results');
-    
+        
         // Counters for individual system indicators
         let optimalCount = 0;
         let normalCount = 0;
         let lossCount = 0;
         let hardwareFailCount = 0;
         let preInstallCount = 0;
-    
+        
         // CSV Blocks for structured export
         const csvHeader = [];
         const csvSummary = [];
         const csvFinancial = [];
         const csvDaily = [];
         const csvAnomalies = [];
-
+    
         // Resolve the friendly custom name from local storage or fallback to serial number
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const friendlyName = customNames[sn] || sn;
-    
+        
         const totalWp = globalConfig.totalWp || 900;
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60; 
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 8;
-    
+        
         let tableRowsHtml = "";
-    
+        const INITIAL_VISIBLE_COUNT = 30;
+        
         // Populate Header Block
         csvHeader.push([`DEVICE: ${sn} / ${friendlyName}`]);
         csvHeader.push([]);
-
+    
         // Populate Daily Block Header
         csvDaily.push(["DAILY EFFICIENCY TRACKER"]);
         csvDaily.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
-    
+        
         // Resolve hardware deployment boundaries once prior to the loop
         const validDates = Object.keys(deviceDaily).filter(d => deviceDaily[d] !== undefined);
         const firstActiveDate = validDates.length > 0 ? validDates.sort()[0] : null;
-    
+        
         // 1. Loop through historical daily records in REVERSE order (Newest date first)
         for (let i = dates.length - 1; i >= 0; i--) {
           const dateStr = dates[i];
           if (radSumRaw[i] === null) continue;
-    
+        
           totalDaysAnalyzed++;
           let totalRadKwhM2 = radSumRaw[i] / 3.6;
-    
+        
           let diffuseShare = 0.30;
           if (totalRadKwhM2 < 1.5) diffuseShare = 0.85; 
           else if (totalRadKwhM2 < 3.5) diffuseShare = 0.50;
           else if (totalRadKwhM2 > 5.5) diffuseShare = 0.18; 
-    
+        
           let dirKwhM2 = totalRadKwhM2 * (1 - diffuseShare);
           let diffKwhM2 = totalRadKwhM2 * diffuseShare;
-    
+        
           const dayTemp = maxTempRaw[i] || 25;
-    
+        
           const expectedDirectWh = dirKwhM2 * totalWp;
           const expectedDiffuseWh = diffKwhM2 * totalWp * 0.45; 
           let calculatedSollWh = (expectedDirectWh + expectedDiffuseWh) * standardSystemEfficiency;
@@ -561,19 +589,19 @@
           const expectedSollWh = Math.min(calculatedSollWh, maxPhysicalDailyCapWh);
           const realYieldWh = deviceDaily[dateStr] || 0;
           const totalSolarEnergyWh = totalRadKwhM2 * 1000 * globalConfig.moduleArea;
-    
+        
           let rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
           let efficiency = Math.round(rawEfficiency * 10) / 10;
-    
+        
           const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
           const isInstallationDay = firstActiveDate && dateStr === firstActiveDate;
-    
+        
           let diagnosis = "🟢"; 
           let cssClass = "good";
           let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
-    
+        
           const dynamicThreshold = baseEfficiencyThreshold;
-    
+        
           if (isPreInstallation) {
             diagnosis = "⏳";
             cssClass = "text-dim";
@@ -594,13 +622,13 @@
             cssClass = "warn"; 
             fullTextExplanation = "Performance Loss: Real generation falling below expected baselines.";
           }
-    
+        
           if (diagnosis === "✅") optimalCount++;
           else if (diagnosis === "🟢") normalCount++;
           else if (diagnosis === "🟠") lossCount++;
           else if (diagnosis === "❌") hardwareFailCount++;
           else if (diagnosis === "⏳") preInstallCount++;
-    
+        
           if ((diagnosis === "❌" || diagnosis === "🟠") && !isPreInstallation) {
             anomalies.push({ 
               date: dateStr, 
@@ -612,16 +640,19 @@
               maxTemp: dayTemp
             });
           }
+        
+          // Truncate table rows beyond initial count using hidden-row CSS class
+          const isHiddenClass = (totalDaysAnalyzed - 1) >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
     
-          tableRowsHtml += `<tr>
-                          <td>${dateStr}</td>
-                          <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
-                          <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
-                          <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
-                          <td class="${cssClass}">${efficiency.toFixed(1)} %</td>
-                          <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
-                      </tr>`;
-    
+          tableRowsHtml += `<tr${isHiddenClass}>
+                              <td>${dateStr}</td>
+                              <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
+                              <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
+                              <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
+                              <td class="${cssClass}">${efficiency.toFixed(1)} %</td>
+                              <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
+                          </tr>`;
+        
           csvDaily.push([
             `"${dateStr}"`, 
             `"${totalRadKwhM2.toFixed(2)}"`, 
@@ -632,23 +663,23 @@
             `"${diagnosis}"`
           ]);
         }
-    
+        
         // 2. Process anomaly sub-rows asynchronously, ensuring newest dates come first
         if (anomalies.length > 0) {
           anomalies.sort((a, b) => b.date.localeCompare(a.date));
-
+    
           csvAnomalies.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
           csvAnomalies.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
-    
+        
           const resolvedAnomalies = [];
           const batchSize = 4;
           const delayMs = 120;  
-    
+        
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-    
+        
           for (let i = 0; i < anomalies.length; i += batchSize) {
             const chunk = anomalies.slice(i, i + batchSize);
-    
+        
             const chunkPromises = chunk.map(async (target) => {
               try {
                 const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration,diffuse_radiation&timezone=auto`;
@@ -660,24 +691,25 @@
                 return null;
               }
             });
-    
+        
             const chunkResults = await Promise.all(chunkPromises);
             resolvedAnomalies.push(...chunkResults);
-    
+        
             if (i + batchSize < anomalies.length) {
               await sleep(delayMs);
             }
           }
-    
+        
+          let anomalyRowIndex = 0;
           for (const item of resolvedAnomalies) {
             if (!item || !item.hData || !item.hData.hourly) continue;
-    
+        
             const target = item.target;
             const hData = item.hData;
-    
+        
             let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
             let totalRad = 0, totalDiffuse = 0; 
-    
+        
             for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
               if (j >= 6 && j <= 20) {
                 cloudSum += hData.hourly.cloud_cover[j];
@@ -690,17 +722,17 @@
               sunSeconds += hData.hourly.sunshine_duration[j];
               if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
             }
-    
+        
             const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
             const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
             const maxTemp = parseFloat(target.maxTemp || 0);
             const realDiffuseShare = totalRad > 0 ? (totalDiffuse / totalRad) : 0;
-    
+        
             let explanation = "⛅ ☀️"; 
             let weatherTooltip = "Partly cloudy with mixed radiation.";
             let cssClass = "text-dim"; 
             let isCritical = false;
-    
+        
             if (target.realYieldWh === 0 || (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3))) {
               explanation = "❌ 🔌";
               weatherTooltip = "Hardware Drop: System turned off, missing local data or completely disconnected.";
@@ -748,24 +780,28 @@
               weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
               weatherCount++;
             }
-    
+        
             if (isCritical) {
               criticalCount++;
             }
             
             const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
             const realKwh = (target.realYieldWh / 1000).toFixed(2);
+        
+            // Truncate anomaly table rows beyond initial count using hidden-row CSS class
+            const isSubHiddenClass = anomalyRowIndex >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
+            anomalyRowIndex++;
     
-            subTableRowsHtml += `<tr>
-                              <td>${target.date}</td>
-                              <td class="nowrap">${sollKwh} | <b>${realKwh}</b></td>
-                              <td class="bad">${target.efficiency.toFixed(1)}</td>
-                              <td>${avgClouds}</td>
-                              <td>${sunHours}</td>
-                              <td>${maxPeak}</td>
-                              <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
-                          </tr>`;
-    
+            subTableRowsHtml += `<tr${isSubHiddenClass}>
+                                  <td>${target.date}</td>
+                                  <td class="nowrap">${sollKwh} | <b>${realKwh}</b></td>
+                                  <td class="bad">${target.efficiency.toFixed(1)}</td>
+                                  <td>${avgClouds}</td>
+                                  <td>${sunHours}</td>
+                                  <td>${maxPeak}</td>
+                                  <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
+                              </tr>`;
+        
             csvAnomalies.push([
               `"${target.date}"`, 
               `"${sollKwh.replace('.',',')} / ${realKwh.replace('.',',')}"`, 
@@ -781,20 +817,16 @@
         if (anomalies.length > 0) {
           weatherCount = Math.max(0, anomalies.length - criticalCount);
         }
-    
+        
         const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-  
-        const optPct = totalDaysAnalyzed > 0 ? Math.round((optimalCount / totalDaysAnalyzed) * 100) : 0;
-        const normPct = totalDaysAnalyzed > 0 ? Math.round((normalCount / totalDaysAnalyzed) * 100) : 0;
-        const lossPct = totalDaysAnalyzed > 0 ? Math.round((lossCount / totalDaysAnalyzed) * 100) : 0;
-        const failPct = totalDaysAnalyzed > 0 ? Math.round((hardwareFailCount / totalDaysAnalyzed) * 100) : 0;
-  
-        const sumOptNorm = optPct + normPct;
-        const sumLossFail = lossPct + failPct;
-  
+        
+        // Calculate combined percentage ratios with 2 decimal precision
+        const sumOptNorm = totalDaysAnalyzed > 0 ? (((optimalCount + normalCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
+        const sumLossFail = totalDaysAnalyzed > 0 ? (((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
+    
         const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
-  
+    
         // Populate Summary Block for CSV
         csvSummary.push(["OVERALL ANALYSIS SUMMARY"]);
         csvSummary.push([`Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`]);
@@ -802,43 +834,49 @@
         csvSummary.push([`Weather: ${weatherCount}`]);
         csvSummary.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
         csvSummary.push([]);
-
-        // Build HTML
+    
+        // Table 1 pagination logic
+        const hasMoreTable1 = totalDaysAnalyzed > INITIAL_VISIBLE_COUNT;
+        const remainingTable1 = totalDaysAnalyzed - INITIAL_VISIBLE_COUNT;
+    
+        // Table 2 pagination logic
+        const hasMoreTable2 = anomalies.length > INITIAL_VISIBLE_COUNT;
+        const remainingTable2 = anomalies.length - INITIAL_VISIBLE_COUNT;
+    
+        // Build HTML Layout
         let html = `<div class="card">
                   <h2>📡 Inverter: ${friendlyName}</h2>
                   
                   <div class="summary-card sum-${efficiencyClass}">
                       <h3 class="${efficiencyClass}">📊 Status</h3>
                       
-                      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
-                          <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                              <div>✅ <b>${optimalCount}</b> (${optPct}%)</div>
-                              <div>🟢 <b>${normalCount}</b> (${normPct}%)</div>
-                              <span style="font-weight: bold; color: var(--text-dim);">∑: ${sumOptNorm}%</span>
-                          </div>
+                      <!-- Primary summary metrics with larger font -->
+                      <div style="display: flex; gap: 18px; flex-wrap: wrap; align-items: center; font-size: 1.05rem; font-weight: bold; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
+                          <div>Days: <b>${totalDaysAnalyzed}</b></div>
+                          <div>Issues: <b>${criticalCount}</b></div>
+                          <div>Weather: <b>${weatherCount}</b></div>
+                          <div>Hardw. Efficiency: <span class="${efficiencyClass}">${hwEfficiency}%</span></div>
                       </div>
-              
-                      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; flex-wrap: wrap; gap: 10px;">
-                          <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                              <div>🟠 <b>${lossCount}</b> (${lossPct}%)</div>
-                              <div>❌ <b>${hardwareFailCount}</b> (${failPct}%)</div>
-                              <span style="font-weight: bold; color: var(--text-dim);">∑: ${sumLossFail}%</span>
+    
+                      <!-- Status indicators: Total percentage (2 decimals) followed by counts in parentheses -->
+                      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem;">
+                          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                              <span style="font-weight: bold; color: var(--accent); min-width: 65px;">${sumOptNorm}%</span>
+                              <div>✅ (${optimalCount})</div>
+                              <div>🟢 (${normalCount})</div>
                           </div>
-                          <div style="color: var(--text-dim); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-                              <span>Days: <b>${totalDaysAnalyzed}</b></span>
-                              <span>|</span>
-                              <span>Issues: <b>${criticalCount}</b></span>
-                              <span>|</span>
-                              <span>Weather: <b>${weatherCount}</b></span>
-                              <span>|</span>
-                              <span>Hardw. Efficiency: <span class="${efficiencyClass}" style="font-weight: bold;">${hwEfficiency}%</span></span>
+    
+                          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                              <span style="font-weight: bold; color: var(--danger); min-width: 65px;">${sumLossFail}%</span>
+                              <div>🟠 (${lossCount})</div>
+                              <div>❌ (${hardwareFailCount})</div>
                           </div>
                       </div>
                   </div>`;
-
+    
         // Financial & ROI Report (generates HTML and pushes to csvFinancial Block)
         html += renderFinancialReportHtml(deviceDaily, csvFinancial);
-
+    
         // Table 1: Daily Efficiency Tracker
         html += `
                   <h3>Daily Efficiency Tracker</h3>
@@ -847,8 +885,9 @@
                           <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
                           ${tableRowsHtml}
                       </table>
-                  </div>`;
-  
+                  </div>
+                  ${hasMoreTable1 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable1} remaining)</button>` : ''}`;
+    
         // Table 2: Anomaly & Weather Context
         if (anomalies.length > 0) {
           html += `
@@ -863,9 +902,10 @@
                           <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Efficiency (%)</th><th>Clouds (%)</th><th>Sun (h)</th><th>MaxPeak (W/m²)</th><th>Context</th></tr>
                           ${subTableRowsHtml}
                       </table>
-                  </div>`;
+                  </div>
+                  ${hasMoreTable2 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable2} remaining)</button>` : ''}`;
         }
-  
+    
         html += `
               <div class="legend-box">
                   <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
@@ -873,7 +913,7 @@
                   <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
                   <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
               </div></div>`;
-  
+    
         // Final Assembly of CSV Rows in correct order
         globalCsvRows = [
             ...csvHeader,
@@ -883,10 +923,10 @@
             [], // Empty spacer row
             ...csvAnomalies
         ];
-
+    
         resultsDiv.innerHTML = html;
     }
-
+    
     // Relative Seasonal Load Profile (Normalized around 1.00 base average per day)
     // Based on typical household electricity load profiles (SLP H0 / DIN standards)
     const RELATIVE_SEASONAL_PROFILE = {
@@ -921,6 +961,36 @@
         }
     
         return cumulativeWeight;
+    }
+
+    /**
+     * Reveals the next batch of hidden rows for a specific table container.
+     * @param {HTMLElement} buttonElement - The clicked button element instance.
+     * @param {number} batchSize - Number of hidden rows to reveal per click (default: 30).
+     */
+    function showNextRows(buttonElement, batchSize = 30) {
+        // Find the current card container to scope query selectors locally
+        const card = buttonElement.closest('.card');
+        if (!card) return;
+    
+        // Get all remaining hidden rows inside this table
+        const hiddenRows = card.querySelectorAll('tr.hidden-row');
+    
+        // Unhide the next chunk of rows based on batchSize
+        const limit = Math.min(batchSize, hiddenRows.length);
+        for (let i = 0; i < limit; i++) {
+            hiddenRows[i].classList.remove('hidden-row');
+        }
+    
+        // Recalculate remaining hidden rows
+        const remainingCount = hiddenRows.length - limit;
+    
+        // Update button text or hide button if no hidden rows remain
+        if (remainingCount > 0) {
+            buttonElement.innerText = `Show More (${remainingCount} remaining)`;
+        } else {
+            buttonElement.style.display = 'none';
+        }
     }
     
     // Generate dynamic ROI, financial summary HTML string, and fill the CSV Block
