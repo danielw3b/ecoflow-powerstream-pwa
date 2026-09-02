@@ -665,6 +665,8 @@
         }
         
         // 2. Process anomaly sub-rows asynchronously, ensuring newest dates come first
+        let anomalyRowIndex = 0;
+    
         if (anomalies.length > 0) {
           anomalies.sort((a, b) => b.date.localeCompare(a.date));
     
@@ -700,7 +702,6 @@
             }
           }
         
-          let anomalyRowIndex = 0;
           for (const item of resolvedAnomalies) {
             if (!item || !item.hData || !item.hData.hourly) continue;
         
@@ -835,13 +836,13 @@
         csvSummary.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
         csvSummary.push([]);
     
-        // Table 1 pagination logic
+        // Table 1 pagination logic (based on actually rendered rows)
         const hasMoreTable1 = totalDaysAnalyzed > INITIAL_VISIBLE_COUNT;
         const remainingTable1 = totalDaysAnalyzed - INITIAL_VISIBLE_COUNT;
     
-        // Table 2 pagination logic
-        const hasMoreTable2 = anomalies.length > INITIAL_VISIBLE_COUNT;
-        const remainingTable2 = anomalies.length - INITIAL_VISIBLE_COUNT;
+        // Table 2 pagination logic (based on actually rendered rows: anomalyRowIndex)
+        const hasMoreTable2 = anomalyRowIndex > INITIAL_VISIBLE_COUNT;
+        const remainingTable2 = anomalyRowIndex - INITIAL_VISIBLE_COUNT;
     
         // Build HTML Layout
         let html = `<div class="card">
@@ -889,7 +890,7 @@
                   ${hasMoreTable1 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable1} remaining)</button>` : ''}`;
     
         // Table 2: Anomaly & Weather Context
-        if (anomalies.length > 0) {
+        if (anomalyRowIndex > 0) {
           html += `
                   <h3 style="margin-top:30px; color:var(--warning);">
                       🔍 Daily Anomaly & Weather Context
@@ -925,8 +926,7 @@
         ];
     
         resultsDiv.innerHTML = html;
-    }
-    
+    }   
     // Relative Seasonal Load Profile (Normalized around 1.00 base average per day)
     // Based on typical household electricity load profiles (SLP H0 / DIN standards)
     const RELATIVE_SEASONAL_PROFILE = {
@@ -968,28 +968,21 @@
      * @param {HTMLElement} buttonElement - The clicked button element instance.
      * @param {number} batchSize - Number of hidden rows to reveal per click (default: 30).
      */
-    function showNextRows(buttonElement, batchSize = 30) {
-        // Find the current card container to scope query selectors locally
-        const card = buttonElement.closest('.card');
-        if (!card) return;
+    function showNextRows(btn, step = 30) {
+        // Isolierte Suche: Nur im direkt vorangehenden Tabellen-Frame suchen
+        const frame = btn.previousElementSibling;
+        if (!frame) return;
     
-        // Get all remaining hidden rows inside this table
-        const hiddenRows = card.querySelectorAll('tr.hidden-row');
+        const hiddenRows = Array.from(frame.querySelectorAll('tr.hidden-row'));
+        const toShow = hiddenRows.slice(0, step);
     
-        // Unhide the next chunk of rows based on batchSize
-        const limit = Math.min(batchSize, hiddenRows.length);
-        for (let i = 0; i < limit; i++) {
-            hiddenRows[i].classList.remove('hidden-row');
-        }
+        toShow.forEach(row => row.classList.remove('hidden-row'));
     
-        // Recalculate remaining hidden rows
-        const remainingCount = hiddenRows.length - limit;
-    
-        // Update button text or hide button if no hidden rows remain
-        if (remainingCount > 0) {
-            buttonElement.innerText = `Show More (${remainingCount} remaining)`;
+        const remaining = hiddenRows.length - toShow.length;
+        if (remaining > 0) {
+            btn.textContent = `Show More (${remaining} remaining)`;
         } else {
-            buttonElement.style.display = 'none';
+            btn.style.display = 'none';
         }
     }
     
