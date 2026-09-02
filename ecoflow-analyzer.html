@@ -318,7 +318,7 @@
             background-color: rgba(255, 255, 255, 0.05);
         }
 
-        /* Floating Scroll-to-Top Button (Samsung Browser Style) */
+        /* Floating Scroll-to-Top Button */
         #scrollToTopBtn {
             position: fixed;
             bottom: 25px;
@@ -328,7 +328,6 @@
             border-radius: 50%;
             background-color: rgba(13, 24, 43, 0.85);
             border: 1px solid var(--border);
-            color: var(--text-dim);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -337,7 +336,7 @@
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
             
-            /* Hidden state with subtle downward offset */
+            /* Hidden state */
             opacity: 0;
             visibility: hidden;
             transform: translateY(12px);
@@ -345,34 +344,32 @@
             z-index: 1000;
         }
         
-        /* Visible state triggered by scroll threshold */
         #scrollToTopBtn.show {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
         }
         
-        /* Interactive hover state */
         #scrollToTopBtn:hover {
             transform: translateY(0) scale(1.08);
-            color: var(--text);
             background-color: rgba(20, 35, 60, 0.95);
         }
         
-        /* SVG icon styling and scaling */
+        /* High-contrast & scaled SVG styling */
         #scrollToTopBtn svg {
-            width: 22px;
-            height: 22px;
+            width: 24px !important;  /* Dynamic scale override */
+            height: 24px !important;
             fill: none;
-            stroke: #8b9eb3;
-            stroke-width: 2.5;
+            stroke: #ffffff;         /* High contrast white against dark background */
+            stroke-width: 1.8;       /* Ideal line thickness for 12x12 viewbox */
             stroke-linecap: round;
             stroke-linejoin: round;
-            transition: stroke 0.2s ease;
+            transition: stroke 0.2s ease, transform 0.2s ease;
         }
         
         #scrollToTopBtn:hover svg {
-            stroke: var(--text);
+            stroke: #ffffff;
+            transform: translateY(-2px); /* Subtle hover lift for responsiveness */
         }
     </style>
 </head>
@@ -497,8 +494,9 @@
 
 <!-- Floating Scroll-to-Top Button -->
 <button id="scrollToTopBtn" onclick="scrollToTop()" aria-label="Scroll to top">
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M18 15l-6-6-6 6" />
+    <svg viewBox="0 0 12 12" aria-hidden="true">
+        <line x1="6" y1="11" x2="6" y2="1"></line>
+        <polyline points="2.5 5 6 1 9.5 5"></polyline>
     </svg>
 </button>
 
