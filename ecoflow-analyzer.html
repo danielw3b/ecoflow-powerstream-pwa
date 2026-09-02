@@ -144,14 +144,22 @@
             gap: 12px;
             margin-bottom: 12px;
         }
+        
         @media (min-width: 480px) {
-            .config-row { grid-template-columns: repeat(2, 1fr); }
+            .config-row { 
+                grid-template-columns: repeat(2, 1fr); 
+            }
         }
+        
         @media (min-width: 850px) {
-            .config-row { grid-template-columns: repeat(4, 1fr); }
-            .config-row > div[style*="display: grid"] { grid-column: span 2; }
+            .config-row { 
+                grid-template-columns: repeat(4, 1fr); 
+            }
+            .config-row > .span-2,
+            .config-row > .grid-2-col { 
+                grid-column: span 2; 
+            }
         }
-
         table { 
             width: 100%; 
             border-collapse: separate; 
