@@ -323,53 +323,62 @@
             position: fixed;
             bottom: 25px;
             right: 25px;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background-color: rgba(13, 24, 43, 0.85);
-            border: 1px solid var(--border);
+            z-index: 1000;
+            
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background-color: rgba(13, 24, 43, 0.85);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(6px);
+            
             -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            cursor: pointer;
             
             /* Hidden state */
             opacity: 0;
             visibility: hidden;
             transform: translateY(12px);
             transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
-            z-index: 1000;
         }
         
+        /* Visible state */
         #scrollToTopBtn.show {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
         }
         
+        /* Hover state */
         #scrollToTopBtn:hover {
             transform: translateY(0) scale(1.08);
             background-color: rgba(20, 35, 60, 0.95);
         }
         
-        /* High-contrast & scaled SVG styling */
+        /* Scaled SVG icon styling */
         #scrollToTopBtn svg {
-            width: 24px !important;  /* Dynamic scale override */
-            height: 24px !important;
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            pointer-events: none;
+            
             fill: none;
-            stroke: #ffffff;         /* High contrast white against dark background */
-            stroke-width: 1.8;       /* Ideal line thickness for 12x12 viewbox */
+            stroke: #ffffff;
+            stroke-width: 1.8;
             stroke-linecap: round;
             stroke-linejoin: round;
-            transition: stroke 0.2s ease, transform 0.2s ease;
+            
+            transition: transform 0.2s ease;
         }
         
+        /* Subtle SVG lift on button hover */
         #scrollToTopBtn:hover svg {
-            stroke: #ffffff;
-            transform: translateY(-2px); /* Subtle hover lift for responsiveness */
+            transform: translateY(-2px);
         }
     </style>
 </head>
