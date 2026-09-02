@@ -111,10 +111,31 @@
         .btn-secondary:hover { background: #2980b9; }
         .btn-full { width: 100%; margin-top: 10px; font-size: 1.05rem; }
 
+        .btn-icon {
+            padding: 0;
+            height: 34px;
+            width: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(107, 138, 170, 0.1);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
         .btn-icon:hover {
             background: rgba(107, 138, 170, 0.25) !important;
             border-color: var(--accent) !important;
             cursor: pointer;
+        }
+
+        .btn-submit-main {
+            background: var(--accent);
+        }
+
+        .btn-export-csv {
+            display: none;
+            background: #2980b9;
         }
 
         .config-row {
@@ -177,9 +198,10 @@
             display: inline-grid;
         }
         .legend-box strong { color: #fff; }
+        .legend-title { margin-top: 5px; display: inline-block; }
         #results { margin-top: 30px; }
 
-        .loader { display: none; margin: 20px 0; color: var(--accent); font-weight: bold; text-align: center; }
+        .loader { display: none; margin: 20px 0 0 0; color: var(--accent); font-weight: bold; text-align: center; }
 
         .summary-card {
             background: var(--panel);
@@ -200,6 +222,75 @@
         .sum-good { border: 1px solid var(--accent); }
         .sum-warn { border: 1px solid var(--warning); }
         .sum-bad { border: 1px solid var(--danger); }
+
+        /* Status Card Metrics & Indicators */
+        .status-primary-row {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            align-items: center;
+            font-size: 1.05rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-indicators-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .status-indicator-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .ratio-accent {
+            font-weight: bold;
+            color: var(--accent);
+            min-width: 65px;
+        }
+
+        .ratio-danger {
+            font-weight: bold;
+            color: var(--danger);
+            min-width: 65px;
+        }
+
+        .context-cell {
+            cursor: help;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .table-title-warn {
+            margin-top: 30px;
+            color: var(--warning);
+        }
+
+        .title-badge {
+            float: right;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        /* Layout Helper Classes */
+        .subtitle { color: var(--text-dim); }
+        .span-2 { grid-column: span 2; }
+        .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .location-group { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
+        .mt-12 { margin-top: 12px; }
+        .mt-15 { margin-top: 15px; }
+        .mt-30 { margin-top: 30px; }
+        .text-left { text-align: left !important; }
+        .nowrap { white-space: nowrap; }
+        .fw-bold { font-weight: bold; }
+        .help-cursor { cursor: help; }
 
         /* Hide extra table rows initially */
         tr.hidden-row {
@@ -226,39 +317,84 @@
         .show-more-btn:hover {
             background-color: rgba(255, 255, 255, 0.05);
         }
-        
+
+        /* Floating Scroll-to-Top Button (Samsung Browser Style) */
+        #scrollToTopBtn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: rgba(13, 24, 43, 0.85);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease, background-color 0.2s ease;
+            z-index: 1000;
+        }
+
+        #scrollToTopBtn.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #scrollToTopBtn:hover {
+            transform: scale(1.08);
+            color: var(--text);
+            background-color: rgba(20, 35, 60, 0.95);
+        }
+
+        #scrollToTopBtn svg {
+            width: 22px;
+            height: 22px;
+            stroke: #8b9eb3;
+            transition: stroke 0.2s ease;
+        }
+
+        #scrollToTopBtn:hover svg {
+            stroke: var(--text);
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>🌤️ Solar & Weather Analyzer</h1>
-    <p style="color: var(--text-dim)">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>
+    <p class="subtitle">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>
     <div class="card">
         <h2>⚙️ Configuration</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
             
             <h3>🔌 System Selection & Location</h3>
             <div class="config-row">
-                <div class="form-group" style="grid-column: span 2;">
+                <div class="form-group span-2">
                     <label for="cfg_inverter">Select Inverter / Circuit</label>
                     <select id="cfg_inverter" onchange="loadInverterConfig()" required>
                         <option value="">-- Load from localStorage --</option>
                     </select>
                 </div>
-                <div class="form-group" style="grid-column: span 2;">
+                <div class="form-group span-2">
                     <label>Coordinates (LAT / LON)</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center;">
+                    <div class="location-group">
                         <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
                         <input type="number" step="any" id="cfg_lon" required placeholder="LON">
-                        <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS" style="padding: 0; height: 34px; width: 34px; display: flex; align-items: center; justify-content: center; background: rgba(107, 138, 170, 0.1); border: 1px solid var(--border); color: var(--text);">📍</button>
+                        <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS">📍</button>
                     </div>
                 </div>
             </div>
 
             <h3>🛠️ Hardware Parameters</h3>
             <div class="config-row">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_panelType">Panel Tech</label>
                         <select id="cfg_panelType">
@@ -272,7 +408,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_moduleArea">Module Area (m²)</label>
                         <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
@@ -286,7 +422,7 @@
 
             <h3>💶 Tariff & Investment</h3>
             <div class="config-row">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_currency">Currency</label>
                         <input type="text" id="cfg_currency" required placeholder="e.g. €">
@@ -297,7 +433,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_energyPrice">Energy Price/kWh(Cent)</label>
                         <input type="number" step="0.0001" id="cfg_energyPrice" required placeholder="e.g. 29.89">
@@ -311,7 +447,7 @@
 
             <h3>📊 Meter & Timeline</h3>
             <div class="config-row">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_meterTariffStart">Tariff Start Meter(kWh)</label>
                         <input type="number" step="0.1" id="cfg_meterTariffStart" required placeholder="e.g. 46406">
@@ -322,15 +458,7 @@
                     </div>
                 </div>
                 
-               <!--<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <div class="form-group">
-                        <label for="cfg_consumption">Ø kWh w/o Solar/Day</label>
-                        <input type="number" step="0.1" id="cfg_consumption" required placeholder="e.g. 5">
-                    </div>
-                    <div class="form-group"></div>
-                </div>-->
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_tariffStart">Tariff Start Date</label>
                         <input type="date" id="cfg_tariffStart" required>
@@ -342,19 +470,26 @@
                 </div>
             </div>
 
-            <div style="margin-top: 30px;">
-                <button type="submit" id="runBtn" class="btn-full" style="background: var(--accent);">💾 Save & Run Analysis</button>
+            <div class="mt-30">
+                <button type="submit" id="runBtn" class="btn-full btn-submit-main">💾 Save & Run Analysis</button>
             </div>
         </form>
         
-        <div style="margin-top: 12px;">
-            <button id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-full" style="display:none; background: #2980b9;">📥 Export CSV Report</button>
+        <div class="mt-12">
+            <button id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-full btn-export-csv">📥 Export CSV Report</button>
         </div>
-        <div id="loading" class="loader" style="margin-top: 15px;">⏳ Fetching weather data and processing history...</div>
+        <div id="loading" class="loader">⏳ Fetching weather data and processing history...</div>
     </div>
 
     <div id="results"></div>
 </div>
+
+<!-- Samsung Browser Floating Scroll-to-Top Button -->
+<button id="scrollToTopBtn" aria-label="Scroll to top" onclick="scrollToTop()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+</button>
 
 <script>
     let globalCsvRows = [];
@@ -415,7 +550,6 @@
             document.getElementById('cfg_currency').value = "€";
             document.getElementById('cfg_investment').value = "0";
             document.getElementById('cfg_energyPrice').value = "29.89";
-            //document.getElementById('cfg_baseFee').value = "14.25";
             document.getElementById('cfg_startDate').value = "2026-05-07";
             document.getElementById('cfg_tariffStart').value = "2026-06-26";
             if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "900";
@@ -435,8 +569,6 @@
             currency: document.getElementById('cfg_currency')?.value || '€',
             investment: parseFloat(document.getElementById('cfg_investment')?.value) || 0,
             energyPrice: parseFloat(document.getElementById('cfg_energyPrice')?.value) || 0,
-            //baseFee: parseFloat(document.getElementById('cfg_baseFee')?.value) || 0,
-            //consumption: parseFloat(document.getElementById('cfg_consumption')?.value) || 0,
             meterTariffStart: parseFloat(document.getElementById('cfg_meterTariffStart')?.value) || 0,
             meterCurrent: parseFloat(document.getElementById('cfg_meterCurrent')?.value) || 0,
             tariffStart: document.getElementById('cfg_tariffStart')?.value || '',
@@ -650,7 +782,7 @@
                               <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
                               <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
                               <td class="${cssClass}">${efficiency.toFixed(1)} %</td>
-                              <td class="${cssClass}" title="${fullTextExplanation}" style="cursor: help;">${diagnosis}</td>
+                              <td class="${cssClass} help-cursor" title="${fullTextExplanation}">${diagnosis}</td>
                           </tr>`;
         
           csvDaily.push([
@@ -800,7 +932,7 @@
                                   <td>${avgClouds}</td>
                                   <td>${sunHours}</td>
                                   <td>${maxPeak}</td>
-                                  <td class="${cssClass}" title="${weatherTooltip}" style="cursor: help; text-align: center; font-size: 1.1rem;">${explanation}</td>
+                                  <td class="${cssClass} context-cell" title="${weatherTooltip}">${explanation}</td>
                               </tr>`;
         
             csvAnomalies.push([
@@ -852,23 +984,23 @@
                       <h3 class="${efficiencyClass}">📊 Status</h3>
                       
                       <!-- Primary summary metrics with larger font -->
-                      <div style="display: flex; gap: 18px; flex-wrap: wrap; align-items: center; font-size: 1.05rem; font-weight: bold; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
+                      <div class="status-primary-row">
                           <div>Days: <b>${totalDaysAnalyzed}</b></div>
                           <div>Issues: <b>${criticalCount}</b></div>
                           <div>Weather: <b>${weatherCount}</b></div>
                           <div>Hardw. Efficiency: <span class="${efficiencyClass}">${hwEfficiency}%</span></div>
                       </div>
-    
+
                       <!-- Status indicators: Total percentage (2 decimals) followed by counts in parentheses -->
-                      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem;">
-                          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                              <span style="font-weight: bold; color: var(--accent); min-width: 65px;">${sumOptNorm}%</span>
+                      <div class="status-indicators-container">
+                          <div class="status-indicator-group">
+                              <span class="ratio-accent">${sumOptNorm}%</span>
                               <div>✅ (${optimalCount})</div>
                               <div>🟢 (${normalCount})</div>
                           </div>
-    
-                          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                              <span style="font-weight: bold; color: var(--danger); min-width: 65px;">${sumLossFail}%</span>
+
+                          <div class="status-indicator-group">
+                              <span class="ratio-danger">${sumLossFail}%</span>
                               <div>🟠 (${lossCount})</div>
                               <div>❌ (${hardwareFailCount})</div>
                           </div>
@@ -892,10 +1024,10 @@
         // Table 2: Anomaly & Weather Context
         if (anomalyRowIndex > 0) {
           html += `
-                  <h3 style="margin-top:30px; color:var(--warning);">
+                  <h3 class="table-title-warn">
                       🔍 Daily Anomaly & Weather Context
-                      <span style="float:right; font-size:0.85rem; color:var(--text-dim);">
-                          Issues: <span class="bad" style="font-weight:bold;">${criticalCount}</span> | <span style="color:var(--text-dim);">${weatherCount} Weather</span>
+                      <span class="title-badge">
+                          Issues: <span class="bad fw-bold">${criticalCount}</span> | <span class="subtitle">${weatherCount} Weather</span>
                       </span>
                   </h3>
                   <div class="table-scroll-frame">
@@ -910,9 +1042,9 @@
         html += `
               <div class="legend-box">
                   <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
-                  <strong style="margin-top: 5px; display: inline-block;">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
-                  <strong style="margin-top: 5px; display: inline-block;">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
-                  <strong style="margin-top: 5px; display: inline-block;">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
+                  <strong class="legend-title">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
+                  <strong class="legend-title">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
+                  <strong class="legend-title">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
               </div></div>`;
     
         // Final Assembly of CSV Rows in correct order
@@ -927,6 +1059,7 @@
     
         resultsDiv.innerHTML = html;
     }   
+
     // Relative Seasonal Load Profile (Normalized around 1.00 base average per day)
     // Based on typical household electricity load profiles (SLP H0 / DIN standards)
     const RELATIVE_SEASONAL_PROFILE = {
@@ -965,8 +1098,8 @@
 
     /**
      * Reveals the next batch of hidden rows for a specific table container.
-     * @param {HTMLElement} buttonElement - The clicked button element instance.
-     * @param {number} batchSize - Number of hidden rows to reveal per click (default: 30).
+     * @param {HTMLElement} btn - The clicked button element instance.
+     * @param {number} step - Number of hidden rows to reveal per click (default: 30).
      */
     function showNextRows(btn, step = 30) {
         // Isolierte Suche: Nur im direkt vorangehenden Tabellen-Frame suchen
@@ -1064,21 +1197,21 @@
         csvFinancialBlock.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
         csvFinancialBlock.push([]); // Spacer row
     
-        return `<div class="summary-card" style="margin-top: 15px;">
+        return `<div class="summary-card mt-15">
             <h3>💰 Financial & ROI Report</h3>
             <table>
-                <tr><th>Metric</th><th>Value</th><th style="text-align:left;">Context</th></tr>
-                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td style="text-align:left;">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
-                <tr><td>Consumption (Grid)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td style="text-align:left;">Consumption (Grid): (${meterCurrent} - ${meterStart})</td></tr>
-                <tr><td>Avg. Daily Usage <b class="good">+</b> Solar</td><td class="good">${meterDay.toFixed(2)} kWh</td><td style="text-align:left;">Grid import / Days</td></tr>
-                <tr><td>Avg. Daily Usage <b class="warn">-</b> Solar</td><td class="warn">${rawDailyConsumption.toFixed(2)} kWh</td><td style="text-align:left;">(Grid + Saved) / Days</td></tr>
-                <tr><td>Norm. Base Daily Usage</td><td>${baseDailyDemand.toFixed(2)} kWh</td><td style="text-align:left;">Seasonally adjusted annual daily base</td></tr>
-                <tr><td>Est. Annual House Demand</td><td><b>${estimatedAnnualDemand.toFixed(0)} kWh</b></td><td style="text-align:left;">Extrapolated annual total (SLP H0 profile)</td></tr>
-                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td style="text-align:left;">Energy generated since tariff start</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td style="text-align:left;">${selfConsumptionRate}% of Energy saved since tariff start</td></tr>
-                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td style="text-align:left;">Contribution to ${theoryDemand.toFixed(0)} kWh Total Demand</td></tr>
-                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td style="text-align:left;">Cash saved by this inverter</td></tr>
-                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td style="text-align:left;">Of ${cur}${investment} investment</td></tr>
+                <tr><th>Metric</th><th>Value</th><th class="text-left">Context</th></tr>
+                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td class="text-left">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
+                <tr><td>Consumption (Grid)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td class="text-left">Consumption (Grid): (${meterCurrent} - ${meterStart})</td></tr>
+                <tr><td>Avg. Daily Usage <b class="good">+</b> Solar</td><td class="good">${meterDay.toFixed(2)} kWh</td><td class="text-left">Grid import / Days</td></tr>
+                <tr><td>Avg. Daily Usage <b class="warn">-</b> Solar</td><td class="warn">${rawDailyConsumption.toFixed(2)} kWh</td><td class="text-left">(Grid + Saved) / Days</td></tr>
+                <tr><td>Norm. Base Daily Usage</td><td>${baseDailyDemand.toFixed(2)} kWh</td><td class="text-left">Seasonally adjusted annual daily base</td></tr>
+                <tr><td>Est. Annual House Demand</td><td><b>${estimatedAnnualDemand.toFixed(0)} kWh</b></td><td class="text-left">Extrapolated annual total (SLP H0 profile)</td></tr>
+                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td class="text-left">Energy generated since tariff start</td></tr>
+                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td class="text-left">${selfConsumptionRate}% of Energy saved since tariff start</td></tr>
+                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td class="text-left">Contribution to ${theoryDemand.toFixed(0)} kWh Total Demand</td></tr>
+                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td class="text-left">Cash saved by this inverter</td></tr>
+                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td class="text-left">Of ${cur}${investment} investment</td></tr>
             </table>
         </div>`;
     }
@@ -1097,6 +1230,26 @@
         link.download = `Solar_Analysis_${inverterName}_${startDateStr}.csv`;
         link.click();
         URL.revokeObjectURL(url);
+    }
+
+    // Toggle scroll-to-top button visibility on scroll
+    window.addEventListener('scroll', () => {
+        const btn = document.getElementById('scrollToTopBtn');
+        if (btn) {
+            if (window.scrollY > 300) {
+                btn.classList.add('show');
+            } else {
+                btn.classList.remove('show');
+            }
+        }
+    });
+
+    // Smooth scroll back to top
+    function scrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     }
     
     window.addEventListener('DOMContentLoaded', initInverters);
