@@ -859,7 +859,7 @@
           anomalies.sort((a, b) => b.date.localeCompare(a.date));
     
           csvAnomalies.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
-          csvAnomalies.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (h)", "Max Peak (W/m²)", "Context"]);
+          csvAnomalies.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (hr)", "Max Peak (W/m²)", "Context"]);
         
           const resolvedAnomalies = [];
           const batchSize = 4;
@@ -1068,7 +1068,7 @@
     
         // Table 1: Daily Efficiency Tracker
         html += `
-                  <h3>Daily Efficiency Tracker</h3>
+                  <h3>🏆 Daily Efficiency Tracker</h3>
                   <div class="table-scroll-frame">
                       <table>
                           <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
@@ -1081,7 +1081,7 @@
         if (anomalyRowIndex > 0) {
           html += `
                   <h3 class="table-title-warn">
-                      🔍 Daily Anomaly & Weather Context
+                      🟠 Daily Anomaly & Weather Context
                       <span class="title-badge">
                           Issues: <span class="bad fw-bold">${criticalCount}</span> | <span class="subtitle">${weatherCount} Weather</span>
                       </span>
