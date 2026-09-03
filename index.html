@@ -1313,7 +1313,7 @@ async function fetchWeather() {
     if (!cachedCoords) {
       const pos = await new Promise((res) =>
         navigator.geolocation
-          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout: 30000})
+          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout: 10000})
           : res(null)
       );
       if (pos?.coords) {
@@ -1359,10 +1359,10 @@ async function fetchWeather() {
     if (inlineEl) {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
-        `<span title="Temperature">${icon} <b style="color:#ffcc44">${temp}${displayTempUnit}</b></span>` +
-        `<span title="Wind">${windArrow}${speed}${displayWindUnit}</span>` +
-        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "☀️0.0h") +
-        `<span title="Solar Radiation">💡${rad}W/m²</span>`;
+        `<span title="Temperature:${icon} ${temp}${displayTempUnit}">${icon} <b style="color:#ffcc44">${temp}${displayTempUnit}</b></span>` +
+        `<span title="Windspeed: ${speed}${displayWindUnit}">${windArrow}${speed}${displayWindUnit}</span>` +
+        `<span title="Sun Hours: ☀️${sunHours !== null ? sunHours : "0.0"}h">☀️${sunHours !== null ? sunHours : "0.0"}h</span>` +
+        `<span title="Direct Radiation: 💡${rad}W/m²">💡${rad}W/m²</span>`;
     }
   } catch (err) {
     console.error("Error fetching weather data:", err);
