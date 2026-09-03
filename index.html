@@ -1365,9 +1365,9 @@ async function fetchWeather() {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
         `<span title="Temperature">${icon} <b style="color:#ffcc44">${temp}${displayTempUnit}</b></span>` +
-        `&nbsp;<span title="Wind">${windArrow}${speed}${displayWindUnit}</span>` +
-        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
-        (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
+        `<span title="Wind">${windArrow}${speed}${displayWindUnit}</span>` +
+        `<span title="Sun Hours">☀️${sunHours}h</span>` +
+        `<span title="Solar Radiation">💡${rad}W/m²</span>`;
     }
   } catch (err) {
     console.error("Error fetching weather data:", err);
