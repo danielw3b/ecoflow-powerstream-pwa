@@ -800,13 +800,8 @@ function cardHtml(sn, s) {
     <div class="offline-msg">
       <div class="offline-icon">🌙</div>
       <div class="offline-text">Device offline - No solar input</div>
-      <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "Not seen"} | ${todaysYieldText ? todaysYieldText : "0 Wh"}</div>
-    </div>
-    <!--<div class="metrics-footer">
-      <div></div>
-      <div class="card-today" title="Today's yield">${todaysYieldText}</div>
-      <div class="card-time">${s.lastSeen ? fmtTime(new Date(s.lastSeen)) : ""}</div>
-    </div>-->`];
+      <div class="offline-since">Last: ${s.lastSeen ? fmtTime(new Date(s.lastSeen)) : "No data"} | ${todaysYieldText ? todaysYieldText : "- Wh"}</div>
+    </div>`];
 
   if (s.status === "waiting") return [`device-card`, `
     <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
@@ -1366,7 +1361,7 @@ async function fetchWeather() {
       inlineEl.innerHTML =
         `<span title="Temperature">${icon} <b style="color:#ffcc44">${temp}${displayTempUnit}</b></span>` +
         `<span title="Wind">${windArrow}${speed}${displayWindUnit}</span>` +
-        `<span title="Sun Hours">☀️${sunHours}h</span>` +
+        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "☀️0.0h") +
         `<span title="Solar Radiation">💡${rad}W/m²</span>`;
     }
   } catch (err) {
