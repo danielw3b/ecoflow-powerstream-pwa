@@ -305,7 +305,6 @@
     }
 
     .table-title-warn {
-        /*margin-top: 30px;*/
         margin: 40px 2px 20px 10px;
         color: var(--warning);
     }
@@ -495,8 +494,7 @@
                         <input type="number" step="0.0001" id="cfg_energyPrice" required placeholder="e.g. 29.89">
                     </div>
                     <div class="form-group">
-                        <!--<label for="cfg_baseFee">Base Fee/Month</label>
-                        <input type="number" step="0.01" id="cfg_baseFee" required placeholder="e.g. 14.25">-->
+                        <!-- Reserve space for optional base fee input -->
                     </div>
                 </div>
             </div>
@@ -655,251 +653,357 @@
             return;
         }
     
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('runBtn').disabled = true;
-        document.getElementById('csvBtn').style.display = 'none';
+        const loadingEl = document.getElementById('loading');
+        const runBtn = document.getElementById('runBtn');
+        const csvBtn = document.getElementById('csvBtn');
         const resultsDiv = document.getElementById('results');
+    
+        loadingEl.style.display = 'block';
+        runBtn.disabled = true;
+        csvBtn.style.display = 'none';
         resultsDiv.innerHTML = '';
         globalCsvRows = [];
     
-        globalConfig = getUserConfig();
-    
-        const localNow = new Date();
-        const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
-        const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);
-        
-        localTargetTime.setDate(localTargetTime.getDate() - 1);
-        const endDate = localTargetTime.toISOString().split('T')[0];
-    
-        const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-        const deviceDaily = dailyStorage[selectedSn] || {};
-    
-        const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum,temperature_2m_max&timezone=auto`;
-        
         try {
+            globalConfig = getUserConfig();
+    
+            // Robust local YYYY-MM-DD generation for "yesterday" (DST & Timezone safe)
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+    
+            const year = yesterday.getFullYear();
+            const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const day = String(yesterday.getDate()).padStart(2, '0');
+            const endDate = `${year}-${month}-${day}`;
+    
+            const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+            const deviceDaily = dailyStorage[selectedSn] || {};
+    
+            const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum,temperature_2m_max&timezone=auto`;
+    
             const dailyResponse = await fetch(dailyUrl);
             if (!dailyResponse.ok) throw new Error(`Open-Meteo API Error: ${dailyResponse.status}`);
+            
             const dailyData = await dailyResponse.json();
-  
+    
             if (!dailyData.daily || !dailyData.daily.shortwave_radiation_sum || !dailyData.daily.temperature_2m_max) {
-              throw new Error("Missing required weather parameters in API response.");
+                throw new Error("Missing required weather parameters in API response.");
             }
-  
-            let dates = dailyData.daily.time;
-            let radSumRaw = dailyData.daily.shortwave_radiation_sum;
-            let maxTempRaw = dailyData.daily.temperature_2m_max;
-  
-            if (dates.length > 0 && radSumRaw[radSumRaw.length - 1] === null) {
+    
+            const dates = dailyData.daily.time || [];
+            const radSumRaw = dailyData.daily.shortwave_radiation_sum || [];
+            const maxTempRaw = dailyData.daily.temperature_2m_max || [];
+    
+            // Defensively trim ALL trailing null entries (e.g., if API hasn't populated yesterday's metrics yet)
+            while (dates.length > 0 && radSumRaw[radSumRaw.length - 1] === null) {
                 dates.pop();
                 radSumRaw.pop();
                 maxTempRaw.pop();
             }
-
+    
             await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
-            document.getElementById('csvBtn').style.display = 'block';
-        
+            csvBtn.style.display = 'block';
+    
         } catch (error) {
-            console.error(error);
-            resultsDiv.innerHTML += `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
+            console.error('Analysis Execution Failed:', error);
+            resultsDiv.innerHTML = `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
+        } finally {
+            // Guaranteed UI state cleanup regardless of success or caught errors
+            loadingEl.style.display = 'none';
+            runBtn.disabled = false;
         }
-        
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('runBtn').disabled = false;
     }
 
-    // Process daily data with scientific solar split estimations, panel profiles, and temperature corrections
-    async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
-        let totalDaysAnalyzed = 0;
-        let criticalCount = 0;
-        let weatherCount = 0;
-        const anomalies = [];
-        let subTableRowsHtml = "";  
-        const resultsDiv = document.getElementById('results');
-        
-        // Counters for individual system indicators
-        let optimalCount = 0;
-        let normalCount = 0;
-        let lossCount = 0;
-        let hardwareFailCount = 0;
-        let preInstallCount = 0;
-        
-        // CSV Blocks for structured export
-        const csvHeader = [];
-        const csvSummary = [];
-        const csvFinancial = [];
-        const csvDaily = [];
-        const csvAnomalies = [];
+    /**
+     * Sanitizes strings to prevent Stored XSS attacks in DOM rendering.
+     * @param {string|number} str - Value to escape.
+     * @returns {string} HTML-safe string representation.
+     */
+    function esc(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
     
-        // Resolve the friendly custom name from local storage or fallback to serial number
-        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
-        const friendlyName = customNames[sn] || sn;
-        
-        const totalWp = globalConfig.totalWp || 900;
-        const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60; 
-        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 8;
-        
-        let tableRowsHtml = "";
-        const INITIAL_VISIBLE_COUNT = 30;
-        
-        // Populate Header Block
-        csvHeader.push([`DEVICE: ${sn} / ${friendlyName}`]);
-        csvHeader.push([]);
+    /**
+     * Validates strictly formatted YYYY-MM-DD date strings.
+     * @param {string} dateStr - Date key candidate.
+     * @returns {boolean} True if string is a valid ISO date.
+     */
+    function isValidDateKey(dateStr) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+      const date = new Date(dateStr);
+      return !isNaN(date.getTime());
+    }
     
-        // Populate Daily Block Header
-        csvDaily.push(["DAILY EFFICIENCY TRACKER"]);
-        csvDaily.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
-        
-        // Resolve hardware deployment boundaries once prior to the loop
-        const validDates = Object.keys(deviceDaily).filter(d => deviceDaily[d] !== undefined);
-        const firstActiveDate = validDates.length > 0 ? validDates.sort()[0] : null;
-        
-        // 1. Loop through historical daily records in REVERSE order (Newest date first)
-        for (let i = dates.length - 1; i >= 0; i--) {
-          const dateStr = dates[i];
-          if (radSumRaw[i] === null) continue;
-        
-          totalDaysAnalyzed++;
-          let totalRadKwhM2 = radSumRaw[i] / 3.6;
-        
-          let diffuseShare = 0.30;
-          if (totalRadKwhM2 < 1.5) diffuseShare = 0.85; 
-          else if (totalRadKwhM2 < 3.5) diffuseShare = 0.50;
-          else if (totalRadKwhM2 > 5.5) diffuseShare = 0.18; 
-        
-          let dirKwhM2 = totalRadKwhM2 * (1 - diffuseShare);
-          let diffKwhM2 = totalRadKwhM2 * diffuseShare;
-        
-          const dayTemp = maxTempRaw[i] || 25;
-        
-          const expectedDirectWh = dirKwhM2 * totalWp;
-          const expectedDiffuseWh = diffKwhM2 * totalWp * 0.45; 
-          let calculatedSollWh = (expectedDirectWh + expectedDiffuseWh) * standardSystemEfficiency;
-          const maxPhysicalDailyCapWh = totalWp * 7; 
-          const expectedSollWh = Math.min(calculatedSollWh, maxPhysicalDailyCapWh);
-          const realYieldWh = deviceDaily[dateStr] || 0;
-          const totalSolarEnergyWh = totalRadKwhM2 * 1000 * globalConfig.moduleArea;
-        
-          let rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
-          let efficiency = Math.round(rawEfficiency * 10) / 10;
-        
-          const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
-          const isInstallationDay = firstActiveDate && dateStr === firstActiveDate;
-        
-          let diagnosis = "🟢"; 
-          let cssClass = "good";
-          let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters."; 
-        
-          const dynamicThreshold = baseEfficiencyThreshold;
-        
-          if (isPreInstallation) {
-            diagnosis = "⏳";
-            cssClass = "text-dim";
-            fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
-          }
-          else if (realYieldWh === 0 || (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500)) { 
-            diagnosis = "❌"; 
-            cssClass = "bad"; 
-            fullTextExplanation = "System / Data Outage: Missing data or significant generation gap.";
-          }
-          else if (efficiency >= (baseEfficiencyThreshold + 3.5)) { 
-            diagnosis = "✅"; 
-            cssClass = "good"; 
-            fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
-          } 
-          else if (efficiency < dynamicThreshold && realYieldWh < expectedSollWh) {
-            diagnosis = "🟠"; 
-            cssClass = "warn"; 
-            fullTextExplanation = "Performance Loss: Real generation falling below expected baselines.";
-          }
-        
-          if (diagnosis === "✅") optimalCount++;
-          else if (diagnosis === "🟢") normalCount++;
-          else if (diagnosis === "🟠") lossCount++;
-          else if (diagnosis === "❌") hardwareFailCount++;
-          else if (diagnosis === "⏳") preInstallCount++;
-        
-          if ((diagnosis === "❌" || diagnosis === "🟠") && !isPreInstallation) {
-            anomalies.push({ 
-              date: dateStr, 
-              realYieldWh, 
-              expectedYieldWh: expectedSollWh, 
-              efficiency, 
-              isInstallationDay,
-              reason: fullTextExplanation,
-              maxTemp: dayTemp
-            });
-          }
-        
-          // Truncate table rows beyond initial count using hidden-row CSS class
-          const isHiddenClass = (totalDaysAnalyzed - 1) >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
+    /**
+     * Executes fetch requests with exponential backoff for Open-Meteo API.
+     * 
+     * @param {string} url - Request endpoint.
+     * @param {number} maxRetries - Max retry iterations.
+     * @param {number} initialDelay - Base delay in milliseconds.
+     * @returns {Promise<Object|null>} Parsed response data or null on complete failure.
+     */
+    async function fetchWithRetry(url, maxRetries = 3, initialDelay = 300) {
+      let attempt = 0;
+      let delay = initialDelay;
     
-          tableRowsHtml += `<tr${isHiddenClass}>
-                              <td>${dateStr}</td>
-                              <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
-                              <td>${(expectedSollWh/1000).toFixed(2)} kWh</td>
-                              <td>${(realYieldWh/1000).toFixed(2)} kWh</td>
-                              <td class="${cssClass}">${efficiency.toFixed(1)} %</td>
-                              <td class="${cssClass} help-cursor" title="${fullTextExplanation}">${diagnosis}</td>
-                          </tr>`;
-        
-          csvDaily.push([
-            `"${dateStr}"`, 
-            `"${totalRadKwhM2.toFixed(2)}"`, 
-            `"${dayTemp.toFixed(1)}"`,
-            `"${(expectedSollWh/1000).toFixed(2)}"`, 
-            `"${(realYieldWh/1000).toFixed(2)}"`, 
-            `"${efficiency.toFixed(1)}"`, 
-            `"${diagnosis}"`
-          ]);
+      while (attempt < maxRetries) {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            return await response.json();
+          }
+          if (response.status === 429 || response.status >= 500) {
+            attempt++;
+            if (attempt >= maxRetries) break;
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            delay *= 2;
+          } else {
+            break; // Non-retryable HTTP errors (e.g. 400)
+          }
+        } catch (err) {
+          attempt++;
+          if (attempt >= maxRetries) break;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          delay *= 2;
         }
-        
-        // 2. Process anomaly sub-rows asynchronously, ensuring newest dates come first
-        let anomalyRowIndex = 0;
+      }
+      return null;
+    }
+
+    /**
+     * Sanitizes and escapes a single CSV field value according to RFC 4180
+     * and neutralizes CSV Formula Injection attacks (=, +, -, @, \t, \r).
+     * 
+     * @param {any} val - The raw input cell value.
+     * @returns {string} Safe, properly escaped CSV string representation.
+     */
+    function sanitizeCsvCell(val) {
+      if (val === null || val === undefined) return '';
+      let str = String(val).trim();
+
+      // Neutralize potential CSV Formula Injection characters
+      if (/^[=+\-@\t\r]/.test(str)) {
+        str = "'" + str;
+      }
+
+      // RFC 4180: If field contains delimiter (;), quotes, or newlines, wrap in quotes and double internal quotes
+      if (str.includes(';') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        str = '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    }
     
-        if (anomalies.length > 0) {
-          anomalies.sort((a, b) => b.date.localeCompare(a.date));
+    /**
+     * Process daily solar data using scientific Liu-Jordan model estimations,
+     * panel profiles, temperature corrections, and resilient weather context.
+     * 
+     * @param {string} sn - Inverter Serial Number.
+     * @param {Array<string>} dates - Array of target dates.
+     * @param {Array<number>} radSumRaw - Raw shortwave radiation values.
+     * @param {Array<number>} maxTempRaw - Raw daily max ambient temperatures.
+     * @param {Object} deviceDaily - Historical daily yield dictionary.
+     */
+    async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
+      let totalDaysAnalyzed = 0;
+      let criticalCount = 0;
+      let weatherCount = 0;
+      const anomalies = [];
+      let subTableRowsHtml = "";
+      const resultsDiv = document.getElementById('results');
     
-          csvAnomalies.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
-          csvAnomalies.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (hr)", "Max Peak (W/m²)", "Context"]);
-        
-          const resolvedAnomalies = [];
-          const batchSize = 4;
-          const delayMs = 120;  
-        
-          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-        
-          for (let i = 0; i < anomalies.length; i += batchSize) {
-            const chunk = anomalies.slice(i, i + batchSize);
-        
-            const chunkPromises = chunk.map(async (target) => {
-              try {
-                const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration,diffuse_radiation&timezone=auto`;
-                const hResp = await fetch(hUrl);
-                if (hResp.status === 429 || !hResp.ok) return null;
-                const hData = await hResp.json();
-                return { target, hData };
-              } catch (err) {
-                return null;
-              }
-            });
-        
-            const chunkResults = await Promise.all(chunkPromises);
-            resolvedAnomalies.push(...chunkResults);
-        
-            if (i + batchSize < anomalies.length) {
-              await sleep(delayMs);
-            }
+      // Counters for individual system indicators
+      let optimalCount = 0;
+      let normalCount = 0;
+      let lossCount = 0;
+      let hardwareFailCount = 0;
+      let preInstallCount = 0;
+    
+      // CSV Blocks for structured export
+      const csvHeader = [];
+      const csvSummary = [];
+      const csvFinancial = [];
+      const csvDaily = [];
+      const csvAnomalies = [];
+    
+      // Resolve custom device name securely from storage
+      const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
+      const rawFriendlyName = customNames[sn] || sn;
+      const safeFriendlyName = esc(rawFriendlyName);
+    
+      const totalWp = globalConfig.totalWp || 900;
+      const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
+      const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 8;
+    
+      let tableRowsHtml = "";
+      const INITIAL_VISIBLE_COUNT = 30;
+    
+      // Populate Header Block
+      csvHeader.push([`DEVICE: ${sn} / ${rawFriendlyName}`]);
+      csvHeader.push([]);
+    
+      // Populate Daily Block Header
+      csvDaily.push(["DAILY EFFICIENCY TRACKER"]);
+      csvDaily.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
+    
+      // Validate date keys to prevent sorting crashes or invalid comparisons
+      const validDates = Object.keys(deviceDaily)
+        .filter((d) => deviceDaily[d] !== undefined && isValidDateKey(d))
+        .sort();
+      const firstActiveDate = validDates.length > 0 ? validDates[0] : null;
+    
+      // 1. Process daily historical records in REVERSE order (Newest first)
+      for (let i = dates.length - 1; i >= 0; i--) {
+        const dateStr = dates[i];
+        if (radSumRaw[i] === null) continue;
+    
+        totalDaysAnalyzed++;
+        const totalRadKwhM2 = radSumRaw[i] / 3.6;
+    
+        let diffuseShare = 0.30;
+        if (totalRadKwhM2 < 1.5) diffuseShare = 0.85;
+        else if (totalRadKwhM2 < 3.5) diffuseShare = 0.50;
+        else if (totalRadKwhM2 > 5.5) diffuseShare = 0.18;
+    
+        const dirKwhM2 = totalRadKwhM2 * (1 - diffuseShare);
+        const diffKwhM2 = totalRadKwhM2 * diffuseShare;
+    
+        const dayTemp = maxTempRaw[i] || 25;
+    
+        const expectedDirectWh = dirKwhM2 * totalWp;
+        const expectedDiffuseWh = diffKwhM2 * totalWp * 0.45;
+        const calculatedSollWh = (expectedDirectWh + expectedDiffuseWh) * standardSystemEfficiency;
+        const maxPhysicalDailyCapWh = totalWp * 7;
+        const expectedSollWh = Math.min(calculatedSollWh, maxPhysicalDailyCapWh);
+        const realYieldWh = deviceDaily[dateStr] || 0;
+        const totalSolarEnergyWh = totalRadKwhM2 * 1000 * (globalConfig.moduleArea || 1);
+    
+        const rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
+        const efficiency = Math.round(rawEfficiency * 10) / 10;
+    
+        const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
+        const isInstallationDay = firstActiveDate && dateStr === firstActiveDate;
+    
+        let diagnosis = "🟢";
+        let cssClass = "good";
+        let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters.";
+    
+        const dynamicThreshold = baseEfficiencyThreshold;
+    
+        if (isPreInstallation) {
+          diagnosis = "⏳";
+          cssClass = "text-dim";
+          fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
+        } else if (realYieldWh === 0 || (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500)) {
+          diagnosis = "❌";
+          cssClass = "bad";
+          fullTextExplanation = "System / Data Outage: Missing data or significant generation gap.";
+        } else if (efficiency >= (baseEfficiencyThreshold + 3.5)) {
+          diagnosis = "✅";
+          cssClass = "good";
+          fullTextExplanation = "Optimal Yield: System operating at peak performance capacity profiles.";
+        } else if (efficiency < dynamicThreshold && realYieldWh < expectedSollWh) {
+          diagnosis = "🟠";
+          cssClass = "warn";
+          fullTextExplanation = "Performance Loss: Real generation falling below expected baselines.";
+        }
+    
+        if (diagnosis === "✅") optimalCount++;
+        else if (diagnosis === "🟢") normalCount++;
+        else if (diagnosis === "🟠") lossCount++;
+        else if (diagnosis === "❌") hardwareFailCount++;
+        else if (diagnosis === "⏳") preInstallCount++;
+    
+        if ((diagnosis === "❌" || diagnosis === "🟠") && !isPreInstallation) {
+          anomalies.push({
+            date: dateStr,
+            realYieldWh,
+            expectedYieldWh: expectedSollWh,
+            efficiency,
+            isInstallationDay,
+            reason: fullTextExplanation,
+            maxTemp: dayTemp
+          });
+        }
+    
+        // Truncate initial rows using hidden-row CSS class
+        const isHiddenClass = (totalDaysAnalyzed - 1) >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
+    
+        tableRowsHtml += `<tr${isHiddenClass}>
+                            <td>${esc(dateStr)}</td>
+                            <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
+                            <td>${(expectedSollWh / 1000).toFixed(2)} kWh</td>
+                            <td>${(realYieldWh / 1000).toFixed(2)} kWh</td>
+                            <td class="${esc(cssClass)}">${efficiency.toFixed(1)} %</td>
+                            <td class="${esc(cssClass)} help-cursor" title="${esc(fullTextExplanation)}">${esc(diagnosis)}</td>
+                        </tr>`;
+    
+        csvDaily.push([
+          dateStr,
+          totalRadKwhM2.toFixed(2),
+          dayTemp.toFixed(1),
+          (expectedSollWh / 1000).toFixed(2),
+          (realYieldWh / 1000).toFixed(2),
+          efficiency.toFixed(1),
+          diagnosis
+        ]);
+      }
+    
+      // 2. Process anomaly sub-rows asynchronously with resilient retries
+      let anomalyRowIndex = 0;
+    
+      if (anomalies.length > 0) {
+        anomalies.sort((a, b) => b.date.localeCompare(a.date));
+    
+        csvAnomalies.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
+        csvAnomalies.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (hr)", "Max Peak (W/m²)", "Context"]);
+    
+        const batchSize = 4;
+        const resolvedAnomalies = [];
+    
+        for (let i = 0; i < anomalies.length; i += batchSize) {
+          const chunk = anomalies.slice(i, i + batchSize);
+    
+          const chunkPromises = chunk.map(async (target) => {
+            const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration,diffuse_radiation&timezone=auto`;
+            
+            // Fetch with resilient retry logic
+            const hData = await fetchWithRetry(hUrl);
+            return { target, hData };
+          });
+    
+          const chunkResults = await Promise.all(chunkPromises);
+          resolvedAnomalies.push(...chunkResults);
+    
+          if (i + batchSize < anomalies.length) {
+            await new Promise((resolve) => setTimeout(resolve, 120));
           }
-        
-          for (const item of resolvedAnomalies) {
-            if (!item || !item.hData || !item.hData.hourly) continue;
-        
-            const target = item.target;
-            const hData = item.hData;
-        
-            let cloudSum = 0, sunSeconds = 0, maxPeak = 0, daylightHours = 0;
-            let totalRad = 0, totalDiffuse = 0; 
-        
+        }
+    
+        for (const item of resolvedAnomalies) {
+          const target = item.target;
+          const hData = item.hData;
+    
+          let avgClouds = 'n/a';
+          let sunHours = 'n/a';
+          let maxPeak = 'n/a';
+          let realDiffuseShare = 0;
+          let hasWeatherData = false;
+    
+          if (hData && hData.hourly && hData.hourly.shortwave_radiation) {
+            hasWeatherData = true;
+            let cloudSum = 0;
+            let sunSeconds = 0;
+            let daylightHours = 0;
+            let totalRad = 0;
+            let totalDiffuse = 0;
+            let peakValue = 0;
+    
             for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
               if (j >= 6 && j <= 20) {
                 cloudSum += hData.hourly.cloud_cover[j];
@@ -910,212 +1014,218 @@
                 }
               }
               sunSeconds += hData.hourly.sunshine_duration[j];
-              if (hData.hourly.shortwave_radiation[j] > maxPeak) maxPeak = hData.hourly.shortwave_radiation[j];
+              if (hData.hourly.shortwave_radiation[j] > peakValue) {
+                peakValue = hData.hourly.shortwave_radiation[j];
+              }
             }
-        
-            const avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
-            const sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-            const maxTemp = parseFloat(target.maxTemp || 0);
-            const realDiffuseShare = totalRad > 0 ? (totalDiffuse / totalRad) : 0;
-        
-            let explanation = "⛅ ☀️"; 
-            let weatherTooltip = "Partly cloudy with mixed radiation.";
-            let cssClass = "text-dim"; 
-            let isCritical = false;
-        
-            if (target.realYieldWh === 0 || (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3))) {
-              explanation = "❌ 🔌";
-              weatherTooltip = "Hardware Drop: System turned off, missing local data or completely disconnected.";
-              cssClass = "bad";
-              isCritical = true;
-            } else if (target.efficiency < 4 && maxPeak > 400 && avgClouds < 85 && sunHours < 10) {
-              explanation = "❌ 🔌";
-              weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and yield failure despite viable solar radiation.`;
-              cssClass = "bad";
-              isCritical = true;
-            } else if (avgClouds <= 35 && maxPeak > 600) {
-              explanation = "📶 ⚠️";
-              weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired.`;
-              cssClass = "bad";
-              isCritical = true;
-            } else if (maxTemp >= 33 && avgClouds <= 35) {
-              explanation = "🌡️ 🥵";
-              weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
-              cssClass = "warn";
-              weatherCount++;
-            } else if (avgClouds > 90 && sunHours < 4) {
-              explanation = "🌧️ ☁️";
-              weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
-              weatherCount++;
-            } else if (target.efficiency < 4 && avgClouds < 80 && sunHours >= 4 && maxPeak >= 500) {
-              explanation = "❌ 🔌"; 
-              weatherTooltip = `Hardware Drop: Critically low efficiency (${target.efficiency}%) and yield below 50% of expected.`;
-              cssClass = "bad";
-              isCritical = true;
-            } else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500 && sunHours > 4) {
-              explanation = "☁️ 🌫️";
-              weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²) over ${sunHours}h sun duration.`;
-              cssClass = "text-dim";
-              weatherCount++;
-            } else if (avgClouds >= 80 && maxPeak >= 600) {
-              explanation = "☁️ ⛅";
-              weatherTooltip = "Mostly Overcast with Sun Breaks: Dense clouds overall, but intense short solar peaks.";
-              weatherCount++;
-            } else if (avgClouds >= 70 || (avgClouds >= 60 && maxPeak < 600)) {
-              explanation = "☁️ ☁️";
-              weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted direct radiation.";
-              weatherCount++;
-            } else {
-              explanation = "⛅ ☀️";
-              weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
-              weatherCount++;
-            }
-        
-            if (isCritical) {
-              criticalCount++;
-            }
-            
-            const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
-            const realKwh = (target.realYieldWh / 1000).toFixed(2);
-        
-            // Truncate anomaly table rows beyond initial count using hidden-row CSS class
-            const isSubHiddenClass = anomalyRowIndex >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
-            anomalyRowIndex++;
     
-            subTableRowsHtml += `<tr${isSubHiddenClass}>
-                                  <td>${target.date}</td>
-                                  <td class="nowrap">${sollKwh} | <b>${realKwh}</b></td>
-                                  <td class="bad">${target.efficiency.toFixed(1)}</td>
-                                  <td>${avgClouds}</td>
-                                  <td>${sunHours}</td>
-                                  <td>${maxPeak}</td>
-                                  <td class="${cssClass} context-cell" title="${weatherTooltip}">${explanation}</td>
-                              </tr>`;
-        
-            csvAnomalies.push([
-              `"${target.date}"`, 
-              `"${sollKwh.replace('.',',')} / ${realKwh.replace('.',',')}"`, 
-              `"${target.efficiency.toFixed(1).replace('.',',')}"`, 
-              `"${avgClouds}"`, 
-              `"${sunHours}"`, 
-              `"${maxPeak}"`, 
-              `"${explanation}"`
-            ]);
+            avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
+            sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
+            maxPeak = peakValue;
+            realDiffuseShare = totalRad > 0 ? (totalDiffuse / totalRad) : 0;
           }
+    
+          const maxTemp = parseFloat(target.maxTemp || 0);
+          let explanation = "⛅ ☀️";
+          let weatherTooltip = "Partly cloudy with mixed radiation.";
+          let cssClass = "text-dim";
+          let isCritical = false;
+    
+          if (!hasWeatherData) {
+            // Fallback context if Open-Meteo API failed completely
+            explanation = "⚠️ N/A";
+            weatherTooltip = "Weather data unavailable due to API rate-limit or network timeout.";
+            cssClass = "warn";
+          } else if (target.realYieldWh === 0 || (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3))) {
+            explanation = "❌ 🔌";
+            weatherTooltip = "Hardware Drop: System turned off, missing local data or completely disconnected.";
+            cssClass = "bad";
+            isCritical = true;
+          } else if (target.efficiency < 4 && maxPeak > 400 && avgClouds < 85 && sunHours < 10) {
+            explanation = "❌ 🔌";
+            weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and yield failure despite viable solar radiation.`;
+            cssClass = "bad";
+            isCritical = true;
+          } else if (avgClouds <= 35 && maxPeak > 600) {
+            explanation = "📶 ⚠️";
+            weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired.`;
+            cssClass = "bad";
+            isCritical = true;
+          } else if (maxTemp >= 33 && avgClouds <= 35) {
+            explanation = "🌡️ 🥵";
+            weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
+            cssClass = "warn";
+            weatherCount++;
+          } else if (avgClouds > 90 && sunHours < 4) {
+            explanation = "🌧️ ☁️";
+            weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
+            weatherCount++;
+          } else if (target.efficiency < 4 && avgClouds < 80 && sunHours >= 4 && maxPeak >= 500) {
+            explanation = "❌ 🔌";
+            weatherTooltip = `Hardware Drop: Critically low efficiency (${target.efficiency}%) and yield below 50% of expected.`;
+            cssClass = "bad";
+            isCritical = true;
+          } else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500 && sunHours > 4) {
+            explanation = "☁️ 🌫️";
+            weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²) over ${sunHours}h sun duration.`;
+            cssClass = "text-dim";
+            weatherCount++;
+          } else if (avgClouds >= 80 && maxPeak >= 600) {
+            explanation = "☁️ ⛅";
+            weatherTooltip = "Mostly Overcast with Sun Breaks: Dense clouds overall, but intense short solar peaks.";
+            weatherCount++;
+          } else if (avgClouds >= 70 || (avgClouds >= 60 && maxPeak < 600)) {
+            explanation = "☁️ ☁️";
+            weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted direct radiation.";
+            weatherCount++;
+          } else {
+            explanation = "⛅ ☀️";
+            weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
+            weatherCount++;
+          }
+    
+          if (isCritical) {
+            criticalCount++;
+          }
+    
+          const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
+          const realKwh = (target.realYieldWh / 1000).toFixed(2);
+    
+          const isSubHiddenClass = anomalyRowIndex >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
+          anomalyRowIndex++;
+    
+          subTableRowsHtml += `<tr${isSubHiddenClass}>
+                                <td>${esc(target.date)}</td>
+                                <td class="nowrap">${esc(sollKwh)} | <b>${esc(realKwh)}</b></td>
+                                <td class="bad">${target.efficiency.toFixed(1)}</td>
+                                <td>${esc(avgClouds)}</td>
+                                <td>${esc(sunHours)}</td>
+                                <td>${esc(maxPeak)}</td>
+                                <td class="${esc(cssClass)} context-cell" title="${esc(weatherTooltip)}">${esc(explanation)}</td>
+                            </tr>`;
+    
+          csvAnomalies.push([
+            target.date,
+            `${sollKwh.replace('.', ',')} / ${realKwh.replace('.', ',')}`,
+            target.efficiency.toFixed(1).replace('.', ','),
+            avgClouds,
+            sunHours,
+            maxPeak,
+            explanation
+          ]);
         }
-        
-        if (anomalies.length > 0) {
-          weatherCount = Math.max(0, anomalies.length - criticalCount);
-        }
-        
-        const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-        
-        // Calculate combined percentage ratios with 2 decimal precision
-        const sumOptNorm = totalDaysAnalyzed > 0 ? (((optimalCount + normalCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
-        const sumLossFail = totalDaysAnalyzed > 0 ? (((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
+      }
     
-        const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
-        const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
+      if (anomalies.length > 0) {
+        weatherCount = Math.max(0, anomalies.length - criticalCount);
+      }
     
-        // Populate Summary Block for CSV
-        csvSummary.push(["OVERALL ANALYSIS SUMMARY"]);
-        csvSummary.push([`Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`]);
-        csvSummary.push([`Issues: ${criticalCount}`]);
-        csvSummary.push([`Weather: ${weatherCount}`]);
-        csvSummary.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
-        csvSummary.push([]);
+      const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
     
-        // Table 1 pagination logic (based on actually rendered rows)
-        const hasMoreTable1 = totalDaysAnalyzed > INITIAL_VISIBLE_COUNT;
-        const remainingTable1 = totalDaysAnalyzed - INITIAL_VISIBLE_COUNT;
+      const sumOptNorm = totalDaysAnalyzed > 0 ? (((optimalCount + normalCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
+      const sumLossFail = totalDaysAnalyzed > 0 ? (((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
     
-        // Table 2 pagination logic (based on actually rendered rows: anomalyRowIndex)
-        const hasMoreTable2 = anomalyRowIndex > INITIAL_VISIBLE_COUNT;
-        const remainingTable2 = anomalyRowIndex - INITIAL_VISIBLE_COUNT;
+      const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
+      const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
     
-        // Build HTML Layout
-        let html = `<div class="card">
-                  <h2>📡 Inverter: ${friendlyName}</h2>
-                  
-                  <div class="summary-card sum-${efficiencyClass}">
-                      <h3 class="${efficiencyClass}">📊 Status</h3>
-                      
-                      <!-- Primary summary metrics with larger font -->
-                      <div class="status-primary-row">
-                          <div>Days: <b>${totalDaysAnalyzed}</b></div>
-                          <div>Issues: <b>${criticalCount}</b></div>
-                          <div>Weather: <b>${weatherCount}</b></div>
-                          <div>Hardw. Efficiency: <span class="${efficiencyClass}">${hwEfficiency}%</span></div>
-                      </div>
-
-                      <!-- Status indicators: Total percentage (2 decimals) followed by counts in parentheses -->
-                      <div class="status-indicators-container">
-                          <div class="status-indicator-group">
-                              <span class="ratio-accent">${sumOptNorm}%</span>
-                              <div>✅ (${optimalCount})</div>
-                              <div>🟢 (${normalCount})</div>
-                          </div>
-
-                          <div class="status-indicator-group">
-                              <span class="ratio-danger">${sumLossFail}%</span>
-                              <div>🟠 (${lossCount})</div>
-                              <div>❌ (${hardwareFailCount})</div>
-                          </div>
-                      </div>
-                  </div>`;
+      // Populate Summary Block for CSV
+      csvSummary.push(["OVERALL ANALYSIS SUMMARY"]);
+      csvSummary.push([`Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`]);
+      csvSummary.push([`Issues: ${criticalCount}`]);
+      csvSummary.push([`Weather: ${weatherCount}`]);
+      csvSummary.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
+      csvSummary.push([]);
     
-        // Financial & ROI Report (generates HTML and pushes to csvFinancial Block)
+      // Table 1 & Table 2 pagination logic
+      const hasMoreTable1 = totalDaysAnalyzed > INITIAL_VISIBLE_COUNT;
+      const remainingTable1 = totalDaysAnalyzed - INITIAL_VISIBLE_COUNT;
+    
+      const hasMoreTable2 = anomalyRowIndex > INITIAL_VISIBLE_COUNT;
+      const remainingTable2 = anomalyRowIndex - INITIAL_VISIBLE_COUNT;
+    
+      // Build HTML Layout (Report & Summary positioned at the top)
+      let html = `<div class="card">
+                    <h2>📡 Inverter: ${safeFriendlyName}</h2>
+                    
+                    <div class="summary-card sum-${efficiencyClass}">
+                        <h3 class="${efficiencyClass}">📊 Status</h3>
+                        
+                        <div class="status-primary-row">
+                            <div>Days: <b>${totalDaysAnalyzed}</b></div>
+                            <div>Issues: <b>${criticalCount}</b></div>
+                            <div>Weather: <b>${weatherCount}</b></div>
+                            <div>Hardw. Efficiency: <span class="${efficiencyClass}">${hwEfficiency}%</span></div>
+                        </div>
+    
+                        <div class="status-indicators-container">
+                            <div class="status-indicator-group">
+                                <span class="ratio-accent">${sumOptNorm}%</span>
+                                <div>✅ (${optimalCount})</div>
+                                <div>🟢 (${normalCount})</div>
+                            </div>
+    
+                            <div class="status-indicator-group">
+                                <span class="ratio-danger">${sumLossFail}%</span>
+                                <div>🟠 (${lossCount})</div>
+                                <div>❌ (${hardwareFailCount})</div>
+                            </div>
+                        </div>
+                    </div>`;
+    
+      // Financial & ROI Report Integration
+      if (typeof renderFinancialReportHtml === 'function') {
         html += renderFinancialReportHtml(deviceDaily, csvFinancial);
+      }
     
-        // Table 1: Daily Efficiency Tracker
+      // Table 1: Daily Efficiency Tracker
+      html += `
+                    <h3 class="table-title-warn">✅️ Daily Efficiency Tracker</h3>
+                    <div class="table-scroll-frame">
+                        <table>
+                            <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
+                            ${tableRowsHtml}
+                        </table>
+                    </div>
+                    ${hasMoreTable1 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable1} remaining)</button>` : ''}`;
+    
+      // Table 2: Anomaly & Weather Context
+      if (anomalyRowIndex > 0) {
         html += `
-                  <h3 class="table-title-warn">✅️ Daily Efficiency Tracker</h3>
-                  <div class="table-scroll-frame">
-                      <table>
-                          <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
-                          ${tableRowsHtml}
-                      </table>
-                  </div>
-                  ${hasMoreTable1 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable1} remaining)</button>` : ''}`;
+                    <h3 class="table-title-warn">
+                        🟠 Daily Anomaly & Weather Context
+                        <span class="title-badge">
+                            Issues: <span class="bad fw-bold">${criticalCount}</span> | <span class="subtitle">${weatherCount} Weather</span>
+                        </span>
+                    </h3>
+                    <div class="table-scroll-frame">
+                        <table>
+                            <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Efficiency (%)</th><th>Clouds (%)</th><th>Sun (hr)</th><th>MaxPeak (W/m²)</th><th>Context</th></tr>
+                            ${subTableRowsHtml}
+                        </table>
+                    </div>
+                    ${hasMoreTable2 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable2} remaining)</button>` : ''}`;
+      }
     
-        // Table 2: Anomaly & Weather Context
-        if (anomalyRowIndex > 0) {
-          html += `
-                  <h3 class="table-title-warn">
-                      🟠 Daily Anomaly & Weather Context
-                      <span class="title-badge">
-                          Issues: <span class="bad fw-bold">${criticalCount}</span> | <span class="subtitle">${weatherCount} Weather</span>
-                      </span>
-                  </h3>
-                  <div class="table-scroll-frame">
-                      <table>
-                          <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Efficiency (%)</th><th>Clouds (%)</th><th>Sun (hr)</th><th>MaxPeak (W/m²)</th><th>Context</th></tr>
-                          ${subTableRowsHtml}
-                      </table>
-                  </div>
-                  ${hasMoreTable2 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable2} remaining)</button>` : ''}`;
-        }
+      html += `
+                <div class="legend-box">
+                    <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
+                    <strong class="legend-title">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
+                    <strong class="legend-title">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
+                    <strong class="legend-title">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
+                </div></div>`;
     
-        html += `
-              <div class="legend-box">
-                  <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
-                  <strong class="legend-title">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
-                  <strong class="legend-title">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
-                  <strong class="legend-title">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
-              </div></div>`;
+      // Final Assembly of global CSV export structure
+      window.globalCsvRows = [
+        ...csvHeader,
+        ...csvSummary,
+        ...csvFinancial,
+        ...csvDaily,
+        [],
+        ...csvAnomalies
+      ];
     
-        // Final Assembly of CSV Rows in correct order
-        globalCsvRows = [
-            ...csvHeader,
-            ...csvSummary,
-            ...csvFinancial,
-            ...csvDaily,
-            [], // Empty spacer row
-            ...csvAnomalies
-        ];
-    
-        resultsDiv.innerHTML = html;
-    }   
+      resultsDiv.innerHTML = html;
+    }
 
     // Relative Seasonal Load Profile (Normalized around 1.00 base average per day)
     // Based on typical household electricity load profiles (SLP H0 / DIN standards)
@@ -1135,10 +1245,10 @@
     };
     
     /**
-     * Calculates cumulative seasonal weight points for a date range
+     * Calculates cumulative seasonal weight points for a date range.
      * @param {Date} startDate 
      * @param {Date} endDate 
-     * @returns {number} Cumulative seasonal factor weight
+     * @returns {number} Cumulative seasonal factor weight.
      */
     function getPeriodSeasonalWeight(startDate, endDate) {
         let cumulativeWeight = 0;
@@ -1159,7 +1269,7 @@
      * @param {number} step - Number of hidden rows to reveal per click (default: 30).
      */
     function showNextRows(btn, step = 30) {
-        // Isolierte Suche: Nur im direkt vorangehenden Tabellen-Frame suchen
+        // Isolated lookup: search only in the preceding table scroll frame
         const frame = btn.previousElementSibling;
         if (!frame) return;
     
@@ -1180,101 +1290,122 @@
     function renderFinancialReportHtml(deviceDaily = {}, csvFinancialBlock = []) {
         let totalGeneratedWh = 0;
         const tariffStartDate = new Date(globalConfig.tariffStart);
-    
-        // Get current local time and offset to accurately step back 24h to "yesterday"
-        const localNow = new Date();
-        const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
-        const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);     
-        localTargetTime.setDate(localTargetTime.getDate() - 1);
         
-        // Format yesterday's date string (YYYY-MM-DD)
-        const endDateStr = localTargetTime.toISOString().split('T')[0];
+        // Normalize tariff start date to local midnight for precise day calculation
+        tariffStartDate.setHours(0, 0, 0, 0);
     
-        // Parse back to Date object to ensure midnight-to-midnight accuracy
-        const endDateObj = new Date(endDateStr);
-        const diffTime = endDateObj - tariffStartDate; 
-        
-        // Compute total elapsed calendar days up to yesterday
-        window.tariffDaysCounter = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+        // Calculate 'yesterday' midnight to prevent partial-day skewing
+        const endDateObj = new Date();
+        endDateObj.setDate(endDateObj.getDate() - 1);
+        endDateObj.setHours(0, 0, 0, 0);
     
-        // Sum total generated energy from active tariff start date to yesterday
+        // Compute total elapsed full calendar days up to yesterday
+        const diffTime = endDateObj.getTime() - tariffStartDate.getTime();
+        const tariffDaysCounter = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    
+        // Sum total generated energy within active tariff window
         for (const [dateStr, wh] of Object.entries(deviceDaily)) {
             const entryDate = new Date(dateStr);
+            entryDate.setHours(0, 0, 0, 0);
+            
             if (entryDate >= tariffStartDate && entryDate <= endDateObj) {
                 totalGeneratedWh += wh;
             }
         }
-        
-        const totalGeneratedKwh = totalGeneratedWh / 1000;
     
+        const totalGeneratedKwh = totalGeneratedWh / 1000;
         const selfConsumptionRate = globalConfig.selfConsumptionRate !== undefined ? globalConfig.selfConsumptionRate : 75;
         const savedKwh = totalGeneratedKwh * (selfConsumptionRate / 100);
-        
+    
         const energyPrice = globalConfig.energyPrice || 0;
         const investment = globalConfig.investment || 0;
     
         const meterStart = globalConfig.meterTariffStart || 0;
         const meterCurrent = globalConfig.meterCurrent || 0;
         const meterDelta = Math.max(0, meterCurrent - meterStart);
-        
-        // Average daily grid usage since tariff start
-        const meterDay = meterDelta / window.tariffDaysCounter || 0;
     
+        // --- MEASURED GROUND TRUTH CALCULATIONS ---
         // Total measured demand so far (Grid import + Direct solar usage)
-        const theoryDemand = meterDelta + savedKwh || 0;
-    
-        // Raw unadjusted daily demand average
-        const rawDailyConsumption = theoryDemand / window.tariffDaysCounter || 0;
-    
-        // Seasonal weighting adjustments
-        const totalSeasonalWeight = getPeriodSeasonalWeight(tariffStartDate, endDateObj);
-        const baseDailyDemand = totalSeasonalWeight > 0 ? (theoryDemand / totalSeasonalWeight) : rawDailyConsumption;
-        const estimatedAnnualDemand = baseDailyDemand * 365;
+        const theoryDemand = meterDelta + savedKwh;
         
-        const cur = globalConfig.currency || '€';
+        // Net daily grid import with active solar generation
+        const dailyGridOnlyDemand = meterDelta / tariffDaysCounter;
+        
+        // Estimated total daily household demand if no solar generation existed
+        const dailyTotalDemand = theoryDemand / tariffDaysCounter;
     
+        // --- SEASONAL MODEL ESTIMATES (SLP H0) ---
+        const totalSeasonalWeight = getPeriodSeasonalWeight(tariffStartDate, endDateObj);
+        const baseDailyDemand = totalSeasonalWeight > 0 ? (theoryDemand / totalSeasonalWeight) : dailyTotalDemand;
+        const estimatedAnnualDemand = baseDailyDemand * 365;
+    
+        const cur = globalConfig.currency || '€';
         const savingsNet = savedKwh * (energyPrice / 100);
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
     
-        // Populating the Financial CSV Block (Synchronized with HTML presentation)
-        csvFinancialBlock.push(["FINANCIAL REPORT:"]);
-        csvFinancialBlock.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days", window.tariffDaysCounter]);
-        csvFinancialBlock.push(["Meter Tariff Start (kWh)", meterStart.toFixed(1).replace('.',',')]);
-        csvFinancialBlock.push(["Meter Current (kWh)", meterCurrent.toFixed(1).replace('.',',')]);
-        csvFinancialBlock.push(["Consumption (Grid) (kWh)", meterDelta.toFixed(1).replace('.',',')]);
-        csvFinancialBlock.push(["Avg. Daily Usage + Solar (kWh)", meterDay.toFixed(2).replace('.',',')]);
-        csvFinancialBlock.push(["Avg. Daily Usage - Solar (kWh)", rawDailyConsumption.toFixed(2).replace('.',',')]);
-        csvFinancialBlock.push(["Norm. Base Daily Usage (kWh)", baseDailyDemand.toFixed(2).replace('.',',')]);
+        // --- CSV BLOCK EXPORT (Synchronized with HTML) ---
+        csvFinancialBlock.push(["=== FINANCIAL REPORT: MEASURED DATA ==="]);
+        csvFinancialBlock.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days Tracked", tariffDaysCounter]);
+        csvFinancialBlock.push(["Meter Start (kWh)", meterStart.toFixed(1).replace('.', ',')]);
+        csvFinancialBlock.push(["Meter Current (kWh)", meterCurrent.toFixed(1).replace('.', ',')]);
+        csvFinancialBlock.push(["Grid Import (kWh)", meterDelta.toFixed(1).replace('.', ',')]);
+        csvFinancialBlock.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.', ',')]);
+        csvFinancialBlock.push(["Direct Solar Used (kWh)", savedKwh.toFixed(2).replace('.', ',')]);
+        csvFinancialBlock.push(["Total Household Demand (kWh)", theoryDemand.toFixed(1).replace('.', ',')]);
+        csvFinancialBlock.push(["Daily Grid Import (with PV) (kWh)", dailyGridOnlyDemand.toFixed(2).replace('.', ',')]);
+        csvFinancialBlock.push(["Total Demand (without PV) (kWh)", dailyTotalDemand.toFixed(2).replace('.', ',')]);
+        csvFinancialBlock.push(["Realized Autarky Rate (%)", autarkyRate.toFixed(1).replace('.', ',')]);
+        csvFinancialBlock.push(["Total Net Savings (" + cur + ")", savingsNet.toFixed(2).replace('.', ',')]);
+        csvFinancialBlock.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.', ',')]);
+        csvFinancialBlock.push([]);
+        csvFinancialBlock.push(["=== MODEL EXTRAPOLATIONS (SLP H0 PROFILE) ==="]);
+        csvFinancialBlock.push(["Normalized Base Daily Usage (kWh)", baseDailyDemand.toFixed(2).replace('.', ',')]);
         csvFinancialBlock.push(["Est. Annual Household Demand (kWh)", estimatedAnnualDemand.toFixed(0)]);
-        csvFinancialBlock.push(["Total Generated (kWh)", totalGeneratedKwh.toFixed(2).replace('.',',')]);
-        csvFinancialBlock.push(["Saved Energy (kWh)", savedKwh.toFixed(2).replace('.',',')]);
-        csvFinancialBlock.push(["Est. House Autarky Rate (%)", autarkyRate.toFixed(1).replace('.',','), "Contribution to kWh Total Demand:", theoryDemand.toFixed(0)]);
-        csvFinancialBlock.push([`Total Savings (${cur})`, savingsNet.toFixed(2).replace('.',',')]);
-        csvFinancialBlock.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.',',')]);
-        csvFinancialBlock.push([]); // Spacer row
+        csvFinancialBlock.push([]);
     
+        // --- HTML RENDER ---
         return `<div class="summary-card mt-15">
             <h3>💰 Financial & ROI Report</h3>
             <table>
-                <tr><th>Metric</th><th>Value</th><th class="text-left">Context</th></tr>
-                <tr><td>Tariff Days Tracked</td><td>${window.tariffDaysCounter}</td><td class="text-left">Tariff start (${globalConfig.tariffStart}) up to yesterday</td></tr>
-                <tr><td>Consumption (Grid)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td class="text-left">Consumption (Grid): (${meterCurrent} - ${meterStart})</td></tr>
-                <tr><td>Avg. Daily Usage <b class="good">+</b> Solar</td><td class="good">${meterDay.toFixed(2)} kWh</td><td class="text-left">Grid import / Days</td></tr>
-                <tr><td>Avg. Daily Usage <b class="warn">-</b> Solar</td><td class="warn">${rawDailyConsumption.toFixed(2)} kWh</td><td class="text-left">(Grid + Saved) / Days</td></tr>
-                <tr><td>Norm. Base Daily Usage</td><td>${baseDailyDemand.toFixed(2)} kWh</td><td class="text-left">Seasonally adjusted annual daily base</td></tr>
-                <tr><td>Est. Annual House Demand</td><td><b>${estimatedAnnualDemand.toFixed(0)} kWh</b></td><td class="text-left">Extrapolated annual total (SLP H0 profile)</td></tr>
-                <tr><td>Total Generated (Inverter)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td class="text-left">Energy generated since tariff start</td></tr>
-                <tr><td>Solar Energy Used Directly</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td class="text-left">${selfConsumptionRate}% of Energy saved since tariff start</td></tr>
-                <tr><td>Est. House Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td class="text-left">Contribution to ${theoryDemand.toFixed(0)} kWh Total Demand</td></tr>
-                <tr><td>Total Savings (Net)</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td class="text-left">Cash saved by this inverter</td></tr>
-                <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td class="text-left">Of ${cur}${investment} investment</td></tr>
+                <thead>
+                    <tr><th colspan="3" class="text-left">📊 Measured Historical Data (Ground Truth)</th></tr>
+                    <tr><th>Metric</th><th>Value</th><th class="text-left">Context</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Tariff Days Tracked</td><td>${tariffDaysCounter} Days</td><td class="text-left">From ${globalConfig.tariffStart} up to yesterday</td></tr>
+                    <tr><td>Grid Import (Meter)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td class="text-left">Current meter (${meterCurrent}) - Start (${meterStart})</td></tr>
+                    <tr><td>Total Generated (PV)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td class="text-left">Inverter production since tariff start</td></tr>
+                    <tr><td>Direct Solar Usage</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td class="text-left">${selfConsumptionRate}% direct self-consumption rate</td></tr>
+                    <tr><td>Total Household Demand</td><td><b>${theoryDemand.toFixed(1)} kWh</b></td><td class="text-left">Real total consumption (Grid import + Solar used)</td></tr>
+                    
+                    <!-- Daily Averages with corrected physical naming -->
+                    <tr><td>Daily Grid Import <b class="warn">(with PV)</b></td><td class="warn">${dailyGridOnlyDemand.toFixed(2)} kWh</td><td class="text-left">Actual net grid import per day with active solar system</td></tr>
+                    <tr><td>Total Demand <b class="good">(without PV)</b></td><td class="good">${dailyTotalDemand.toFixed(2)} kWh</td><td class="text-left">Estimated daily grid import needed if solar system did not exist</td></tr>
+                    
+                    <tr><td>Realized Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td class="text-left">Solar share of ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
+                    <tr><td>Total Net Savings</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td class="text-left">Direct electricity bill reduction</td></tr>
+                    <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td class="text-left">Of ${cur}${investment} total investment</td></tr>
+                </tbody>
+                <thead>
+                    <tr><th colspan="3" class="text-left">🔮 Extrapolations & Models (Theoretical Estimates)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Norm. Base Daily Usage</td><td>${baseDailyDemand.toFixed(2)} kWh</td><td class="text-left">Seasonally adjusted daily base [SLP H0]</td></tr>
+                    <tr><td>Est. Annual House Demand</td><td><b>${estimatedAnnualDemand.toFixed(0)} kWh</b></td><td class="text-left">Projected 365-day demand based on seasonal weight</td></tr>
+                </tbody>
             </table>
         </div>`;
     }
 
+    /**
+     * Downloads the collected solar analysis data as an RFC-4180 compliant CSV file.
+     */
     function downloadCSV() {
-        const csvContent = "\uFEFF" + globalCsvRows.map(e => e.join(";")).join("\n");
+        const csvContent = "\uFEFF" + globalCsvRows
+            .map(row => row.map(sanitizeCsvCell).join(";"))
+            .join("\n");
+            
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
