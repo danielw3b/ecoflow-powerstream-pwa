@@ -1357,8 +1357,8 @@
                     <tr><td>Total Household Demand</td><td><b>${theoryDemand.toFixed(1)} kWh</b></td><td class="text-left">Real total consumption (Grid import + Solar used)</td></tr>
                     
                     <!-- Daily Averages with corrected physical naming -->
-                    <tr><td>Daily Grid Import <b class="warn">(with PV)</b></td><td class="warn">${dailyGridOnlyDemand.toFixed(2)} kWh</td><td class="text-left">Actual net grid import per day with active solar system</td></tr>
-                    <tr><td>Total Demand <b class="good">(without PV)</b></td><td class="good">${dailyTotalDemand.toFixed(2)} kWh</td><td class="text-left">Estimated daily grid import needed if solar system did not exist</td></tr>
+                    <tr><td>Daily Grid Import <b class="good">(with PV)</b></td><td class="good">${dailyGridOnlyDemand.toFixed(2)} kWh</td><td class="text-left">Actual net grid import/day w/ solar system</td></tr>
+                    <tr><td>Total Demand <b class="warn">(without PV)</b></td><td class="warn">${dailyTotalDemand.toFixed(2)} kWh</td><td class="text-left">Estimated daily grid import needed w/out solar system</td></tr>
                     
                     <tr><td>Realized Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td class="text-left">Solar share of ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
                     <tr><td>Total Net Savings</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td class="text-left">Direct electricity bill reduction</td></tr>
