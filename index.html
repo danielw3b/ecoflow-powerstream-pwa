@@ -125,7 +125,7 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 /* 3-Column Footer Layout */
 .metrics-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin-top:4px;cursor:pointer;user-select:none;}
 .toggle-indicator{font-family:var(--mono);font-size:.62rem;color:var(--muted);cursor:pointer;user-select:none;}
-.card-today{font-family:var(--mono);font-size:.68rem;color:var(--solar);font-weight:600;text-align:center;white-space:nowrap;}
+.card-today{font-family:var(--mono);font-size:.85rem;/*color:var(--solar);*/font-weight:700;text-align:center;white-space:nowrap;}
 .card-time{font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;}
 
 /* Charts */
@@ -845,7 +845,7 @@ function cardHtml(sn, s) {
     </div>
     <div class="metrics-footer" title="Tap to toggle details" onclick="toggleMetrics('${sn}', this)">
       <div class="toggle-indicator">${expandedMetrics.has(sn) ? '↑ Hide' : '↓ Details'}</div>
-      <div class="card-today" title="Today's yield">${todaysYieldText}</div>
+      <div class="card-today" style="color:${colorFor(sn)}" title="Today's yield">${todaysYieldText}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
 }
