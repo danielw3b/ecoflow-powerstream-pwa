@@ -777,29 +777,6 @@
     }
 
     /**
-     * Sanitizes and escapes a single CSV field value according to RFC 4180
-     * and neutralizes CSV Formula Injection attacks (=, +, -, @, \t, \r).
-     * 
-     * @param {any} val - The raw input cell value.
-     * @returns {string} Safe, properly escaped CSV string representation.
-     */
-    function sanitizeCsvCell(val) {
-      if (val === null || val === undefined) return '';
-      let str = String(val).trim();
-
-      // Neutralize potential CSV Formula Injection characters
-      if (/^[=+\-@\t\r]/.test(str)) {
-        str = "'" + str;
-      }
-
-      // RFC 4180: If field contains delimiter (;), quotes, or newlines, wrap in quotes and double internal quotes
-      if (str.includes(';') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-        str = '"' + str.replace(/"/g, '""') + '"';
-      }
-      return str;
-    }
-    
-    /**
      * Process daily solar data using scientific Liu-Jordan model estimations,
      * panel profiles, temperature corrections, and resilient weather context.
      * 
@@ -1399,9 +1376,47 @@
     }
 
     /**
-     * Downloads the collected solar analysis data as an RFC-4180 compliant CSV file.
+     * Sanitizes a single cell value to prevent CSV Formula Injection (CWE-1236).
+     * Prepends an apostrophe if the string starts with formula-triggering characters (=, +, -, @).
+     *
+     * @param {*} value - The input cell content
+     * @returns {string} - The sanitized string compliant with RFC 4180
+     */
+    function sanitizeCsvCell(value) {
+        if (value === null || value === undefined) return "";
+        let str = String(value);
+    
+        // Escape double quotes by doubling them
+        if (str.includes('"')) {
+            str = str.replace(/"/g, '""');
+        }
+    
+        // Neutralize formula triggers for spreadsheet applications (Excel, Calc)
+        if (/^[=+\-@\t\r]/.test(str)) {
+            str = "'" + str;
+        }
+    
+        // Wrap in double quotes if the cell contains delimiters, line breaks, or quotes
+        if (/[;\n\r"]/.test(str)) {
+            str = `"${str}"`;
+        }
+    
+        return str;
+    }
+    
+    /**
+     * Downloads the accumulated globalCsvRows dataset as a UTF-8 encoded CSV file.
+     * Uses a Byte Order Mark (BOM) to ensure correct character encoding in Microsoft Excel.
      */
     function downloadCSV() {
+        // 1. Verify that the global row buffer contains data
+        if (!Array.isArray(globalCsvRows) || globalCsvRows.length === 0) {
+            console.warn("CSV export aborted: 'globalCsvRows' array is empty.");
+            alert("No analysis data available for export! Please run the analysis first.");
+            return;
+        }
+    
+        // 2. Build CSV string with UTF-8 BOM (\uFEFF) for proper emoji and accent rendering
         const csvContent = "\uFEFF" + globalCsvRows
             .map(row => row.map(sanitizeCsvCell).join(";"))
             .join("\n");
@@ -1409,17 +1424,25 @@
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = url;
         
+        // Extract inverter identifier and start date for dynamic filename generation
         const inverterSelect = document.getElementById('cfg_inverter');
-        const inverterName = inverterSelect && inverterSelect.value ? inverterSelect.value : "Unknown_Device";
-        const startDateStr = globalConfig.startDate || "All_Time";
+        const inverterName = (inverterSelect && inverterSelect.value) ? inverterSelect.value : "Unknown_Device";
+        const startDateStr = (typeof globalConfig !== "undefined" && globalConfig?.startDate) ? globalConfig.startDate : "All_Time";
         
+        link.href = url;
         link.download = `Solar_Analysis_${inverterName}_${startDateStr}.csv`;
+        
+        // 3. Append to DOM temporarily to ensure cross-browser trigger (Firefox/Safari support)
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+    
+        // 4. Deallocate object URL asynchronously after click event completion
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 100);
     }
-
     // Cache DOM element once to prevent repeated queries during scroll events
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     
