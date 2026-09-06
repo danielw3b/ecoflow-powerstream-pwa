@@ -44,7 +44,11 @@
         margin-top: 20px; 
         color: var(--text-dim); 
     }
-    
+    /* Mobile Responsive Typography */
+    @media (min-width: 600px) {
+        .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+        body {padding: 6px;line-height: 0.5;}
+    }
     /* Desktop Responsive Typography */
     @media (min-width: 850px) {
         h1 { font-size: 2rem; }
@@ -73,9 +77,6 @@
         grid-template-columns: 1fr 1fr; 
         gap: 15px; 
         margin-bottom: 15px; 
-    }
-    @media (min-width: 600px) {
-        .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
     }
     
     .form-group { 
@@ -913,10 +914,10 @@
     
         tableRowsHtml += `<tr${isHiddenClass}>
                             <td>${esc(dateStr)}</td>
-                            <td>${totalRadKwhM2.toFixed(2)} kWh/m²</td>
-                            <td>${(expectedSollWh / 1000).toFixed(2)} kWh</td>
-                            <td>${(realYieldWh / 1000).toFixed(2)} kWh</td>
-                            <td class="${esc(cssClass)}">${efficiency.toFixed(1)} %</td>
+                            <td>${dayTemp.toFixed(1)}</td>
+                            <td>${totalRadKwhM2.toFixed(2)}</td>
+                            <td>${(expectedSollWh / 1000).toFixed(2)} | ${(realYieldWh / 1000).toFixed(2)}</td>
+                            <td class="${esc(cssClass)}">${efficiency.toFixed(1)}</td>
                             <td class="${esc(cssClass)} help-cursor" title="${esc(fullTextExplanation)}">${esc(diagnosis)}</td>
                         </tr>`;
     
@@ -1074,7 +1075,7 @@
           subTableRowsHtml += `<tr${isSubHiddenClass}>
                                 <td>${esc(target.date)}</td>
                                 <td class="nowrap">${esc(sollKwh)} | <b>${esc(realKwh)}</b></td>
-                                <td class="bad">${target.efficiency.toFixed(1)}</td>
+                                <td class="warn">${target.efficiency.toFixed(1)}</td>
                                 <td>${esc(avgClouds)}</td>
                                 <td>${esc(sunHours)}</td>
                                 <td>${esc(maxPeak)}</td>
@@ -1159,7 +1160,7 @@
                     <h3 class="table-title-warn">✅️ Daily Efficiency Tracker</h3>
                     <div class="table-scroll-frame">
                         <table>
-                            <tr><th>Date</th><th>Radiation</th><th>Expected Soll</th><th>EcoFlow Real</th><th>Efficiency</th><th>Indicator</th></tr>
+                            <tr><th>Date</th><th>Temp °C</th><th>RADN W/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Indicator</th></tr>
                             ${tableRowsHtml}
                         </table>
                     </div>
@@ -1176,7 +1177,7 @@
                     </h3>
                     <div class="table-scroll-frame">
                         <table>
-                            <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Efficiency (%)</th><th>Clouds (%)</th><th>Sun (hr)</th><th>MaxPeak (W/m²)</th><th>Context</th></tr>
+                            <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Eff. %</th><th>Clouds %</th><th>Sun hr</th><th>MaxPeak W/m²</th><th>Context</th></tr>
                             ${subTableRowsHtml}
                         </table>
                     </div>
@@ -1346,7 +1347,7 @@
             <h3>💰 Financial & ROI Report</h3>
             <table>
                 <thead>
-                    <tr><th colspan="3" class="text-left">📊 Measured Historical Data (Ground Truth)</th></tr>
+                    <tr><th colspan="3" class="text-left">📊 Measured Historical Data</th></tr>
                     <tr><th>Metric</th><th>Value</th><th class="text-left">Context</th></tr>
                 </thead>
                 <tbody>
@@ -1357,15 +1358,15 @@
                     <tr><td>Total Household Demand</td><td><b>${theoryDemand.toFixed(1)} kWh</b></td><td class="text-left">Real total consumption (Grid import + Solar used)</td></tr>
                     
                     <!-- Daily Averages with corrected physical naming -->
-                    <tr><td>Daily Grid Import <b class="good">(with PV)</b></td><td class="good">${dailyGridOnlyDemand.toFixed(2)} kWh</td><td class="text-left">Actual net grid import/day w/ solar system</td></tr>
-                    <tr><td>Total Demand <b class="warn">(without PV)</b></td><td class="warn">${dailyTotalDemand.toFixed(2)} kWh</td><td class="text-left">Estimated daily grid import needed w/out solar system</td></tr>
+                    <tr><td>Avg. Daily Import <b class="good">(w/ PV)</b></td><td class="good">${dailyGridOnlyDemand.toFixed(2)} kWh</td><td class="text-left">Actual net grid import/day w/ solar</td></tr>
+                    <tr><td>Avg. Daily elec. Need <b class="warn">(w/out PV)</b></td><td class="warn">${dailyTotalDemand.toFixed(2)} kWh</td><td class="text-left">Daily grid import needed w/out solar</td></tr>
                     
-                    <tr><td>Realized Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)} %</td><td class="text-left">Solar share of ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
+                    <tr><td>Realized Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td class="text-left">Solar share of ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
                     <tr><td>Total Net Savings</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td class="text-left">Direct electricity bill reduction</td></tr>
                     <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td class="text-left">Of ${cur}${investment} total investment</td></tr>
                 </tbody>
                 <thead>
-                    <tr><th colspan="3" class="text-left">🔮 Extrapolations & Models (Theoretical Estimates)</th></tr>
+                    <tr><th colspan="3" class="text-left">🔮 Extrapolations & Models</th></tr>
                 </thead>
                 <tbody>
                     <tr><td>Norm. Base Daily Usage</td><td>${baseDailyDemand.toFixed(2)} kWh</td><td class="text-left">Seasonally adjusted daily base [SLP H0]</td></tr>
