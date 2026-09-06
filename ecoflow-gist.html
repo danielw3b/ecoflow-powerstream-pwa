@@ -486,6 +486,11 @@
       const gistUpdatedAt = new Date(data.updated_at).getTime();
       const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
 
+      // Extract file size from API response
+      const backupFile = data.files['ecoflow_backup.json'];
+      const sizeInBytes = backupFile ? backupFile.size : 0;
+      const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+
       document.getElementById('gistTimestampDisplay').textContent = new Date(data.updated_at).toLocaleString();
 
       const importBtn = document.getElementById('importBtn');
@@ -498,6 +503,7 @@
         importBtn.classList.remove('hidden');
         renderSummary('Info', 'Newer Cloud data detected on Gist. Ready to import!', [
           ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
+          ['Gist Size', `${sizeInKB} KB`],
           ['Local Sync', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
           ['Status', '📥 Import Available']
         ]);
@@ -505,6 +511,7 @@
         importBtn.classList.add('hidden');
         renderSummary('Success', 'Local data is up-to-date or newer than Gist.', [
           ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
+          ['Gist Size', `${sizeInKB} KB`],
           ['Local Sync', new Date(localSyncTs).toLocaleString()],
           ['Status', '✅ Synced']
         ]);
@@ -649,6 +656,9 @@
         throw new Error('File "ecoflow_backup.json" not found inside Gist.');
       }
 
+      const sizeInBytes = backupFile.size || 0;
+      const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+
       let contentStr = backupFile.content;
       let payload;
 
@@ -674,6 +684,7 @@
 
       renderSummary('Success', 'Import & Smart Merge completed cleanly!', [
         ['Backup Date', new Date(importTs).toLocaleString()],
+        ['Gist Size', `${sizeInKB} KB`],
         ['Keys Processed', Object.keys(payload.keys || {}).length],
         ['Status', '✅ LocalStorage Merged Cleanly']
       ]);
