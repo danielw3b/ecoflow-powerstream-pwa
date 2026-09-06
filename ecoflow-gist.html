@@ -222,12 +222,13 @@
 
       <div style="margin-bottom: 12px; font-size: 0.85rem;">
         <span>Gist Cloud Stand:</span> 
-        <strong id="gistTimestampDisplay" style="font-family: monospace;">Not checked</strong>
+        <strong id="gistTimestampDisplay" style="font-family: monospace;">Checking status...</strong>
       </div>
 
       <div class="btn-group">
         <button type="button" class="btn-secondary" onclick="checkGistStatus()">🔍 Check Status</button>
-        <button type="button" id="exportBtn" class="btn-primary" onclick="exportToGist()">📤 Export to Gist</button>
+        <!-- Disabled initially until startup status check completes -->
+        <button type="button" id="exportBtn" class="btn-primary" onclick="exportToGist()" disabled style="opacity: 0.5; cursor: not-allowed;" title="Checking sync status...">📤 Export to Gist</button>
         <button type="button" id="importBtn" class="btn-primary hidden" onclick="importFromGist()" style="background: #3b82f6;">📥 Import & Merge</button>
       </div>
     </div>
@@ -262,7 +263,7 @@
     LOCAL_SYNC_KEY
   ];
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     loadCredentials();
     renderKeySelection();
     updateTimestampDisplays();
@@ -275,6 +276,14 @@
     
     adjustUIForRole();
     updateButtonStates();
+
+    // Automatic startup status check if Gist ID is available
+    const gistId = document.getElementById('gistId').value.trim();
+    if (gistId) {
+      await checkGistStatus();
+    } else {
+      document.getElementById('gistTimestampDisplay').textContent = 'Not checked';
+    }
   });
 
   /**
@@ -368,20 +377,24 @@
   }
 
   /**
-   * Enable/Disable visual cues for export button based on token presence
+   * Enable/Disable visual cues for export button based on token presence and status state
    */
   function updateButtonStates() {
     const token = document.getElementById('gistToken').value.trim();
     const exportBtn = document.getElementById('exportBtn');
 
-    if (!exportBtn.disabled) {
+    if (!exportBtn) return;
+
+    if (exportBtn.disabled) {
+      exportBtn.style.opacity = '0.5';
+      exportBtn.style.cursor = 'not-allowed';
       if (!token) {
-        exportBtn.style.opacity = '0.5';
         exportBtn.title = 'Personal Access Token required for Export (Master device mode)';
-      } else {
-        exportBtn.style.opacity = '1';
-        exportBtn.title = '';
       }
+    } else {
+      exportBtn.style.opacity = '1';
+      exportBtn.style.cursor = 'pointer';
+      exportBtn.title = '';
     }
   }
 
