@@ -374,12 +374,14 @@
     const token = document.getElementById('gistToken').value.trim();
     const exportBtn = document.getElementById('exportBtn');
 
-    if (!token) {
-      exportBtn.style.opacity = '0.5';
-      exportBtn.title = 'Personal Access Token required for Export (Master device mode)';
-    } else {
-      exportBtn.style.opacity = '1';
-      exportBtn.title = '';
+    if (!exportBtn.disabled) {
+      if (!token) {
+        exportBtn.style.opacity = '0.5';
+        exportBtn.title = 'Personal Access Token required for Export (Master device mode)';
+      } else {
+        exportBtn.style.opacity = '1';
+        exportBtn.title = '';
+      }
     }
   }
 
@@ -494,6 +496,7 @@
       document.getElementById('gistTimestampDisplay').textContent = new Date(data.updated_at).toLocaleString();
 
       const importBtn = document.getElementById('importBtn');
+      const exportBtn = document.getElementById('exportBtn');
 
       // Grace period (threshold) of 20000ms (20 seconds) to account for GitHub API metadata caching delays
       const GRACE_PERIOD_MS = 20000;
@@ -501,6 +504,15 @@
 
       if (!localSyncTs || isRemoteNewer) {
         importBtn.classList.remove('hidden');
+
+        // Disable export button to prevent overwriting newer cloud data
+        if (exportBtn) {
+          exportBtn.disabled = true;
+          exportBtn.style.opacity = '0.5';
+          exportBtn.style.cursor = 'not-allowed';
+          exportBtn.title = 'Remote data is newer. Please "Import & Merge" first!';
+        }
+
         renderSummary('Info', 'Newer Cloud data detected on Gist. Ready to import!', [
           ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
           ['Gist Size', `${sizeInKB} KB`],
@@ -509,6 +521,14 @@
         ]);
       } else {
         importBtn.classList.add('hidden');
+
+        // Re-enable export button since local data is up-to-date or newer
+        if (exportBtn) {
+          exportBtn.disabled = false;
+          exportBtn.style.cursor = 'pointer';
+          updateButtonStates();
+        }
+
         renderSummary('Success', 'Local data is up-to-date or newer than Gist.', [
           ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
           ['Gist Size', `${sizeInKB} KB`],
@@ -690,6 +710,14 @@
       ]);
 
       document.getElementById('importBtn').classList.add('hidden');
+
+      // Re-enable export button after successful import and merge
+      const exportBtn = document.getElementById('exportBtn');
+      if (exportBtn) {
+        exportBtn.disabled = false;
+        exportBtn.style.cursor = 'pointer';
+        updateButtonStates();
+      }
 
     } catch (err) {
       renderSummary('Danger', `Import failed: ${err.message}`, []);
