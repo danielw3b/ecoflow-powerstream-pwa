@@ -842,6 +842,7 @@
     
         totalDaysAnalyzed++;
         const totalRadKwhM2 = radSumRaw[i] / 3.6;
+        const radCssClass = (totalRadKwhM2 >= 1.5 && totalRadKwhM2 <= 5.5) ? 'good' : 'warn';
     
         let diffuseShare = 0.30;
         if (totalRadKwhM2 < 1.5) diffuseShare = 0.85;
@@ -915,7 +916,7 @@
         tableRowsHtml += `<tr${isHiddenClass}>
                             <td>${esc(dateStr)}</td>
                             <td>${dayTemp.toFixed(1)}</td>
-                            <td>${totalRadKwhM2.toFixed(2)}</td>
+                            <td class="${radCssClass}">${totalRadKwhM2.toFixed(2)}</td>
                             <td>${(expectedSollWh / 1000).toFixed(2)} | ${(realYieldWh / 1000).toFixed(2)}</td>
                             <td class="${esc(cssClass)}">${efficiency.toFixed(1)}</td>
                             <td class="${esc(cssClass)} help-cursor" title="${esc(fullTextExplanation)}">${esc(diagnosis)}</td>
@@ -1160,7 +1161,7 @@
                     <h3 class="table-title-warn">✅️ Daily Efficiency Tracker</h3>
                     <div class="table-scroll-frame">
                         <table>
-                            <tr><th>Date</th><th>Temp °C</th><th>RADN W/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Indicator</th></tr>
+                            <tr><th>Date</th><th>Temp °C</th><th>RADN kWh/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Indicator</th></tr>
                             ${tableRowsHtml}
                         </table>
                     </div>
