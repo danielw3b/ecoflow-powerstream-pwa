@@ -445,8 +445,8 @@
 
       const importBtn = document.getElementById('importBtn');
 
-      // Grace period (threshold) of 5000ms (5 seconds) to prevent false positives from latency
-      const GRACE_PERIOD_MS = 5000;
+      // Grace period (threshold) of 20000ms (20 seconds) to prevent false positives from latency
+      const GRACE_PERIOD_MS = 20000;
       const isRemoteNewer = (gistUpdatedAt - localSyncTs) > GRACE_PERIOD_MS;
 
       if (!localSyncTs || isRemoteNewer) {
