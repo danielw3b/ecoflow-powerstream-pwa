@@ -1347,12 +1347,12 @@
             <h3>💰 Financial & ROI Report</h3>
             <table>
                 <thead>
-                    <tr><th colspan="3" class="text-left">📊 Measured Historical Data</th></tr>
                     <tr><th>Metric</th><th>Value</th><th class="text-left">Context</th></tr>
+                    <tr><th colspan="3" class="text-left">📊 Measured Historical Data</th></tr>
                 </thead>
                 <tbody>
                     <tr><td>Tariff Days Tracked</td><td>${tariffDaysCounter} Days</td><td class="text-left">From ${globalConfig.tariffStart} up to yesterday</td></tr>
-                    <tr><td>Grid Import (Meter)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td class="text-left">Current meter (${meterCurrent}) - Start (${meterStart})</td></tr>
+                    <tr><td>Grid Import (Meter)</td><td class="warn">${meterDelta.toFixed(1)} kWh</td><td class="text-left">Current (${meterCurrent}) - Start (${meterStart})</td></tr>
                     <tr><td>Total Generated (PV)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td class="text-left">Inverter production since tariff start</td></tr>
                     <tr><td>Direct Solar Usage</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td class="text-left">${selfConsumptionRate}% direct self-consumption rate</td></tr>
                     <tr><td>Total Household Demand</td><td><b>${theoryDemand.toFixed(1)} kWh</b></td><td class="text-left">Real total demand (Grid import + Solar used)</td></tr>
