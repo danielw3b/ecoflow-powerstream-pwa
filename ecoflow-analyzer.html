@@ -842,7 +842,7 @@
     
         totalDaysAnalyzed++;
         const totalRadKwhM2 = radSumRaw[i] / 3.6;
-        const radCssClass = (totalRadKwhM2 >= 1.5 && totalRadKwhM2 <= 5.5) ? 'good' : 'warn';
+        const radCssClass = (totalRadKwhM2 >= 2.5) ? 'good' : 'warn';
     
         let diffuseShare = 0.30;
         if (totalRadKwhM2 < 1.5) diffuseShare = 0.85;
