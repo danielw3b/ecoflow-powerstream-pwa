@@ -93,6 +93,7 @@
       border-radius: 6px;
       border: 1px solid var(--border);
       cursor: pointer;
+      overflow: auto;
     }
     .btn-group {
       display: flex;
@@ -305,7 +306,7 @@
       item.className = 'key-item';
       item.innerHTML = `
         <input type="checkbox" value="${key}" checked>
-        <span>${key}</span>
+        <span title="${key}">${key}</span>
       `;
       container.appendChild(item);
     });
