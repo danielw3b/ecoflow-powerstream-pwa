@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTEyIDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
-  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTEyIDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
   <title>EcoFlow PWA — Gist Sync Prototype</title>
   <style>
     :root {
@@ -154,6 +154,18 @@
       cursor: pointer;
       margin-top: 10px;
     }
+
+    /* Collapsible accordion styling */
+    details.card summary {
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      user-select: none;
+      outline: none;
+    }
+    details.card[open] summary {
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -173,7 +185,8 @@
         <input type="text" id="gistId" name="username" autocomplete="username" placeholder="e.g. 7f8a9b0c1d2e3f4a..." required>
       </div>
 
-      <div class="form-group">
+      <!-- Token Group: Dynamically hidden on read-only devices -->
+      <div class="form-group" id="tokenGroup">
         <label for="gistToken">GitHub Personal Access Token (Master device only)</label>
         <input type="password" id="gistToken" name="password" autocomplete="current-password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
       </div>
@@ -184,9 +197,10 @@
       </label>
     </div>
 
-    <!-- Backup & Format Options -->
-    <div class="card">
-      <h2>📦 Select LocalStorage Keys & Format</h2>
+    <!-- Backup & Format Options (Collapsible Accordion to save vertical space) -->
+    <details class="card" id="optionsAccordion">
+      <summary>📦 Select LocalStorage Keys & Format</summary>
+      
       <div id="keysContainer" class="keys-grid">
         <!-- Dynamically rendered keys -->
       </div>
@@ -195,7 +209,7 @@
         <input type="checkbox" id="useGzipCompression">
         <span>Compress Backup with Gzip (Base64 encoded)</span>
       </label>
-    </div>
+    </details>
 
     <!-- Actions & Sync Controls -->
     <div class="card">
@@ -253,9 +267,13 @@
     renderKeySelection();
     updateTimestampDisplays();
 
-    document.getElementById('gistToken').addEventListener('input', updateButtonStates);
+    document.getElementById('gistToken').addEventListener('input', () => {
+      adjustUIForRole();
+      updateButtonStates();
+    });
     document.getElementById('gistId').addEventListener('input', updateButtonStates);
     
+    adjustUIForRole();
     updateButtonStates();
   });
 
@@ -277,7 +295,34 @@
     const shouldSave = document.getElementById('saveCredentialsCheck').checked;
     if (shouldSave) {
       if (gistId) localStorage.setItem(CRED_GIST_ID, gistId);
-      if (token) localStorage.setItem(CRED_GIST_TOKEN, token);
+      if (token !== null) {
+        if (token) {
+          localStorage.setItem(CRED_GIST_TOKEN, token);
+        } else {
+          localStorage.removeItem(CRED_GIST_TOKEN);
+        }
+      }
+    }
+  }
+
+  /**
+   * Dynamically adjust UI elements depending on master vs read-only device role
+   */
+  function adjustUIForRole() {
+    const token = document.getElementById('gistToken').value.trim();
+    const tokenGroup = document.getElementById('tokenGroup');
+    const exportBtn = document.getElementById('exportBtn');
+    const optionsAccordion = document.getElementById('optionsAccordion');
+
+    if (!token) {
+      // Read-only Mode (No Token present)
+      if (tokenGroup) tokenGroup.classList.add('hidden');
+      if (exportBtn) exportBtn.classList.add('hidden');
+      if (optionsAccordion) optionsAccordion.open = false; // Collapse options accordion
+    } else {
+      // Master Mode (Token present)
+      if (tokenGroup) tokenGroup.classList.remove('hidden');
+      if (exportBtn) exportBtn.classList.remove('hidden');
     }
   }
 
@@ -445,7 +490,7 @@
 
       const importBtn = document.getElementById('importBtn');
 
-      // Grace period (threshold) of 20000ms (20 seconds) to prevent false positives from latency
+      // Grace period (threshold) of 20000ms (20 seconds) to account for GitHub API metadata caching delays
       const GRACE_PERIOD_MS = 20000;
       const isRemoteNewer = (gistUpdatedAt - localSyncTs) > GRACE_PERIOD_MS;
 
@@ -464,6 +509,9 @@
           ['Status', '✅ Synced']
         ]);
       }
+
+      // Ensure export button remains hidden on read-only devices regardless of sync check
+      adjustUIForRole();
 
       return gistUpdatedAt;
     } catch (err) {
@@ -496,7 +544,7 @@
     const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
 
     // Apply grace period here as well for overwrite prompt
-    const GRACE_PERIOD_MS = 5000;
+    const GRACE_PERIOD_MS = 20000;
     if (remoteTimestamp && (remoteTimestamp - localSyncTs) > GRACE_PERIOD_MS) {
       const confirmOverwrite = confirm(
         `⚠️ WARNING: The Gist has a newer update (${new Date(remoteTimestamp).toLocaleString()}) than your local sync state (${localSyncTs ? new Date(localSyncTs).toLocaleString() : 'Never'}).\n\nDo you really want to export and overwrite the Gist?`
