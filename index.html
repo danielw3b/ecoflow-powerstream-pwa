@@ -1388,24 +1388,39 @@ function aggregateWh(period) {
     const result = {};
     const now    = new Date();
     const pad    = n => String(n).padStart(2,"0");
-    const validHours = [];
+    const validHours = new Set();
     
-    // Build last 24 hours as axis (from -23h to now)
-    for (let i = 23; i >= 0; i--) {
+    // Build valid 24h keys
+    for (let i = 0; i < 24; i++) {
       const d2  = new Date(now.getTime() - i * 3600000);
       const key = `${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())} ${pad(d2.getHours())}`;
-      validHours.push(key);
+      validHours.add(key);
     }
-    
-    // Get known devices (from state or loaded keys)
+
     const sns = Object.keys(state).length ? Object.keys(state) : Object.keys(hourlyWh);
-    
+    let hasData = false;
+
+    // Direct collection: Only collect hours that actually exist in storage and have values
     for (const sn of sns) {
       result[sn] = {};
-      for (const hr of validHours) {
-        result[sn][hr] = hourlyWh[sn]?.[hr] ?? 0;
+      if (hourlyWh[sn]) {
+        for (const [hr, wh] of Object.entries(hourlyWh[sn])) {
+          if (validHours.has(hr) && wh > 0) {
+            result[sn][hr] = wh;
+            hasData = true;
+          }
+        }
       }
     }
+
+    // Fallback if no hours have data: ensure at least the current hour exists so section stays visible
+    if (!hasData) {
+      const currentKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}`;
+      for (const sn of sns) {
+        result[sn] = { [currentKey]: 0 };
+      }
+    }
+
     return result;
   }
 
