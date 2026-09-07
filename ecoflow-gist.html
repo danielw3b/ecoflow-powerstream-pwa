@@ -162,6 +162,9 @@
       font-size: 1rem;
       user-select: none;
       outline: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     details.card[open] summary {
       margin-bottom: 12px;
@@ -174,44 +177,15 @@
   <h1>☁️ EcoFlow Gist Sync</h1>
   <div class="subtitle">Cloud Synchronization & LocalStorage Merge Tool</div>
 
+  <!-- 1. STATUS CARD (POSITIONED AT THE VERY TOP) -->
+  <div id="summaryCard" class="card hidden">
+    <h2>📊 Status</h2>
+    <div id="summaryContent"></div>
+  </div>
+
   <form id="gistForm" autocomplete="on" onsubmit="return false;">
-    
-    <!-- Credentials Card -->
-    <div class="card">
-      <h2>🔐 Credentials</h2>
-      
-      <div class="form-group">
-        <label for="gistId">GitHub Gist ID (Required for Import & Export)</label>
-        <input type="text" id="gistId" name="username" autocomplete="username" placeholder="e.g. 7f8a9b0c1d2e3f4a..." required>
-      </div>
 
-      <!-- Token Group: Dynamically hidden on read-only devices -->
-      <div class="form-group" id="tokenGroup">
-        <label for="gistToken">GitHub Personal Access Token (Master device only)</label>
-        <input type="password" id="gistToken" name="password" autocomplete="current-password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-      </div>
-
-      <label class="checkbox-option">
-        <input type="checkbox" id="saveCredentialsCheck" checked>
-        <span>Save Credentials locally in LocalStorage</span>
-      </label>
-    </div>
-
-    <!-- Backup & Format Options (Collapsible Accordion to save vertical space) -->
-    <details class="card" id="optionsAccordion">
-      <summary>📦 Select LocalStorage Keys & Format</summary>
-      
-      <div id="keysContainer" class="keys-grid">
-        <!-- Dynamically rendered keys -->
-      </div>
-
-      <label class="checkbox-option">
-        <input type="checkbox" id="useGzipCompression">
-        <span>Compress Backup with Gzip (Base64 encoded)</span>
-      </label>
-    </details>
-
-    <!-- Actions & Sync Controls -->
+    <!-- 2. ACTIONS & SYNC CONTROLS -->
     <div class="card">
       <h2>⚡ Sync Controls</h2>
       
@@ -233,13 +207,45 @@
       </div>
     </div>
 
-  </form>
+    <!-- 3. BACKUP & FORMAT OPTIONS ACCORDION -->
+    <details class="card" id="optionsAccordion">
+      <summary>📦 Select LocalStorage Keys & Format</summary>
+      
+      <div id="keysContainer" class="keys-grid">
+        <!-- Dynamically rendered keys -->
+      </div>
 
-  <!-- HTML Action Summary -->
-  <div id="summaryCard" class="card hidden">
-    <h2>📊 Action Summary</h2>
-    <div id="summaryContent"></div>
-  </div>
+      <label class="checkbox-option">
+        <input type="checkbox" id="useGzipCompression">
+        <span>Compress Backup with Gzip (Base64 encoded)</span>
+      </label>
+    </details>
+
+    <!-- 4. CREDENTIALS ACCORDION (POSITIONED AT THE VERY BOTTOM) -->
+    <details class="card" id="credentialsAccordion">
+      <summary>
+        <span>🔐 Credentials</span>
+        <span id="credentialsBadge" class="status-badge badge-info" style="font-size:0.7rem; font-weight:normal;">Unconfigured</span>
+      </summary>
+      
+      <div class="form-group" style="margin-top: 12px;">
+        <label for="gistId">GitHub Gist ID (Required for Import & Export)</label>
+        <input type="text" id="gistId" name="username" autocomplete="username" placeholder="e.g. 7f8a9b0c1d2e3f4a..." required>
+      </div>
+
+      <!-- Token Group: Dynamically hidden on read-only devices -->
+      <div class="form-group" id="tokenGroup">
+        <label for="gistToken">GitHub Personal Access Token (Master device only)</label>
+        <input type="password" id="gistToken" name="password" autocomplete="current-password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+      </div>
+
+      <label class="checkbox-option">
+        <input type="checkbox" id="saveCredentialsCheck" checked>
+        <span>Save Credentials locally in LocalStorage</span>
+      </label>
+    </details>
+
+  </form>
 </div>
 
 <script>
@@ -272,7 +278,10 @@
       adjustUIForRole();
       updateButtonStates();
     });
-    document.getElementById('gistId').addEventListener('input', updateButtonStates);
+    document.getElementById('gistId').addEventListener('input', () => {
+      adjustUIForRole();
+      updateButtonStates();
+    });
     
     adjustUIForRole();
     updateButtonStates();
@@ -315,13 +324,27 @@
   }
 
   /**
-   * Dynamically adjust UI elements depending on master vs read-only device role
+   * Dynamically adjust UI elements depending on master vs read-only device role and update credentials badge
    */
   function adjustUIForRole() {
+    const gistId = document.getElementById('gistId').value.trim();
     const token = document.getElementById('gistToken').value.trim();
     const tokenGroup = document.getElementById('tokenGroup');
     const exportBtn = document.getElementById('exportBtn');
     const optionsAccordion = document.getElementById('optionsAccordion');
+    const credBadge = document.getElementById('credentialsBadge');
+
+    // Update summary badge on the credentials accordion
+    if (!gistId) {
+      credBadge.textContent = 'Unconfigured';
+      credBadge.className = 'status-badge badge-danger';
+    } else if (token) {
+      credBadge.textContent = 'Master Mode';
+      credBadge.className = 'status-badge badge-success';
+    } else {
+      credBadge.textContent = 'Read-Only Mode';
+      credBadge.className = 'status-badge badge-info';
+    }
 
     if (!token) {
       // Read-only Mode (No Token present)
@@ -738,7 +761,7 @@
   }
 
   /**
-   * Render HTML Action Summary Card
+   * Render HTML Action Status Card at the top
    */
   function renderSummary(type, message, details) {
     const card = document.getElementById('summaryCard');
