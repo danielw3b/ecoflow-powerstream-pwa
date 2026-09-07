@@ -632,7 +632,7 @@
         renderSummary('Info', 'Newer Cloud data detected on Gist. Ready to import!', [
           ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
           ['Gist Size', `${sizeInKB} KB`],
-          ['Local Sync', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
+          ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
           ['Status', '📥 Import Available']
         ]);
       } else {
@@ -648,10 +648,13 @@
             exportBtn.title = 'New local data detected. Ready to export!';
           }
   
+          const formattedLatestData = `<span style="color: #10b981; font-weight: 600;">${new Date(latestDataTs).toLocaleString()}</span>`;
+  
           renderSummary('Success', 'New local hourly data available for upload!', [
             ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
-            ['Latest Data Point', new Date(latestDataTs).toLocaleString()],
+            ['Gist Size', `${sizeInKB} KB`],
             ['Local Sync State', new Date(localSyncTs).toLocaleString()],
+            ['<br>Latest Data Point', formattedLatestData],
             ['Status', '📤 Ready for Export']
           ]);
         } else {
@@ -663,10 +666,13 @@
             exportBtn.title = 'All local data is already synced to Gist.';
           }
   
+          const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
+  
           renderSummary('Success', 'Local data is fully up-to-date with Gist.', [
             ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
             ['Gist Size', `${sizeInKB} KB`],
             ['Local Sync State', new Date(localSyncTs).toLocaleString()],
+            ['<br>Latest Data Point', formattedLatestData],
             ['Status', '✅ Fully Synced']
           ]);
         }
@@ -681,6 +687,7 @@
       return null;
     }
   }
+
   /**
    * Export LocalStorage data to GitHub Gist with remote timestamp validation safety net
    */
