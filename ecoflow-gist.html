@@ -375,11 +375,10 @@
   function adjustUIForRole() {
     const gistId = document.getElementById('gistId').value.trim();
     const token = document.getElementById('gistToken').value.trim();
-    const tokenGroup = document.getElementById('tokenGroup');
     const exportBtn = document.getElementById('exportBtn');
     const optionsAccordion = document.getElementById('optionsAccordion');
     const credBadge = document.getElementById('credentialsBadge');
-
+  
     // Update summary badge on the credentials accordion
     if (!gistId) {
       credBadge.textContent = 'Unconfigured';
@@ -391,15 +390,13 @@
       credBadge.textContent = 'Read-Only Mode';
       credBadge.className = 'status-badge badge-info';
     }
-
+  
     if (!token) {
       // Read-only Mode (No Token present)
-      if (tokenGroup) tokenGroup.classList.add('hidden');
       if (exportBtn) exportBtn.classList.add('hidden');
       if (optionsAccordion) optionsAccordion.open = false; // Collapse options accordion
     } else {
       // Master Mode (Token present)
-      if (tokenGroup) tokenGroup.classList.remove('hidden');
       if (exportBtn) exportBtn.classList.remove('hidden');
     }
   }
