@@ -1043,20 +1043,19 @@ function renderPowerChart() {
 }
 
 function renderWhChart() {
-  const buckets  = aggregateWh(currentPeriod);
-  const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
-  
   const sectionEl = document.getElementById("whSection");
-  if (!sns.length) {
-    if (sectionEl) sectionEl.style.display = "none";
-    return;
+  if (sectionEl && sectionEl.style.display !== "") {
+    sectionEl.style.display = ""; // Let section stay visible
   }
+
+  const buckets  = aggregateWh(currentPeriod);
+  const canvas   = document.getElementById("whChart");
+  if (!canvas) return;
+
+  const stableSns  = Object.keys(state).length ? Object.keys(state) : Object.keys(buckets);
+  const orderedSns = stableSns.filter(sn => buckets[sn] !== undefined);
   
-  let allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn])))].sort();
-  if (!allLabels.length) {
-    if (sectionEl) sectionEl.style.display = "none";
-    return;
-  }
+  let allLabels = [...new Set(orderedSns.flatMap(sn => Object.keys(buckets[sn] ?? {})))].sort();
 
   const now      = new Date();
   const pad      = n => String(n).padStart(2,"0");
@@ -1073,27 +1072,25 @@ function renderWhChart() {
     const cutoffStr = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
     allLabels = allLabels.filter(label => label >= cutoffStr);
   }
-  
-  if (!allLabels.length) return;
 
-  const canvas = document.getElementById("whChart");
-  if (!canvas) return;
+  // If no labels remain after filtering (e.g., for Day/Month without data)
+  if (!allLabels.length) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById("whTotal").textContent = "No data available";
+    return;
+  }
 
-  const stableSns = Object.keys(state);
-  const orderedSns = sns.sort((a,b) => stableSns.indexOf(a) - stableSns.indexOf(b));
-  
   const thisKey  = currentPeriod==="hour"   ? nowHour
                  : currentPeriod==="month" ? today.slice(0,7)
                  : currentPeriod==="year"  ? today.slice(0,4)
                  : today;
 
-  const periodWh = orderedSns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
-  const dataFingerprintKey = `${currentPeriod}|${thisKey}|${periodWh.toFixed(0)}|${allLabels.length}|${orderedSns.map(sn => sn + (buckets[sn][thisKey]??0).toFixed(0)).join("-")}`;
+  const periodWh = orderedSns.reduce((s,sn) => s+(buckets[sn]?.[thisKey]??0), 0);
+  const dataFingerprintKey = `${currentPeriod}|${thisKey}|${periodWh.toFixed(0)}|${allLabels.length}|${orderedSns.map(sn => sn + (buckets[sn]?.[thisKey]??0).toFixed(0)).join("-")}`;
   
   if (canvas.dataset.renderKey === dataFingerprintKey) return;
   canvas.dataset.renderKey = dataFingerprintKey;
-
-  if (sectionEl.style.display !== "") sectionEl.style.display = "";
 
   const periodLabel = currentPeriod==="hour"  ? "Now"
                     : currentPeriod==="day"   ? "Today"
@@ -1142,7 +1139,7 @@ function renderWhChart() {
   
   ctx.fillStyle = "#060c1a"; ctx.fillRect(0, 0, W, H);
   
-  const maxWh = Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn][l]??0)), 100);
+  const maxWh = Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn]?.[l]??0)), 100);
   
   ctx.strokeStyle = "rgba(30,58,95,.6)"; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
@@ -1175,7 +1172,7 @@ function renderWhChart() {
     const isCurrent = (label === thisKey);
     
     orderedSns.forEach((sn, si) => {
-      const wh = buckets[sn][label] ?? 0;
+      const wh = buckets[sn]?.[label] ?? 0;
       const bH = wh > 0 ? Math.max(2, cH * wh / maxWh) : 0;
       const x = gx + gP + si * bW;
       const y = PT + cH - bH;
@@ -1370,7 +1367,7 @@ async function fetchWeather() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  PERIOD TOGGLE
+//  PERIOD TOGGLE & ENERGY HISTORY RENDER
 // ════════════════════════════════════════════════════════════════
 let currentPeriod = "day";
 
@@ -1378,7 +1375,10 @@ function setPeriod(p) {
   currentPeriod = p;
   ["hour","day","month","year"].forEach(x => {
     const btn = document.getElementById("period"+x[0].toUpperCase()+x.slice(1));
-    if (btn) { btn.style.color = x===p?"#ffb830":""; btn.style.borderColor = x===p?"#ffb830":""; }
+    if (btn) { 
+      btn.style.color = x===p?"#ffb830":""; 
+      btn.style.borderColor = x===p?"#ffb830":""; 
+    }
   });
   renderWhChart();
 }
@@ -1388,19 +1388,27 @@ function aggregateWh(period) {
     const result = {};
     const now    = new Date();
     const pad    = n => String(n).padStart(2,"0");
-    const validHours = new Set();
-    for (let i = 0; i < 24; i++) {
+    const validHours = [];
+    
+    // Build last 24 hours as axis (from -23h to now)
+    for (let i = 23; i >= 0; i--) {
       const d2  = new Date(now.getTime() - i * 3600000);
       const key = `${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())} ${pad(d2.getHours())}`;
-      validHours.add(key);
+      validHours.push(key);
     }
-    for (const [sn, hours] of Object.entries(hourlyWh)) {
+    
+    // Get known devices (from state or loaded keys)
+    const sns = Object.keys(state).length ? Object.keys(state) : Object.keys(hourlyWh);
+    
+    for (const sn of sns) {
       result[sn] = {};
-      for (const [hr, wh] of Object.entries(hours))
-        if (validHours.has(hr)) result[sn][hr] = wh;
+      for (const hr of validHours) {
+        result[sn][hr] = hourlyWh[sn]?.[hr] ?? 0;
+      }
     }
     return result;
   }
+
   const result = {};
   for (const [sn, days] of Object.entries(dailyWh)) {
     result[sn] = {};
