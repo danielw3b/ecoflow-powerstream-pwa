@@ -223,22 +223,22 @@
 
     <!-- 4. CREDENTIALS ACCORDION (POSITIONED AT THE VERY BOTTOM) -->
     <details class="card" id="credentialsAccordion">
-      <summary>
+      <summary id="credentialsSummary" title="Double click badge/header to unlock token input">
         <span>🔐 Credentials</span>
-        <span id="credentialsBadge" class="status-badge badge-info" style="font-size:0.7rem; font-weight:normal;">Unconfigured</span>
+        <span id="credentialsBadge" class="status-badge badge-info" style="font-size:0.7rem; font-weight:normal; cursor:pointer;">Unconfigured</span>
       </summary>
       
       <div class="form-group" style="margin-top: 12px;">
         <label for="gistId">GitHub Gist ID (Required for Import & Export)</label>
         <input type="text" id="gistId" name="username" autocomplete="username" placeholder="e.g. 7f8a9b0c1d2e3f4a..." required>
       </div>
-
+    
       <!-- Token Group: Dynamically hidden on read-only devices -->
-      <div class="form-group" id="tokenGroup">
+      <div class="form-group hidden" id="tokenGroup">
         <label for="gistToken">GitHub Personal Access Token (Master device only)</label>
         <input type="password" id="gistToken" name="password" autocomplete="current-password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
       </div>
-
+    
       <label class="checkbox-option">
         <input type="checkbox" id="saveCredentialsCheck" checked>
         <span>Save Credentials locally in LocalStorage</span>
@@ -292,6 +292,27 @@
       await checkGistStatus();
     } else {
       document.getElementById('gistTimestampDisplay').textContent = 'Not checked';
+    }
+
+    // Toggle Token input visibility via double click on Credentials header or badge
+    const credentialsSummary = document.getElementById('credentialsSummary');
+    const tokenGroup = document.getElementById('tokenGroup');
+    const tokenInput = document.getElementById('gistToken');
+    
+    if (credentialsSummary && tokenGroup) {
+      credentialsSummary.addEventListener('dblclick', (e) => {
+        // Prevent collapsing/expanding accordion on double click
+        e.preventDefault(); 
+        
+        // Toggle visibility of the token field
+        const isHidden = tokenGroup.classList.contains('hidden');
+        if (isHidden) {
+          tokenGroup.classList.remove('hidden');
+          if (tokenInput) tokenInput.focus();
+        } else {
+          tokenGroup.classList.add('hidden');
+        }
+      });
     }
   });
 
