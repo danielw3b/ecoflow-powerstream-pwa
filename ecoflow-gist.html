@@ -550,7 +550,40 @@
   }
 
   /**
-   * Query Gist metadata to check remote timestamp vs local timestamp
+   * Helper: Find the newest timestamp string in ecoflow_wh_hourly (Format: "YYYY-MM-DD HH")
+   */
+  function getLatestDataTimestamp() {
+    const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
+    if (!hourlyRaw) return null;
+  
+    try {
+      const hourlyData = JSON.parse(hourlyRaw);
+      let latestKey = "";
+  
+      // Iterate through all device SNs and find the highest date-hour string
+      Object.values(hourlyData).forEach(deviceHours => {
+        if (typeof deviceHours === 'object' && deviceHours !== null) {
+          Object.keys(deviceHours).forEach(timeKey => {
+            if (timeKey > latestKey) {
+              latestKey = timeKey;
+            }
+          });
+        }
+      });
+  
+      if (!latestKey) return null;
+  
+      // Convert "YYYY-MM-DD HH" to epoch timestamp
+      const [datePart, hourPart] = latestKey.split(' ');
+      const [year, month, day] = datePart.split('-').map(Number);
+      return new Date(year, month - 1, day, parseInt(hourPart, 10), 59, 59).getTime();
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /**
+   * Query Gist metadata to check remote timestamp vs local timestamp & local hourly data
    */
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
@@ -558,40 +591,44 @@
       alert('Please enter a Gist ID to check status.');
       return null;
     }
-
+  
     try {
       const response = await fetch(`https://api.github.com/gists/${gistId}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}: Gist not found or invalid ID`);
-
+  
       const data = await response.json();
       const gistUpdatedAt = new Date(data.updated_at).getTime();
       const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
-
+  
       // Extract file size from API response
       const backupFile = data.files['ecoflow_backup.json'];
       const sizeInBytes = backupFile ? backupFile.size : 0;
       const sizeInKB = (sizeInBytes / 1024).toFixed(2);
-
+  
       document.getElementById('gistTimestampDisplay').textContent = new Date(data.updated_at).toLocaleString();
-
+  
       const importBtn = document.getElementById('importBtn');
       const exportBtn = document.getElementById('exportBtn');
-
+  
       // Grace period (threshold) of 20000ms (20 seconds) to account for GitHub API metadata caching delays
       const GRACE_PERIOD_MS = 20000;
       const isRemoteNewer = (gistUpdatedAt - localSyncTs) > GRACE_PERIOD_MS;
-
+  
+      // Check if new local hourly readings are available since last sync
+      const latestDataTs = getLatestDataTimestamp();
+      const hasNewLocalData = latestDataTs && (!localSyncTs || latestDataTs > localSyncTs);
+  
       if (!localSyncTs || isRemoteNewer) {
+        // Case 1: Remote cloud data is newer
         importBtn.classList.remove('hidden');
-
-        // Disable export button to prevent overwriting newer cloud data
+  
         if (exportBtn) {
           exportBtn.disabled = true;
           exportBtn.style.opacity = '0.5';
           exportBtn.style.cursor = 'not-allowed';
           exportBtn.title = 'Remote data is newer. Please "Import & Merge" first!';
         }
-
+  
         renderSummary('Info', 'Newer Cloud data detected on Gist. Ready to import!', [
           ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
           ['Gist Size', `${sizeInKB} KB`],
@@ -599,33 +636,51 @@
           ['Status', '📥 Import Available']
         ]);
       } else {
+        // Case 2: Local data is up-to-date or newer than cloud
         importBtn.classList.add('hidden');
-
-        // Re-enable export button since local data is up-to-date or newer
-        if (exportBtn) {
-          exportBtn.disabled = false;
-          exportBtn.style.cursor = 'pointer';
-          updateButtonStates();
+  
+        if (hasNewLocalData) {
+          // Case 2a: New local hourly readings detected -> Enable Export
+          if (exportBtn) {
+            exportBtn.disabled = false;
+            exportBtn.style.opacity = '1';
+            exportBtn.style.cursor = 'pointer';
+            exportBtn.title = 'New local data detected. Ready to export!';
+          }
+  
+          renderSummary('Success', 'New local hourly data available for upload!', [
+            ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
+            ['Latest Data Point', new Date(latestDataTs).toLocaleString()],
+            ['Local Sync State', new Date(localSyncTs).toLocaleString()],
+            ['Status', '📤 Ready for Export']
+          ]);
+        } else {
+          // Case 2b: No new data since last sync -> Fully synced
+          if (exportBtn) {
+            exportBtn.disabled = true;
+            exportBtn.style.opacity = '0.5';
+            exportBtn.style.cursor = 'not-allowed';
+            exportBtn.title = 'All local data is already synced to Gist.';
+          }
+  
+          renderSummary('Success', 'Local data is fully up-to-date with Gist.', [
+            ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
+            ['Gist Size', `${sizeInKB} KB`],
+            ['Local Sync State', new Date(localSyncTs).toLocaleString()],
+            ['Status', '✅ Fully Synced']
+          ]);
         }
-
-        renderSummary('Success', 'Local data is up-to-date or newer than Gist.', [
-          ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
-          ['Gist Size', `${sizeInKB} KB`],
-          ['Local Sync', new Date(localSyncTs).toLocaleString()],
-          ['Status', '✅ Synced']
-        ]);
       }
-
+  
       // Ensure export button remains hidden on read-only devices regardless of sync check
       adjustUIForRole();
-
+  
       return gistUpdatedAt;
     } catch (err) {
       renderSummary('Danger', `Failed to check Gist status: ${err.message}`, []);
       return null;
     }
   }
-
   /**
    * Export LocalStorage data to GitHub Gist with remote timestamp validation safety net
    */
