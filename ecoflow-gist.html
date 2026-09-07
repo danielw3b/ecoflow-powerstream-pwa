@@ -179,7 +179,7 @@
 
   <!-- 1. STATUS CARD (POSITIONED AT THE VERY TOP) -->
   <div id="summaryCard" class="card hidden">
-    <h2>📊 Status</h2>
+    <h2 id="statusHeader" style="cursor: pointer; user-select: none;">📊 Status</h2>
     <div id="summaryContent"></div>
   </div>
 
@@ -273,7 +273,7 @@
     loadCredentials();
     renderKeySelection();
     updateTimestampDisplays();
-  
+
     // 1. Dynamic token input handling with instant LocalStorage cleanup
     const tokenInput = document.getElementById('gistToken');
     if (tokenInput) {
@@ -288,7 +288,7 @@
         updateButtonStates();
       });
     }
-  
+
     document.getElementById('gistId').addEventListener('input', () => {
       adjustUIForRole();
       updateButtonStates();
@@ -296,7 +296,7 @@
     
     adjustUIForRole();
     updateButtonStates();
-  
+
     // Automatic startup status check if Gist ID is available
     const gistId = document.getElementById('gistId').value.trim();
     if (gistId) {
@@ -304,23 +304,38 @@
     } else {
       document.getElementById('gistTimestampDisplay').textContent = 'Not checked';
     }
-  
-    // 2. Toggle Token input visibility via double click on Credentials header or badge
-    const credentialsSummary = document.getElementById('credentialsSummary');
+
+    // 2. Secret Android-style 7-click developer unlock on the Status header
+    const statusHeader = document.getElementById('statusHeader');
     const tokenGroup = document.getElementById('tokenGroup');
-    
-    if (credentialsSummary && tokenGroup) {
-      credentialsSummary.addEventListener('dblclick', (e) => {
-        // Prevent collapsing/expanding accordion on double click
-        e.preventDefault(); 
-        
-        // Toggle visibility of the token field
-        const isHidden = tokenGroup.classList.contains('hidden');
-        if (isHidden) {
-          tokenGroup.classList.remove('hidden');
-          if (tokenInput) tokenInput.focus();
-        } else {
-          tokenGroup.classList.add('hidden');
+    let clickCount = 0;
+    let clickTimer = null;
+
+    if (statusHeader && tokenGroup) {
+      statusHeader.addEventListener('click', () => {
+        clickCount++;
+
+        // Reset counter if clicks are spaced too far apart (more than 1.5s delay)
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+          clickCount = 0;
+        }, 1500);
+
+        // Unlock after 7 clicks
+        if (clickCount === 7) {
+          clickCount = 0;
+          clearTimeout(clickTimer);
+
+          // Toggle visibility of the master token field
+          tokenGroup.classList.toggle('hidden');
+
+          if (!tokenGroup.classList.contains('hidden')) {
+            // Make sure the credentials accordion opens if it was closed
+            const credentialsAccordion = document.getElementById('credentialsAccordion');
+            if (credentialsAccordion) credentialsAccordion.open = true;
+
+            if (tokenInput) tokenInput.focus();
+          }
         }
       });
     }
