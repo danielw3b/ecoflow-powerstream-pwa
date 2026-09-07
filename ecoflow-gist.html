@@ -273,11 +273,22 @@
     loadCredentials();
     renderKeySelection();
     updateTimestampDisplays();
-
-    document.getElementById('gistToken').addEventListener('input', () => {
-      adjustUIForRole();
-      updateButtonStates();
-    });
+  
+    // 1. Dynamic token input handling with instant LocalStorage cleanup
+    const tokenInput = document.getElementById('gistToken');
+    if (tokenInput) {
+      tokenInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (!val) {
+          localStorage.removeItem(CRED_GIST_TOKEN);
+        } else if (document.getElementById('saveCredentialsCheck').checked) {
+          localStorage.setItem(CRED_GIST_TOKEN, val);
+        }
+        adjustUIForRole();
+        updateButtonStates();
+      });
+    }
+  
     document.getElementById('gistId').addEventListener('input', () => {
       adjustUIForRole();
       updateButtonStates();
@@ -285,7 +296,7 @@
     
     adjustUIForRole();
     updateButtonStates();
-
+  
     // Automatic startup status check if Gist ID is available
     const gistId = document.getElementById('gistId').value.trim();
     if (gistId) {
@@ -293,11 +304,10 @@
     } else {
       document.getElementById('gistTimestampDisplay').textContent = 'Not checked';
     }
-
-    // Toggle Token input visibility via double click on Credentials header or badge
+  
+    // 2. Toggle Token input visibility via double click on Credentials header or badge
     const credentialsSummary = document.getElementById('credentialsSummary');
     const tokenGroup = document.getElementById('tokenGroup');
-    const tokenInput = document.getElementById('gistToken');
     
     if (credentialsSummary && tokenGroup) {
       credentialsSummary.addEventListener('dblclick', (e) => {
@@ -315,7 +325,7 @@
       });
     }
   });
-
+    
   /**
    * Load stored credentials from LocalStorage
    */
