@@ -247,17 +247,30 @@
       <div class="form-group">
         <label>Select Storage Keys to Export</label>
         <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+          
+          <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
+            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh" checked>
+            <code>ecoflow_wh</code>
+          </label>
+    
           <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
             <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh_hourly" checked>
-            <code>ecoflow_wh_hourly</code> (Yield Data)
+            <code>ecoflow_wh_hourly</code>
           </label>
+    
           <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
-            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_powerstream_config" checked>
-            <code>ecoflow_powerstream_config</code> (App Settings)
+            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z11ACH4G5929" checked>
+            <code>ecoflow_analyzer_config_BK01Z11ACH4G5929</code>
           </label>
+    
+          <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
+            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z1SACH2M3738" checked>
+            <code>ecoflow_analyzer_config_BK01Z1SACH2M3738</code>
+          </label>
+    
         </div>
       </div>
-
+    
       <div class="checkbox-group" style="margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px;">
         <input type="checkbox" id="gzipCompress">
         <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
