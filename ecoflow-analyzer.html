@@ -40,17 +40,12 @@
     h1 { font-size: 1.5rem; }
     h2 { font-size: 1.2rem; }
     
-    /* Sticky positioning for all H3 section titles */
+    /* Standard non-sticky H3 titles for normal flow */
     h3 { 
         font-size: 0.9rem; 
-        padding: 8px 0; 
+        padding-bottom: 5px; 
         margin-top: 20px; 
-        margin-bottom: 0;
         color: var(--text-dim); 
-        position: sticky;
-        top: 0;
-        background-color: var(--panel);
-        z-index: 20; /* High z-index prevents table content from showing underneath */
     }
 
     .container { max-width: 1200px; margin: 0 auto; }
@@ -153,13 +148,12 @@
         min-width: 0;
     }
 
-    /* Scroll Frame wrapper for large tables */
+    /* Standard Scroll Frame wrapper for long tables */
     .table-scroll-frame {
         border: 1px solid var(--border);
         border-radius: 6px;
-        margin-top: 10px;
+        margin-top: 15px;
         overflow-x: auto;
-        position: relative;
     }
 
     /* Base Table Structure */
@@ -175,21 +169,21 @@
         font-size: 0.85rem; 
         word-break: break-word; 
     }
-
-    /* Standard Sticky Headers inside table containers */
+    
+    /* RESTORED: Sticky Table Headers for ALL tables */
     th { 
         color: var(--text-dim); 
         font-weight: normal; 
-        position: sticky; 
-        top: 0; 
+        position: sticky;
+        top: 0;
+        z-index: 10;
         background-color: var(--panel); 
-        z-index: 10; 
         box-shadow: inset 0 -1px 0 var(--border); 
     }
     tr:hover { background: rgba(255,255,255,0.02); }
     table td:last-child, table th:last-child { text-align: center; }
 
-    /* Summary Card Styling */
+    /* Summary Card Container */
     .summary-card {
         background: var(--panel);
         border: 1px solid var(--border);
@@ -198,11 +192,21 @@
         margin-bottom: 15px;
     }
     
+    /* EXCLUSIVE: Sticky H3 Title ONLY inside Summary Card */
     .summary-card h3 {
-        margin-top: 0;
+        margin: 0;
+        padding: 8px 0;
+        font-size: 0.9rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        position: sticky;
+        top: 0;
+        background-color: var(--panel);
+        z-index: 12;
     }
 
-    /* Custom column width for Financial Table */
+    /* EXCLUSIVE: Offset for Financial Table TH to stick directly below its H3 */
     .summary-card table {
         table-layout: fixed;
         width: 100%;
@@ -211,13 +215,14 @@
         white-space: normal !important;
     }
     .summary-card th {
-        top: 33px; /* Positions TH directly below the sticky H3 in Summary Card */
+        top: 33px; /* Sticking right below the summary-card H3 */
+        z-index: 11;
     }
     .summary-card th:nth-child(1), .summary-card td:nth-child(1) { width: 34%; text-align: left; }
     .summary-card th:nth-child(2), .summary-card td:nth-child(2) { width: 25%; text-align: right; }
     .summary-card th:nth-child(3), .summary-card td:nth-child(3) { width: 41%; text-align: left; }
 
-    /* Status Indicators and Utility Colors */
+    /* Status Indicators & Utility Colors */
     .good { color: var(--accent);}
     .bad { color: var(--danger);}
     .warn { color: var(--warning);}
@@ -272,16 +277,7 @@
     .ratio-accent { font-weight: bold; color: var(--accent); min-width: 65px; }
     .ratio-danger { font-weight: bold; color: var(--danger); min-width: 65px; }
     .context-cell { cursor: help; text-align: center; font-size: 1.1rem; }
-    
-    /* Custom Warning Table Header */
-    .table-title-warn { 
-        margin: 40px 2px 0 10px; 
-        color: var(--warning) !important; 
-        background-color: var(--panel);
-        position: sticky;
-        top: 0;
-        z-index: 20;
-    }
+    .table-title-warn { margin: 40px 2px 20px 10px; color: var(--warning); }
     .title-badge { float: right; font-size: 0.85rem; color: var(--text-dim); }
 
     /* Layout Helper Classes */
@@ -315,7 +311,7 @@
     }
     .show-more-btn:hover { background-color: rgba(255, 255, 255, 0.05); }
 
-    /* Scroll-to-Top Floating Action Button & SVG sizing */
+    /* Scroll-to-Top Floating Action Button & SVG Sizing Fix */
     #scrollToTopBtn {
         position: fixed;
         bottom: 25px; right: 25px; z-index: 1000;
