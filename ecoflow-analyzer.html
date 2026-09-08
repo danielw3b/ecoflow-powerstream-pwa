@@ -57,13 +57,13 @@ h3 {
     color: var(--text-dim); 
 }
 
-/* Desktop Responsive Typography */
 @media (min-width: 850px) {
     h1 { font-size: 2rem; }
     h2 { font-size: 1.5rem; }
     h3 { font-size: 1rem; }
 }
 
+/* Container & Cards */
 .container { 
     max-width: 1200px; 
     margin: 0 auto; 
@@ -116,7 +116,7 @@ input, select {
     width: 100%; 
     box-sizing: border-box; 
     height: 34px; 
-    min-width: 0; /* Prevents inputs from overflowing */
+    min-width: 0;
 }
 
 input[type="date"] {
@@ -181,16 +181,14 @@ button:disabled { background: var(--text-dim); cursor: not-allowed; }
     min-width: 0;
 }
 
-/* Mobile & Tablet Portrait: Expand blocks to full card width */
-@media (max-width: 849px) {
+@media (max-width: 767px) {
     .config-row > .grid-2-col,
     .config-row > .span-2 {
         grid-column: 1 / -1;
     }
 }
 
-/* Desktop: Multi-column grid for side-by-side blocks */
-@media (min-width: 850px) {
+@media (min-width: 768px) {
     .config-row { 
         grid-template-columns: repeat(4, 1fr); 
     }
@@ -200,58 +198,53 @@ button:disabled { background: var(--text-dim); cursor: not-allowed; }
     }
 }
 
-/* Scrollable Table Container (Enables horizontal scroll on smaller viewports) */
+/* ==========================================
+   GLOBAL DATA TABLES & STICKY HEADER (RESTORED)
+   ========================================== */
+
 .table-scroll-frame {
     border: 1px solid var(--border);
     border-radius: 6px;
     margin-top: 15px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: auto; /* Erlaubt nur horizontales Wischen auf Mobile */
 }
 
-/* Table Styles & Vertical Layout Fixes */
 table { 
     width: 100%; 
     border-collapse: separate; 
     border-spacing: 0;
-    min-width: 500px; /* Prevents column crushing in tablet portrait mode */
 }
 
 th, td { 
-    padding: 10px 8px; 
+    padding: 10px 6px; 
     text-align: left; 
     border-bottom: 1px solid var(--border); 
-    font-size: 0.85rem; 
-}
-
-/* Prevent text wrapping on metrics and value columns */
-th, 
-td:nth-child(2), /* Middle value column */
-td:first-child {
-    white-space: nowrap; 
-}
-
-/* Allow description/context cells to wrap gracefully */
-td:last-child {
-    white-space: normal;
+    font-size: 0.82rem; 
     word-break: break-word;
 }
 
+/* Fester, dunkler Sticky Header für ALLE Tabellen */
 th { 
     color: var(--text-dim); 
     font-weight: normal; 
+    position: -webkit-sticky;
     position: sticky; 
     top: 0; 
-    background-color: var(--panel); 
-    z-index: 10; 
-    box-shadow: inset 0 -1px 0 var(--border); 
+    background-color: var(--panel); /* Dunkler Hintergrund restored */
+    z-index: 100; /* Hoher Index zum Überlagern der scrollenden Zeilen */
+    box-shadow: inset 0 -1px 0 var(--border), 0 2px 4px rgba(0,0,0,0.2); 
 }
 
-tr:hover { background: rgba(255,255,255,0.02); }
-table td:last-child, table th:last-child { text-align: center; }
+tr:hover { background: rgba(255, 255, 255, 0.02); }
 
 @media (min-width: 600px) {
-    th, td { padding: 10px; font-size: 0.9rem; }
+    th, td { 
+        padding: 10px; 
+        font-size: 0.9rem; 
+    }
+    table td:first-child, table th:first-child { 
+        white-space: nowrap; 
+    }
 }
 
 /* Value Status Colors */
