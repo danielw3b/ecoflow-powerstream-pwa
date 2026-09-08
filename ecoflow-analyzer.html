@@ -25,8 +25,6 @@
         --warning: #f1c40f;
         --border: rgba(107, 138, 170, 0.2);
     }
-
-    /* Base Layout & Typography */
     body {
         font-family: system-ui, -apple-system, sans-serif;
         background-color: var(--bg);
@@ -34,10 +32,6 @@
         margin: 0;
         padding: 20px;
         line-height: 1.5;
-    }
-
-    @media (max-width: 600px) {
-        body { padding: 6px; line-height: 1; }
     }
 
     /* Unified Typography Styles */
@@ -50,7 +44,11 @@
         margin-top: 20px; 
         color: var(--text-dim); 
     }
-    
+    /* Mobile Responsive Typography */
+    @media (min-width: 600px) {
+        .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+        body {padding: 6px;line-height: 0.5;}
+    }
     /* Desktop Responsive Typography */
     @media (min-width: 850px) {
         h1 { font-size: 2rem; }
@@ -68,12 +66,10 @@
         margin-bottom: 20px; 
     }
     
-    /* Allow horizontal scrolling on small screens without breaking sticky positioning */
     .table-scroll-frame {
         border: 1px solid var(--border);
         border-radius: 6px;
         margin-top: 15px;
-        overflow-x: auto;
     }
     
     .grid { 
@@ -81,10 +77,6 @@
         grid-template-columns: 1fr 1fr; 
         gap: 15px; 
         margin-bottom: 15px; 
-    }
-
-    @media (min-width: 600px) {
-        .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
     }
     
     .form-group { 
@@ -150,8 +142,14 @@
         cursor: pointer;
     }
 
-    .btn-submit-main { background: var(--accent); }
-    .btn-export-csv { display: none; background: #2980b9; }
+    .btn-submit-main {
+        background: var(--accent);
+    }
+
+    .btn-export-csv {
+        display: none;
+        background: #2980b9;
+    }
 
     /* Refactored Config Grid Layout */
     .config-row {
@@ -161,7 +159,9 @@
         margin-bottom: 12px;
     }
 
-    .config-row > * { min-width: 0; }
+    .config-row > * {
+        min-width: 0;
+    }
 
     .grid-2-col { 
         display: grid; 
@@ -170,7 +170,7 @@
         min-width: 0;
     }
 
-    /* Mobile / Tablet breakpoint adjustments */
+    /* Below 850px: Blocks use full card width (max 2 fields per row) */
     @media (max-width: 849px) {
         .config-row > .grid-2-col,
         .config-row > .span-2 {
@@ -178,62 +178,45 @@
         }
     }
 
-    /* Desktop layout grid */
+    /* Above 850px (Desktop): 4-column grid for side-by-side blocks */
     @media (min-width: 850px) {
-        .config-row { grid-template-columns: repeat(4, 1fr); }
+        .config-row { 
+            grid-template-columns: repeat(4, 1fr); 
+        }
         .config-row > .span-2,
-        .config-row > .grid-2-col { grid-column: span 2; }
+        .config-row > .grid-2-col { 
+            grid-column: span 2; 
+        }
     }
 
-    /* === STICKY HEADERS & EVENLY DISTRIBUTED COLUMNS === */
     table { 
         width: 100%; 
         border-collapse: separate; 
         border-spacing: 0;
-        table-layout: auto; /* Allows dynamic column width calculations */
     }
-
     th, td { 
-        padding: 10px 6px; 
+        padding: 10px 4px; 
         text-align: left; 
         border-bottom: 1px solid var(--border); 
         font-size: 0.82rem; 
-        word-break: normal;
+        word-break: break-word; 
     }
-
-    /* Sticky headers relative to the window viewport */
     th { 
         color: var(--text-dim); 
         font-weight: normal; 
         position: sticky; 
         top: 0; 
         background-color: var(--panel); 
-        z-index: 100; 
-        box-shadow: inset 0 -1px 0 var(--border), 0 2px 4px rgba(0,0,0,0.3); 
+        z-index: 10; 
+        box-shadow: inset 0 -1px 0 var(--border); 
     }
-
     tr:hover { background: rgba(255,255,255,0.02); }
-
-    /* Even distribution for middle columns (ideal for tablet view) */
-    table th:not(:first-child):not(:last-child),
-    table td:not(:first-child):not(:last-child) {
-        text-align: center;
-        width: auto;
-    }
-
-    /* Keep outer columns strictly compact */
-    table td:first-child, table th:first-child,
-    table td:last-child, table th:last-child { 
-        white-space: nowrap;
-        width: 1%;
-    }
-
-    table td:last-child, table th:last-child {
-        text-align: center;
-    }
+    table td:last-child, table th:last-child { text-align: center; }
 
     @media (min-width: 600px) {
         th, td { padding: 10px; font-size: 0.9rem; }
+        table td:first-child, table th:first-child { white-space: nowrap; }
+        table td:last-child, table th:last-child { white-space: nowrap; }
     }
 
     .good { color: var(--accent);}
@@ -304,12 +287,34 @@
         flex-wrap: wrap;
     }
 
-    .ratio-accent { font-weight: bold; color: var(--accent); min-width: 65px; }
-    .ratio-danger { font-weight: bold; color: var(--danger); min-width: 65px; }
+    .ratio-accent {
+        font-weight: bold;
+        color: var(--accent);
+        min-width: 65px;
+    }
 
-    .context-cell { cursor: help; text-align: center; font-size: 1.1rem; }
-    .table-title-warn { margin: 40px 2px 20px 10px; color: var(--warning); }
-    .title-badge { float: right; font-size: 0.85rem; color: var(--text-dim); }
+    .ratio-danger {
+        font-weight: bold;
+        color: var(--danger);
+        min-width: 65px;
+    }
+
+    .context-cell {
+        cursor: help;
+        text-align: center;
+        font-size: 1.1rem;
+    }
+
+    .table-title-warn {
+        margin: 40px 2px 20px 10px;
+        color: var(--warning);
+    }
+
+    .title-badge {
+        float: right;
+        font-size: 0.85rem;
+        color: var(--text-dim);
+    }
 
     /* Layout Helper Classes */
     .subtitle { color: var(--text-dim); }
@@ -324,9 +329,11 @@
     .help-cursor { cursor: help; }
 
     /* Hide extra table rows initially */
-    tr.hidden-row { display: none !important; }
+    tr.hidden-row {
+        display: none !important;
+    }
     
-    /* Expand button styling */
+    /* Pagination / Expand button styling */
     .show-more-btn {
         display: block;
         width: 100%;
@@ -343,7 +350,9 @@
         transition: background-color 0.2s ease;
     }
     
-    .show-more-btn:hover { background-color: rgba(255, 255, 255, 0.05); }
+    .show-more-btn:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
 
     /* Floating Scroll-to-Top Button */
     #scrollToTopBtn {
@@ -351,50 +360,65 @@
         bottom: 25px;
         right: 25px;
         z-index: 1000;
+        
         display: flex;
         align-items: center;
         justify-content: center;
+        
         width: 48px;
         height: 48px;
         border-radius: 50%;
+        
+        /* Contrast fix for dark mode */
         background-color: rgba(22, 38, 66, 0.92);
         border: 1px solid rgba(255, 255, 255, 0.18);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        
         -webkit-backdrop-filter: blur(8px);
         backdrop-filter: blur(8px);
         cursor: pointer;
+        
+        /* Hidden state */
         opacity: 0;
         visibility: hidden;
         transform: translateY(12px);
         transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease, background-color 0.2s ease, border-color 0.2s ease;
     }
     
+    /* Visible state */
     #scrollToTopBtn.show {
         opacity: 1;
         visibility: visible;
         transform: translateY(0);
     }
     
+    /* Hover state */
     #scrollToTopBtn:hover {
         transform: translateY(0) scale(1.08);
         background-color: rgba(32, 54, 92, 0.98);
         border-color: rgba(255, 255, 255, 0.35);
     }
     
+    /* Scaled SVG icon styling */
     #scrollToTopBtn svg {
         width: 24px;
         height: 24px;
         flex-shrink: 0;
         pointer-events: none;
+        
         fill: none;
         stroke: #ffffff;
         stroke-width: 1.8;
         stroke-linecap: round;
         stroke-linejoin: round;
+        
         transition: transform 0.2s ease;
     }
     
-    #scrollToTopBtn:hover svg { transform: translateY(-2px); }
+    /* Subtle SVG lift on hover */
+    #scrollToTopBtn:hover svg {
+        transform: translateY(-2px);
+    }
 </style>
 </head>
 <body>
