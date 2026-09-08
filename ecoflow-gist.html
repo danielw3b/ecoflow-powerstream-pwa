@@ -94,6 +94,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .badge {
@@ -179,6 +182,13 @@
       color: var(--text-muted);
     }
 
+    code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -232,15 +242,25 @@
       </div>
     </div>
 
-    <!-- Export Specific Options (Only visible when export is needed) -->
+    <!-- Export Specific Options (Key Checkboxes) -->
     <div id="exportOptionsArea" class="hidden">
       <div class="form-group">
-        <label for="storageKeys">Storage Keys (Comma Separated)</label>
-        <input type="text" id="storageKeys" value="ecoflow_wh_hourly, ecoflow_devices">
+        <label>Select Storage Keys to Export</label>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+          <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
+            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh_hourly" checked>
+            <code>ecoflow_wh_hourly</code> (Yield Data)
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
+            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_powerstream_config" checked>
+            <code>ecoflow_powerstream_config</code> (App Settings)
+          </label>
+        </div>
       </div>
-      <div class="checkbox-group">
-        <input type="checkbox" id="gzipCompress" checked>
-        <label for="gzipCompress">Compress Backup with Gzip (Base64 encoded)</label>
+
+      <div class="checkbox-group" style="margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px;">
+        <input type="checkbox" id="gzipCompress">
+        <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
       </div>
     </div>
 
@@ -256,6 +276,7 @@
 
 <script>
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
+  const CHECKBOX_STATES_KEY = 'ecoflow_gist_checkbox_states';
   let clickCounter = 0;
   let clickTimer = null;
 
@@ -266,11 +287,38 @@
   });
 
   function loadSavedSettings() {
-    const savedGistId = localStorage.getItem('ecoflow_gist_id') || '';
-    const savedToken = localStorage.getItem('ecoflow_github_token') || '';
-    
-    document.getElementById('gistId').value = savedGistId;
-    document.getElementById('githubToken').value = savedToken;
+    // Load Gist ID and Token
+    document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
+    document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
+
+    // Restore saved Checkbox states
+    const savedCheckboxStates = JSON.parse(localStorage.getItem(CHECKBOX_STATES_KEY) || '{}');
+
+    // Storage key checkboxes
+    document.querySelectorAll('.storage-key-checkbox').forEach(cb => {
+      if (savedCheckboxStates.hasOwnProperty(cb.value)) {
+        cb.checked = savedCheckboxStates[cb.value];
+      }
+    });
+
+    // Gzip checkbox state
+    if (savedCheckboxStates.hasOwnProperty('gzipCompress')) {
+      document.getElementById('gzipCompress').checked = savedCheckboxStates['gzipCompress'];
+    }
+  }
+
+  function saveCheckboxStates() {
+    const checkboxStates = {};
+
+    // Save key selection states
+    document.querySelectorAll('.storage-key-checkbox').forEach(cb => {
+      checkboxStates[cb.value] = cb.checked;
+    });
+
+    // Save gzip state
+    checkboxStates['gzipCompress'] = document.getElementById('gzipCompress').checked;
+
+    localStorage.setItem(CHECKBOX_STATES_KEY, JSON.stringify(checkboxStates));
   }
 
   function setupEventListeners() {
@@ -284,6 +332,11 @@
       localStorage.setItem('ecoflow_github_token', e.target.value.trim());
       adjustUIForRole();
       checkGistStatus();
+    });
+
+    // Automatically save checkbox states when toggled
+    document.querySelectorAll('.storage-key-checkbox, #gzipCompress').forEach(cb => {
+      cb.addEventListener('change', saveCheckboxStates);
     });
 
     // 7-Click Unlock Trigger on Sync Action Header
@@ -513,15 +566,23 @@
       return;
     }
 
+    // Collect all checked storage keys
+    const checkedBoxes = document.querySelectorAll('.storage-key-checkbox:checked');
+    const selectedKeys = Array.from(checkedBoxes).map(cb => cb.value);
+
+    if (selectedKeys.length === 0) {
+      alert('Please select at least one Storage Key to export!');
+      return;
+    }
+
     const btn = document.getElementById('mainActionBtn');
     btn.textContent = '⏳ Uploading...';
     btn.disabled = true;
 
     try {
-      const keys = document.getElementById('storageKeys').value.split(',').map(k => k.trim());
       const exportData = {};
 
-      keys.forEach(key => {
+      selectedKeys.forEach(key => {
         const item = localStorage.getItem(key);
         if (item) {
           try { exportData[key] = JSON.parse(item); } catch (e) { exportData[key] = item; }
