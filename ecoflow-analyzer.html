@@ -33,7 +33,7 @@
         color: var(--text);
         margin: 0;
         padding: 15px;
-        line-height: 1.4; /* Korrigiert: Sicherer Standardwert */
+        line-height: 1.4;
     }
 
     h1, h2, h3 { color: #fff; margin-top: 0; }
@@ -187,7 +187,7 @@
         letter-spacing: 0.05em;
     }
 
-    /* Finanztabelle: Flexible relative Prozentwerte statt nowrap */
+    /* Exklusiv für Finanztabelle: Erste Spalte schmaler, rechte Spalte breiter */
     .summary-card table {
         table-layout: fixed;
         width: 100%;
@@ -195,9 +195,9 @@
     .summary-card table td, .summary-card table th {
         white-space: normal !important;
     }
-    .summary-card th:nth-child(1), .summary-card td:nth-child(1) { width: 42%; text-align: left; }
+    .summary-card th:nth-child(1), .summary-card td:nth-child(1) { width: 34%; text-align: left; }
     .summary-card th:nth-child(2), .summary-card td:nth-child(2) { width: 25%; text-align: right; }
-    .summary-card th:nth-child(3), .summary-card td:nth-child(3) { width: 33%; text-align: left; }
+    .summary-card th:nth-child(3), .summary-card td:nth-child(3) { width: 41%; text-align: left; }
 
     .good { color: var(--accent);}
     .bad { color: var(--danger);}
@@ -287,6 +287,7 @@
     }
     .show-more-btn:hover { background-color: rgba(255, 255, 255, 0.05); }
 
+    /* Scroll-to-Top Button & SVG Dimension Fix */
     #scrollToTopBtn {
         position: fixed;
         bottom: 25px; right: 25px; z-index: 1000;
@@ -302,8 +303,19 @@
     }
     #scrollToTopBtn.show { opacity: 1; visibility: visible; transform: translateY(0); }
     #scrollToTopBtn:hover { transform: translateY(0) scale(1.08); background-color: rgba(32, 54, 92, 0.98); }
-    #scrollToTopBtn svg { width: 24px; height: 24px; fill: none; stroke: #ffffff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-
+    
+    /* Fixiert SVG Aspect Ratio & Abmessungen */
+    #scrollToTopBtn svg { 
+        width: 24px; 
+        height: 24px; 
+        aspect-ratio: 1 / 1;
+        flex-shrink: 0;
+        fill: none; 
+        stroke: #ffffff; 
+        stroke-width: 1.8; 
+        stroke-linecap: round; 
+        stroke-linejoin: round; 
+    }
 
     /* 2. TABLET BREAKPOINT (ab 600px) */
     @media (min-width: 600px) {
@@ -311,7 +323,7 @@
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 10px; font-size: 0.9rem; }
         
-        /* Allgemeine Tabellen dürfen nowrap nutzen, ABGESEHEN von der Finanztabelle */
+        /* Allgemeine Tabellen nutzen nowrap, außer der Finanztabelle */
         table:not(.summary-card table) td:first-child, 
         table:not(.summary-card table) th:first-child,
         table:not(.summary-card table) td:last-child, 
@@ -319,7 +331,6 @@
             white-space: nowrap; 
         }
     }
-
 
     /* 3. DESKTOP BREAKPOINT (ab 850px) */
     @media (min-width: 850px) {
