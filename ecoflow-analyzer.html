@@ -26,7 +26,7 @@
         --border: rgba(107, 138, 170, 0.2);
     }
 
-    /* 1. BASE STYLES (Mobile First - applies to all screens) */
+    /* 1. BASE STYLES (Mobile First - gilt für alle Bildschirme) */
     body {
         font-family: system-ui, -apple-system, sans-serif;
         background-color: var(--bg);
@@ -39,8 +39,6 @@
     h1, h2, h3 { color: #fff; margin-top: 0; }
     h1 { font-size: 1.5rem; }
     h2 { font-size: 1.2rem; }
-    
-    /* Standard non-sticky H3 titles for normal flow */
     h3 { 
         font-size: 0.9rem; 
         padding-bottom: 5px; 
@@ -148,7 +146,7 @@
         min-width: 0;
     }
 
-    /* Standard Scroll Frame wrapper for long tables */
+    /* Scroll Frame wrapper für lange Tabellen */
     .table-scroll-frame {
         border: 1px solid var(--border);
         border-radius: 6px;
@@ -156,7 +154,7 @@
         overflow-x: auto;
     }
 
-    /* Base Table Structure */
+    /* Tabellen Grundstruktur */
     table { 
         width: 100%; 
         border-collapse: separate; 
@@ -170,14 +168,14 @@
         word-break: break-word; 
     }
     
-    /* RESTORED: Sticky Table Headers for ALL tables */
+    /* ALLE Tabellenköpfe wieder global sticky */
     th { 
         color: var(--text-dim); 
         font-weight: normal; 
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        position: sticky; 
+        top: 0; 
         background-color: var(--panel); 
+        z-index: 10; 
         box-shadow: inset 0 -1px 0 var(--border); 
     }
     tr:hover { background: rgba(255,255,255,0.02); }
@@ -192,10 +190,10 @@
         margin-bottom: 15px;
     }
     
-    /* EXCLUSIVE: Sticky H3 Title ONLY inside Summary Card */
+    /* NUR das h3 in der Summary Card wird sticky gemacht */
     .summary-card h3 {
-        margin: 0;
-        padding: 8px 0;
+        margin: 0 0 10px 0;
+        padding: 5px 0;
         font-size: 0.9rem;
         color: var(--text-dim);
         text-transform: uppercase;
@@ -203,10 +201,10 @@
         position: sticky;
         top: 0;
         background-color: var(--panel);
-        z-index: 12;
+        z-index: 11;
     }
 
-    /* EXCLUSIVE: Offset for Financial Table TH to stick directly below its H3 */
+    /* Exklusiv für Finanztabelle */
     .summary-card table {
         table-layout: fixed;
         width: 100%;
@@ -214,15 +212,10 @@
     .summary-card table td, .summary-card table th {
         white-space: normal !important;
     }
-    .summary-card th {
-        top: 33px; /* Sticking right below the summary-card H3 */
-        z-index: 11;
-    }
     .summary-card th:nth-child(1), .summary-card td:nth-child(1) { width: 34%; text-align: left; }
     .summary-card th:nth-child(2), .summary-card td:nth-child(2) { width: 25%; text-align: right; }
     .summary-card th:nth-child(3), .summary-card td:nth-child(3) { width: 41%; text-align: left; }
 
-    /* Status Indicators & Utility Colors */
     .good { color: var(--accent);}
     .bad { color: var(--danger);}
     .warn { color: var(--warning);}
@@ -311,7 +304,7 @@
     }
     .show-more-btn:hover { background-color: rgba(255, 255, 255, 0.05); }
 
-    /* Scroll-to-Top Floating Action Button & SVG Sizing Fix */
+    /* Scroll-to-Top Button & SVG Dimension Fix */
     #scrollToTopBtn {
         position: fixed;
         bottom: 25px; right: 25px; z-index: 1000;
@@ -328,6 +321,7 @@
     #scrollToTopBtn.show { opacity: 1; visibility: visible; transform: translateY(0); }
     #scrollToTopBtn:hover { transform: translateY(0) scale(1.08); background-color: rgba(32, 54, 92, 0.98); }
     
+    /* Fixiert SVG Aspect Ratio & Abmessungen */
     #scrollToTopBtn svg { 
         width: 24px; 
         height: 24px; 
@@ -340,12 +334,13 @@
         stroke-linejoin: round; 
     }
 
-    /* 2. TABLET BREAKPOINT (from 600px) */
+    /* 2. TABLET BREAKPOINT (ab 600px) */
     @media (min-width: 600px) {
         body { padding: 20px; }
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 10px; font-size: 0.9rem; }
         
+        /* Allgemeine Tabellen nutzen nowrap, außer der Finanztabelle */
         table:not(.summary-card table) td:first-child, 
         table:not(.summary-card table) th:first-child,
         table:not(.summary-card table) td:last-child, 
@@ -354,7 +349,7 @@
         }
     }
 
-    /* 3. DESKTOP BREAKPOINT (from 850px) */
+    /* 3. DESKTOP BREAKPOINT (ab 850px) */
     @media (min-width: 850px) {
         h1 { font-size: 2rem; }
         h2 { font-size: 1.5rem; }
