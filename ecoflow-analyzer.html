@@ -14,6 +14,7 @@
     <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCI+PHRleHQgeT0iODUiIGZvbnQtc2l6ZT0iODUiPvCfjKTvuI88L3RleHQ+PC9zdmc+" />
 
 <style>
+<style>
 :root {
     --bg: #060c1a;
     --panel: #0d182b;
@@ -75,7 +76,7 @@ h3 {
     border-radius: 8px; 
     padding: 20px; 
     margin-bottom: 20px; 
-    overflow: visible; /* Erlaubt das freie Ankleben der Tabellen-Header */
+    overflow: visible !important; /* Allows sticky positioning across card boundaries */
 }
 
 /* Form Controls & General Grid */
@@ -117,7 +118,7 @@ input, select {
     width: 100%; 
     box-sizing: border-box; 
     height: 34px; 
-    min-width: 0;
+    min-width: 0; /* Prevents inputs from overflowing */
 }
 
 input[type="date"] {
@@ -182,14 +183,14 @@ button:disabled { background: var(--text-dim); cursor: not-allowed; }
     min-width: 0;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 849px) {
     .config-row > .grid-2-col,
     .config-row > .span-2 {
         grid-column: 1 / -1;
     }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 850px) {
     .config-row { 
         grid-template-columns: repeat(4, 1fr); 
     }
@@ -203,6 +204,7 @@ button:disabled { background: var(--text-dim); cursor: not-allowed; }
    GLOBAL DATA TABLES & STICKY HEADER FIX
    ========================================== */
 
+/* Frame allows horizontal scrolling on tiny screens without breaking vertical sticky behavior */
 .table-scroll-frame {
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -213,40 +215,49 @@ button:disabled { background: var(--text-dim); cursor: not-allowed; }
 
 table { 
     width: 100%; 
+    min-width: 340px; /* Guarantees minimum width so Context column won't collapse */
     border-collapse: separate; 
     border-spacing: 0;
 }
 
 th, td { 
-    padding: 6px 8px; /* Kompakteres Padding verhindert aufgeblähte Zellen */
+    padding: 8px 6px; 
     text-align: left; 
     border-bottom: 1px solid var(--border); 
     font-size: 0.82rem; 
-    line-height: 1.35;
+    line-height: 1.25; /* Compact line-height prevents vertical stretching */
 }
 
-/* Erste beiden Spalten in einer Zeile halten (Metric & Value) */
-th:first-child, td:first-child,
+/* Col 1 (Metric Name) */
+th:first-child, td:first-child {
+    white-space: nowrap;
+    width: 40%;
+}
+
+/* Col 2 (Value) */
 th:nth-child(2), td:nth-child(2) {
     white-space: nowrap;
+    width: 25%;
+    font-weight: bold;
 }
 
-/* Nur Kontext/Letzte Spalte darf normal an Wortgrenzen umbrechen */
+/* Col 3 (Context) - Sufficient width and natural word wrap */
 th:last-child, td:last-child {
     white-space: normal;
     word-break: normal;
+    width: 35%;
 }
 
-/* Sticky Header für alle Tabellen */
+/* Guaranteed working sticky header across all tables */
 th { 
     color: var(--text-dim); 
     font-weight: normal; 
-    position: -webkit-sticky;
-    position: sticky; 
-    top: 0; 
-    background-color: var(--panel); 
-    z-index: 100; 
-    box-shadow: inset 0 -1px 0 var(--border), 0 2px 4px rgba(0,0,0,0.2); 
+    position: -webkit-sticky !important;
+    position: sticky !important; 
+    top: 0 !important; 
+    background-color: var(--panel) !important; 
+    z-index: 100 !important; 
+    box-shadow: inset 0 -1px 0 var(--border), 0 2px 4px rgba(0,0,0,0.3) !important; 
 }
 
 tr:hover { background: rgba(255, 255, 255, 0.02); }
@@ -462,6 +473,7 @@ tr.hidden-row {
 #scrollToTopBtn:hover svg {
     transform: translateY(-2px);
 }
+</style>
 </style>
 </head>
 <body>
