@@ -109,7 +109,8 @@
     .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
     .badge-info { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
     .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-    .badge-master { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; }
+    /*.badge-master { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; }*/
+    .badge-master { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid #ab6e07; }
 
     /* Summary Table */
     .summary-table {
@@ -713,8 +714,10 @@
 
       const resData = await response.json();
       localStorage.setItem(LOCAL_SYNC_KEY, resData.updated_at);
-
-      await checkGistStatus();
+      // Short delay (500ms) for stable API-Response
+      setTimeout(async () => {
+        await checkGistStatus();
+      }, 500);
     } catch (err) {
       alert(`Export failed: ${err.message}`);
       checkGistStatus();
