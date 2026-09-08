@@ -410,106 +410,117 @@
    * Main Status Check & UI Dynamic Router
    */
   async function checkGistStatus() {
-      const gistId = document.getElementById('gistId').value.trim();
-      const exportOptions = document.getElementById('exportOptionsArea');
-  
-      if (!gistId) {
-        renderSummary('WARNING', 'Missing Configuration', 'Please enter a Gist ID in settings.', []);
-        setButtonState('btn-disabled', '⚠️ Gist ID Missing', true, null);
-        exportOptions.classList.add('hidden');
-        return;
-      }
-  
-      try {
-        const response = await fetch(`https://api.github.com/gists/${gistId}`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}: Invalid Gist ID`);
-  
-        const data = await response.json();
-        const gistUpdatedAt = new Date(data.updated_at).getTime();
-        const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
-  
-        const backupFile = data.files['ecoflow_backup.json'];
-        const sizeInBytes = backupFile ? backupFile.size : 0;
-        const sizeInKB = (sizeInBytes / 1024).toFixed(2);
-  
-        // Extract internal backup payload timestamp if available
-        let contentTimestampStr = 'N/A';
-        if (backupFile && backupFile.content) {
-          try {
-            const parsed = JSON.parse(backupFile.content);
-            if (parsed.timestamp) {
-              contentTimestampStr = new Date(parsed.timestamp).toLocaleString();
-            }
-          } catch (e) {}
-        }
-  
-        const GRACE_PERIOD_MS = 20000;
-        const isRemoteNewer = (gistUpdatedAt - localSyncTs) > GRACE_PERIOD_MS;
-  
-        const latestDataTs = getLatestDataTimestamp();
-        const hasNewLocalData = latestDataTs && (!localSyncTs || latestDataTs > localSyncTs);
-  
-        adjustUIForRole();
-  
-        if (!localSyncTs || isRemoteNewer) {
-          // CASE 1: Cloud data is newer -> IMPORT ACTION (GREEN)
-          exportOptions.classList.add('hidden');
-          setButtonState('btn-success', '📥 Update LocalStorage', false, () => triggerImport(gistId));
-  
-          renderSummary('INFO', 'New Cloud Data Detected', 'Remote backup modification detected.', [
-            ['Gist File Modified', new Date(gistUpdatedAt).toLocaleString()],
-            ['Backup Content Date', contentTimestampStr],
-            ['Gist Size', `${sizeInKB} KB`],
-            ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
-            ['Status', '📥 Import Available']
-          ]);
-  
-        } else if (hasNewLocalData) {
-          // CASE 2: Local data is newer -> EXPORT ACTION
-          const hasToken = !!document.getElementById('githubToken').value.trim();
-          
-          if (hasToken) {
-            exportOptions.classList.remove('hidden');
-            setButtonState('btn-warning', '📤 Update Gist', false, () => triggerExport(gistId));
-          } else {
-            exportOptions.classList.add('hidden');
-            setButtonState('btn-disabled', '🔒 Read-Only Device (New Local Data)', true, null);
-          }
-  
-          const formattedLatestData = `<span style="color: var(--success); font-weight: 600;">${new Date(latestDataTs).toLocaleString()}</span>`;
-  
-          renderSummary('SUCCESS', 'New Local Data Ready', 'New local readings available for upload.', [
-            ['Gist File Modified', new Date(gistUpdatedAt).toLocaleString()],
-            ['Backup Content Date', contentTimestampStr],
-            ['Gist Size', `${sizeInKB} KB`],
-            ['Local Sync State', new Date(localSyncTs).toLocaleString()],
-            ['Latest Data Point', formattedLatestData],
-            ['Status', '📤 Ready for Export']
-          ]);
-  
-        } else {
-          // CASE 3: Fully Synced
-          exportOptions.classList.add('hidden');
-          setButtonState('btn-disabled', '✅ Local Data Fully Synced', true, null);
-  
-          const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
-  
-          renderSummary('SUCCESS', 'Fully Synced', 'Local data is up-to-date with Gist cloud.', [
-            ['Gist File Modified', new Date(gistUpdatedAt).toLocaleString()],
-            ['Backup Content Date', contentTimestampStr],
-            ['Gist Size', `${sizeInKB} KB`],
-            ['Local Sync State', new Date(localSyncTs).toLocaleString()],
-            ['Latest Data Point', formattedLatestData],
-            ['Status', '✅ Fully Synced']
-          ]);
-        }
-  
-      } catch (err) {
-        exportOptions.classList.add('hidden');
-        setButtonState('btn-disabled', '❌ Connection Error', true, null);
-        renderSummary('DANGER', 'Sync Check Failed', err.message, []);
-      }
+    const gistId = document.getElementById('gistId').value.trim();
+    const exportOptions = document.getElementById('exportOptionsArea');
+
+    if (!gistId) {
+      renderSummary('WARNING', 'Missing Configuration', 'Please enter a Gist ID in settings.', []);
+      setButtonState('btn-disabled', '⚠️ Gist ID Missing', true, null);
+      exportOptions.classList.add('hidden');
+      return;
     }
+
+    try {
+      const response = await fetch(`https://api.github.com/gists/${gistId}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}: Invalid Gist ID`);
+
+      const data = await response.json();
+      const gistUpdatedAt = new Date(data.updated_at).getTime();
+      const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
+
+      const backupFile = data.files['ecoflow_backup.json'];
+      const sizeInBytes = backupFile ? backupFile.size : 0;
+      const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+
+      // 1. Content Timestamp (Inhalt des Backups) auslesen
+      let backupContentTs = 0;
+      let backupContentStr = 'N/A';
+
+      if (backupFile && backupFile.content) {
+        try {
+          const parsed = JSON.parse(backupFile.content);
+          if (parsed.timestamp) {
+            backupContentTs = new Date(parsed.timestamp).getTime();
+            backupContentStr = new Date(parsed.timestamp).toLocaleString();
+          }
+        } catch (e) {}
+      }
+
+      // 2. Neuesten lokalen Datenpunkt ermitteln
+      const latestDataTs = getLatestDataTimestamp();
+      const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
+
+      // Prüfen, ob die Gist-Datei manuell bearbeitet wurde (File modified > Content Timestamp)
+      const isManualGistEdit = (gistUpdatedAt - backupContentTs) > 30000;
+      const modifiedLabel = isManualGistEdit 
+        ? `${new Date(gistUpdatedAt).toLocaleString()} <span style="color: var(--warning); font-size: 0.75rem;">(Manual Edit)</span>`
+        : new Date(gistUpdatedAt).toLocaleString();
+
+      adjustUIForRole();
+
+      // DECISION MATRIX: Basiert nun auf echten Inhalts-Daten!
+      
+      const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
+      const hasNewLocalData = latestDataTs && latestDataTs > (backupContentTs + 20000);
+
+      if (isRemoteContentNewer) {
+        // CASE 1: In der Cloud liegen tatsächlich NEUERE MESSDATEN -> Importieren
+        exportOptions.classList.add('hidden');
+        setButtonState('btn-success', '📥 Update LocalStorage', false, () => triggerImport(gistId));
+
+        renderSummary('INFO', 'New Cloud Data Available', 'Remote backup contains newer measurements.', [
+          ['Gist File Modified', modifiedLabel],
+          ['Backup Content Date', backupContentStr],
+          ['Gist Size', `${sizeInKB} KB`],
+          ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
+          ['Latest Data Point', formattedLatestData],
+          ['Status', '📥 Import Available']
+        ]);
+
+      } else if (hasNewLocalData) {
+        // CASE 2: Lokale Messdaten sind neuer -> Exportieren
+        const hasToken = !!document.getElementById('githubToken').value.trim();
+
+        if (hasToken) {
+          exportOptions.classList.remove('hidden');
+          setButtonState('btn-warning', '📤 Update Gist', false, () => triggerExport(gistId));
+        } else {
+          exportOptions.classList.add('hidden');
+          setButtonState('btn-disabled', '🔒 Read-Only Device (New Local Data)', true, null);
+        }
+
+        const highlightedLocalData = `<span style="color: var(--success); font-weight: 600;">${formattedLatestData}</span>`;
+
+        renderSummary('SUCCESS', 'New Local Data Ready', 'New local readings available for upload.', [
+          ['Gist File Modified', modifiedLabel],
+          ['Backup Content Date', backupContentStr],
+          ['Gist Size', `${sizeInKB} KB`],
+          ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
+          ['Latest Data Point', highlightedLocalData],
+          ['Status', '📤 Ready for Export']
+        ]);
+
+      } else {
+        // CASE 3: Datenstand ist vollkommen synchron
+        exportOptions.classList.add('hidden');
+        setButtonState('btn-disabled', '✅ Local Data Fully Synced', true, null);
+
+        renderSummary('SUCCESS', 'Fully Synced', 'Local data is up-to-date with Gist cloud.', [
+          ['Gist File Modified', modifiedLabel],
+          ['Backup Content Date', backupContentStr],
+          ['Gist Size', `${sizeInKB} KB`],
+          ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
+          ['Latest Data Point', formattedLatestData],
+          ['Status', '✅ Fully Synced']
+        ]);
+      }
+
+    } catch (err) {
+      exportOptions.classList.add('hidden');
+      setButtonState('btn-disabled', '❌ Connection Error', true, null);
+      renderSummary('DANGER', 'Sync Check Failed', err.message, []);
+    }
+  }
 
   function setButtonState(className, text, disabled, onClickHandler) {
     const btn = document.getElementById('mainActionBtn');
