@@ -39,11 +39,18 @@
     h1, h2, h3 { color: #fff; margin-top: 0; }
     h1 { font-size: 1.5rem; }
     h2 { font-size: 1.2rem; }
+    
+    /* Generelle Sticky-Einstellung für ALLE h3 Überschriften */
     h3 { 
         font-size: 0.9rem; 
-        padding-bottom: 5px; 
+        padding: 8px 0; 
         margin-top: 20px; 
+        margin-bottom: 0;
         color: var(--text-dim); 
+        position: sticky;
+        top: 0;
+        background-color: var(--panel);
+        z-index: 12; /* Höher als TH, damit Text nicht durchscheint */
     }
 
     .container { max-width: 1200px; margin: 0 auto; }
@@ -146,6 +153,14 @@
         min-width: 0;
     }
 
+    /* Table Scroll Frame Kompatibilität mit Sticky Elements */
+    .table-scroll-frame {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        margin-top: 15px;
+        overflow-x: auto;
+    }
+
     /* Tabellen Grundstruktur */
     table { 
         width: 100%; 
@@ -159,11 +174,12 @@
         font-size: 0.85rem; 
         word-break: break-word; 
     }
+    /* ALLE Table Header docken exakt unter dem sticky H3 an */
     th { 
         color: var(--text-dim); 
         font-weight: normal; 
         position: sticky; 
-        top: 0; 
+        top: 33px; /* Höhe des sticky H3 */
         background-color: var(--panel); 
         z-index: 10; 
         box-shadow: inset 0 -1px 0 var(--border); 
@@ -180,14 +196,10 @@
     }
     
     .summary-card h3 {
-        margin: 0 0 10px 0;
-        font-size: 0.9rem;
-        color: var(--text-dim);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        margin-top: 0;
     }
 
-    /* Exklusiv für Finanztabelle: Erste Spalte schmaler, rechte Spalte breiter */
+    /* Exklusiv für Finanztabelle: Spaltenbreiten */
     .summary-card table {
         table-layout: fixed;
         width: 100%;
@@ -304,7 +316,6 @@
     #scrollToTopBtn.show { opacity: 1; visibility: visible; transform: translateY(0); }
     #scrollToTopBtn:hover { transform: translateY(0) scale(1.08); background-color: rgba(32, 54, 92, 0.98); }
     
-    /* Fixiert SVG Aspect Ratio & Abmessungen */
     #scrollToTopBtn svg { 
         width: 24px; 
         height: 24px; 
@@ -323,7 +334,6 @@
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 10px; font-size: 0.9rem; }
         
-        /* Allgemeine Tabellen nutzen nowrap, außer der Finanztabelle */
         table:not(.summary-card table) td:first-child, 
         table:not(.summary-card table) th:first-child,
         table:not(.summary-card table) td:last-child, 
