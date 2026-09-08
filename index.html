@@ -21,6 +21,7 @@
   --bat:#00f584; --bat-low:#ff3355; --offline:#ff3355; --offline-bg:rgba(255,51,85,.07);
   --mono:'JetBrains Mono',monospace; --sans:'IBM Plex Sans',sans-serif; --radius:10px;
   --hi-text:#f0f8ff; --card-border-live:rgba(0,245,132,.4); --card-border-off:rgba(255,51,85,.35);
+  /* light-dark() — adapts if user switches OS to light mode */
   color-scheme: dark light;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -73,12 +74,12 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
   justify-content:center;gap:8px;overflow:hidden;padding: 5px;margin-bottom:5px;}
 
 .section-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--muted);
-  text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
-.devices-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:20px;}
+  text-transform:uppercase;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+.devices-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:28px;}
 
-/* Device cards — Compact Layout */
+/* Device cards */
 .device-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:12px 14px;position:relative;overflow:hidden;transition:border-color .3s;}
+  padding:20px;position:relative;overflow:hidden;transition:border-color .3s;}
 .device-card.live{border-color:var(--card-border-live);}
 .device-card.offline{border-color:var(--card-border-off);background:var(--offline-bg);}
 .device-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
@@ -91,46 +92,40 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .online-badge.yes{color:#00ff88;border-color:rgba(0,255,136,.5);background:rgba(0,255,136,.1);}
 .online-badge.no{color:#ff5577;border-color:rgba(255,85,119,.4);background:rgba(255,85,119,.08);}
 .online-badge.wait{color:var(--muted);border-color:var(--muted);}
-.offline-msg{display:flex;flex-direction:column;align-items:center;padding:12px 10px;gap:4px;}
-.offline-icon{font-size:1.6rem;opacity:.6;}
-.offline-text{font-family:var(--mono);font-size:.78rem;color:#8fb0cc;text-align:center;line-height:1.5;}
+.offline-msg{display:flex;flex-direction:column;align-items:center;padding:28px 16px;gap:8px;}
+.offline-icon{font-size:2rem;opacity:.6;}
+.offline-text{font-family:var(--mono);font-size:.78rem;color:#8fb0cc;text-align:center;line-height:1.7;}
 .offline-since{font-size:.65rem;color:var(--muted);opacity:.8;}
-
-.power-flow{display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;margin-bottom:8px;align-items:center;}
-.flow-node{text-align:center;padding:2px 4px;}
-.flow-icon{font-size:1.1rem;margin-bottom:1px;}
-.flow-label{font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.06em;}
-.flow-value{font-family:var(--mono);font-size:1.15rem;font-weight:700;margin:1px 0;}
-.flow-value.solar{color:#ffcc44;text-shadow:0 0 10px rgba(255,200,50,.4);}
-.flow-value.inv{color:#22e8ff;text-shadow:0 0 10px rgba(0,230,255,.3);}
-.flow-value.bat{color:#00ff88;text-shadow:0 0 10px rgba(0,255,136,.3);}
-.flow-unit{font-family:var(--mono);font-size:.6rem;color:#8fb0cc;}
-.flow-divider{width:1px;height:32px;background:var(--border);margin:0 auto;}
-
-.bat-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.power-flow{display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;margin-bottom:16px;align-items:center;}
+.flow-node{text-align:center;padding:10px 6px;}
+.flow-icon{font-size:1.4rem;margin-bottom:3px;}
+.flow-label{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.06em;}
+.flow-value{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin:3px 0;}
+.flow-value.solar{color:#ffcc44;text-shadow:0 0 14px rgba(255,200,50,.5);}
+.flow-value.inv{color:#22e8ff;text-shadow:0 0 14px rgba(0,230,255,.4);}
+.flow-value.bat{color:#00ff88;text-shadow:0 0 12px rgba(0,255,136,.35);}
+.flow-unit{font-family:var(--mono);font-size:.62rem;color:#8fb0cc;}
+.flow-divider{width:1px;height:44px;background:var(--border);margin:0 auto;}
+.bat-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
 .bat-label{font-family:var(--mono);font-size:.68rem;color:#8fb0cc;white-space:nowrap;}
 .bat-track{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;}
 .bat-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1),background .4s;}
 .bat-pct{font-family:var(--mono);font-size:.78rem;min-width:34px;text-align:right;font-weight:600;}
-
 .metrics{display:grid;grid-template-columns:1fr 1fr;background:var(--border);gap:1px;cursor: pointer;user-select: none;
-  border:0px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:4px;}
-.metric{background:var(--surface);padding:7px 10px;display:flex;justify-content:space-between;align-items:center;}
-.metric-label{font-size:.68rem;color:#8fb0cc;}
-.metric-value{font-family:var(--mono);font-size:.75rem;color:var(--hi-text);font-weight:600;}
+  border:0px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:6px;}
+.metric{background:var(--surface);padding:9px 12px;display:flex;justify-content:space-between;align-items:center;}
+.metric-label{font-size:.7rem;color:#8fb0cc;}
+.metric-value{font-family:var(--mono);font-size:.78rem;color:var(--hi-text);font-weight:600;}
 .metric-value.hi{color:#ffcc44;}
 .metric.extra {display: none;}
 .metrics.expanded .metric.extra {display: flex;}
-
-/* 3-Column Footer Layout */
-.metrics-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin-top:4px;cursor:pointer;user-select:none;}
-.toggle-indicator{font-family:var(--mono);font-size:.62rem;color:var(--muted);cursor:pointer;user-select:none;}
-.card-today{font-family:var(--mono);font-size:.85rem;/*color:var(--solar);*/font-weight:700;text-align:center;white-space:nowrap;}
+.metrics-footer{display: flex;justify-content: space-between;align-items: center;gap: 8px;cursor: pointer;user-select: none;}
+.toggle-indicator{font-family: var(--mono);font-size: .62rem;color: var(--muted);cursor: pointer;user-select: none;}
 .card-time{font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;}
 
 /* Charts */
-.chart-section{margin-bottom:20px;position:relative;}
-.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.chart-section{margin-bottom:24px;position:relative;}
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
 .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .chart-legend{display:flex;gap:14px;font-family:var(--mono);font-size:.63rem;}
 .legend-item{display:flex;align-items:center;gap:5px;color:var(--muted);}
@@ -138,7 +133,7 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 canvas{width:100%;display:block;}
 
 /* Log */
-.log-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;max-height:200px;overflow-y:auto;margin-bottom:20px;}
+.log-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;max-height:200px;overflow-y:auto;margin-bottom: 24px;}
 .log-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.67rem;}
 .log-table th{padding:7px 12px;text-align:left;color:var(--muted);font-weight:400;
   border-bottom:1px solid var(--border);font-size:.63rem;letter-spacing:.07em;}
@@ -213,10 +208,10 @@ canvas{width:100%;display:block;}
   <div id="weatherInline"></div>
 
   <!-- Devices grid -->
-  <div class="section-title">
+  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
     <span>DEVICES</span>
   </div>
-  <div class="devices-grid" id="devicesGrid">
+  <div class="devices-grid" id="devicesGrid" style="margin-bottom:28px;">
     <div data-placeholder style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);
       font-family:var(--mono);font-size:.8rem;">
       <div style="font-size:2rem;margin-bottom:12px;opacity:.3">⚡</div>
@@ -280,8 +275,8 @@ canvas{width:100%;display:block;}
 //  CONFIG — stored in localStorage, editable via setup modal
 // ════════════════════════════════════════════════════════════════
 const STORAGE_KEY   = "ecoflow_config";
-const NAMES_KEY     = "ecoflow_names";   
-let   customNames   = {};                
+const NAMES_KEY     = "ecoflow_names";   // custom device names
+let   customNames   = {};                // sn → custom name
 
 function loadNames() {
   try { customNames = JSON.parse(localStorage.getItem(NAMES_KEY) || "{}"); } catch {}
@@ -315,7 +310,7 @@ function showSetup() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  SIGNATURE (EcoFlow open API)
+//  SIGNATURE (EcoFlow open API — Java demo algorithm)
 // ════════════════════════════════════════════════════════════════
 async function hmacSha256(secret, message) {
   const enc  = new TextEncoder();
@@ -369,7 +364,7 @@ async function apiGet(path, params=null) {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  MQTT over WebSocket
+//  MQTT over WebSocket (port 8084 — confirmed working)
 // ════════════════════════════════════════════════════════════════
 function encLen(n){const o=[];do{let b=n%128;n=Math.floor(n/128);if(n)b|=0x80;o.push(b);}while(n);return new Uint8Array(o);}
 function mStr(s){const b=new TextEncoder().encode(s),h=new Uint8Array(2);new DataView(h.buffer).setUint16(0,b.length);return concat(h,b);}
@@ -392,11 +387,14 @@ function mqttPingResp(){return new Uint8Array([0xD0,0x00]);}
 let mqttWs = null, pingTimer = null, pongTimer = null;
 const RECONNECT_MS = 5000;
 
+// ── Each tab/device connects to MQTT independently without pipeline collision ──
 function connectMqtt(creds, devices) {
   const host = creds.url.replace(/^mqtts?:\/\//, "");
   const accountId = creds.certificateAccount;
   const wsUrl = `wss://${host}:8084/mqtt`;
 
+  // OPTIMIZATION: Compute a purely volatile, deterministic hardware fingerprint 
+  // to prevent identical ClientIDs from kicking family devices offline.
   const userAgent = navigator.userAgent.toLowerCase();
   const screenWidth = window.screen.width || 0;
   const screenHeight = window.screen.height || 0;
@@ -407,6 +405,8 @@ function connectMqtt(creds, devices) {
   else if (userAgent.includes("windows")) platform = "Windows";
   else if (userAgent.includes("macintosh")) platform = "Mac";
   const geometricHash = ((screenWidth * 7) + (screenHeight * 13)) % 1000;
+  
+  // Final dynamic but stable ClientID (Bypasses localStorage to protect your nightly sync merges)
   const clientId = `${accountId}_${platform}${geometricHash}`;
 
   setStatus("conn", "Connecting MQTT…");
@@ -417,6 +417,8 @@ function connectMqtt(creds, devices) {
   let mqttBuf = new Uint8Array(0), pid = 1, subscribed = false;
 
   mqttWs.onopen = () => {
+    // We pass the unique fingerprinted clientId to the connection broker, 
+    // but preserve the official accountId for authentication credentials.
     mqttWs.send(mqttConnect(clientId, accountId, creds.certificatePassword));
   };
 
@@ -434,14 +436,18 @@ function connectMqtt(creds, devices) {
       const body = mqttBuf.slice(pos, pos + rlen);
       off = pos + rlen;
 
-      if (type === 2) { 
+      if (type === 2) { // CONNACK
         if (body[1] !== 0) { setStatus("error", `MQTT rc=${body[1]}`); return; }
         setStatus("live", "MQTT Live");
+        
+        // START UI TIMERS (Ensures clean runtime allocations)
         initPwaPerformanceTimers();
         
+        mqttRetry = 2000; 
         if (!subscribed) {
           subscribed = true;
           for (const d of devices) {
+            // Topics must strictly use the original accountId template required by the EcoFlow cloud
             mqttWs.send(mqttSub(pid++, `/open/${accountId}/${d.sn}/quota`, 1));
             mqttWs.send(mqttSub(pid++, `/open/${accountId}/${d.sn}/status`, 1));
           }
@@ -465,7 +471,7 @@ function connectMqtt(creds, devices) {
           }
         }, 20000);
       }
-      else if (type === 3) { 
+      else if (type === 3) { // PUBLISH
         const qos = (fb>>1)&3;
         let p = 0;
         const tl = (body[p]<<8)|body[p+1]; p+=2;
@@ -474,7 +480,7 @@ function connectMqtt(creds, devices) {
         const payload = new TextDecoder().decode(body.slice(p));
         handleMqtt(topic, payload, devices, accountId);
       }
-      else if (type === 9) {} 
+      else if (type === 9) {} // SUBACK
       else if (type === 12) mqttWs.send(mqttPingResp()); 
       else if (type === 13) { clearTimeout(pongTimer); pongTimer = null; } 
     }
@@ -482,6 +488,7 @@ function connectMqtt(creds, devices) {
   };
 
   mqttWs.onclose = () => {
+    // Clean up routines on onclose to prevent resource stack leaks
     function clearPwaPerformanceTimers() {
       if (uiRenderIntervalId) { clearInterval(uiRenderIntervalId); uiRenderIntervalId = null; }
       if (pwaSaveIntervalId) { clearInterval(pwaSaveIntervalId); pwaSaveIntervalId = null; }
@@ -489,6 +496,7 @@ function connectMqtt(creds, devices) {
       if (pongTimer) { clearTimeout(pongTimer); pongTimer = null; }
       if (idleTimeoutId) { clearTimeout(idleTimeoutId); idleTimeoutId = null; }
       
+      // Clean high-performance passive lifecycle event listeners cleanly
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", resetIdleTimer);
       window.removeEventListener("touchstart", resetIdleTimer);
@@ -496,7 +504,9 @@ function connectMqtt(creds, devices) {
       window.removeEventListener("keydown", resetIdleTimer);
     }
 
+    // FIX: Actively call the cleanup function to clear performance cycles from RAM
     clearPwaPerformanceTimers();
+    
     setStatus("error", "Reconnecting…");
     setTimeout(() => connectMqtt(creds, devices), RECONNECT_MS);
   };
@@ -507,13 +517,13 @@ function connectMqtt(creds, devices) {
 // ════════════════════════════════════════════════════════════════
 //  STATE & MESSAGE HANDLING
 // ════════════════════════════════════════════════════════════════
-const state    = {};   
-const hist     = {};   
-const dailyWh  = {};   
-const hourlyWh = {};   
-const lastSnap = {};   
+const state    = {};   // sn → {name, status, data, lastSeen}
+const hist     = {};   // sn → [{ts, watts}]
+const dailyWh  = {};   // sn → {"YYYY-MM-DD" → Wh}
+const hourlyWh = {};   // sn → {"YYYY-MM-DD HH" → Wh}
+const lastSnap = {};   // sn → {ts, watts}
 const logRows  = [];
-const snColorMap = {}; 
+const snColorMap = {}; // sn → color — set once from API order, never changes
 const MAX_H    = 120, MAX_LOG = 50;
 const COLORS = ["#00d4ff","#f5a623","#00e87a","#ff7f00","#c084fc","#f43f5e","#facc15","#34d399"];
 const WH_KEY   = "ecoflow_wh";
@@ -521,6 +531,7 @@ const WHH_KEY  = "ecoflow_wh_hourly";
 
 function colorFor(sn) {
   if (!snColorMap[sn]) {
+    // Fallback: assign by insertion order if not yet set
     const idx = Object.keys(snColorMap).length;
     snColorMap[sn] = COLORS[idx % 4];
   }
@@ -529,17 +540,22 @@ function colorFor(sn) {
   
 function saveWh() {
   try {
+    // 1. Daily values — Optimized direct delta persistence
     const stored = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
+    
     for (const [sn, days] of Object.entries(dailyWh)) {
       if (!stored[sn]) stored[sn] = {};
+      // Only merge what actually changed or is higher, avoiding full historical loops
       for (const [day, wh] of Object.entries(days)) {
         if (!(day in stored[sn]) || wh > stored[sn][day]) {
           stored[sn][day] = wh;
         }
       }
     }
+    // Optimization: Directly reference the memory object instead of deep-looping backwards
     localStorage.setItem(WH_KEY, JSON.stringify(stored));
 
+    // 2. Hourly values — Aggregate and clean old records
     const storedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
     for (const [sn, hours] of Object.entries(hourlyWh)) {
       if (!storedH[sn]) storedH[sn] = {};
@@ -550,18 +566,25 @@ function saveWh() {
       }
     }
 
+    // Set rolling 48-hour cutoff timestamp
     const cutOffDate = new Date();
     cutOffDate.setHours(cutOffDate.getHours() - 48);
+    
+    // Generate a lexicographically sortable string: "YYYY-MM-DD HH"
     const pad = (n) => String(n).padStart(2, '0');
     const cutOffStr = `${cutOffDate.getFullYear()}-${pad(cutOffDate.getMonth() + 1)}-${pad(cutOffDate.getDate())} ${pad(cutOffDate.getHours())}`;
 
+    // Perform ultra-fast pruning using a simple string comparison (avoids expensive Date parsing)
     for (const sn in storedH) {
       const cleanedHours = {};
       for (const [hr, wh] of Object.entries(storedH[sn])) {
-        if (hr >= cutOffStr) cleanedHours[hr] = wh;
+        // String format allows direct comparison ("2026-08-11 14" >= "2026-08-09 14")
+        if (hr >= cutOffStr) {
+          cleanedHours[hr] = wh;
+        }
       }
       storedH[sn] = cleanedHours;
-      hourlyWh[sn] = cleanedHours; 
+      hourlyWh[sn] = cleanedHours; // Sync runtime memory cache
     }
 
     localStorage.setItem(WHH_KEY, JSON.stringify(storedH));
@@ -572,30 +595,39 @@ function saveWh() {
 
 function loadWh() {
   try {
+    // 1. Daily data — Ultra-fast memory allocation via native Object.assign
     const saved = JSON.parse(localStorage.getItem(WH_KEY) || "{}");
     for (const [sn, days] of Object.entries(saved)) {
-      dailyWh[sn] = Object.assign({}, days);
+      dailyWh[sn] = Object.assign({}, days); // Native cloning bypasses expensive for-loops
     }
+
+    // 2. Hourly data — Ultra-fast memory allocation via native Object.assign
     const savedH = JSON.parse(localStorage.getItem(WHH_KEY) || "{}");
     for (const [sn, hours] of Object.entries(savedH)) {
-      hourlyWh[sn] = Object.assign({}, hours);
+      hourlyWh[sn] = Object.assign({}, hours); // Native cloning bypasses expensive for-loops
     }
   } catch (e) {
     console.error("Error loading Wh data from localStorage:", e);
   }
 }
 
+// ── Offline Watcher ───────────────────────────────────────────────────────────
+// PRIMARY: /status MQTT topic → instant online/offline detection
+// FALLBACK: If no /status message AND no data arrives for 2 minutes → offline
+// NOTE: Automatically throttles reconnect attempts to prevent infinite loop traps
 setInterval(() => {
   let changed = false;
   let needsReconnect = false;
   const now = Date.now();
 
   for (const [sn, s] of Object.entries(state)) {
+    // 2 minutes (120,000 ms) without data or status message → assume connection stalled
     if (s.status === "live" && s.lastSeen && (now - s.lastSeen) > 120000) {
       s.status = "offline"; 
       changed = true;
-      needsReconnect = true; 
+      needsReconnect = true; // Flag that the data stream has completely stalled
     }
+    // "waiting" status → flip to offline if stuck for 2 minutes
     if (s.status === "waiting" && s.firstSubscribedAt && (now - s.firstSubscribedAt) > 120000) {
       s.status = "offline"; 
       changed = true;
@@ -603,18 +635,27 @@ setInterval(() => {
     }
   }
   
+  // Re-render UI if any device state changed
   if (changed) { 
     renderDevices(); 
     renderLog(); 
   } 
   
-  if (needsReconnect && typeof mqttWs !== 'undefined' && mqttWs !== null) {
-    if (mqttWs.readyState === WebSocket.OPEN) {
-      console.warn("Data stream stalled. Resetting MQTT...");  
-      mqttWs.close(); 
+  // Force a clean MQTT reconnect if the data stream stalled
+  if (needsReconnect) {
+    // Ensure the WebSocket instance exists and is globally available
+    if (typeof mqttWs !== 'undefined' && mqttWs !== null) {
+      // FIX: Only call close() if the socket is actively OPEN.
+      // If it is CONNECTING (1) or already CLOSING (2), do NOT interrupt the browser!
+      if (mqttWs.readyState === WebSocket.OPEN) {
+        console.warn("Data stream stalled for 2 minutes. Resetting MQTT connection wrapper...");  
+        mqttWs.close(); // Triggers the native onclose handler to rebuild the connection cleanly
+      } else {
+        console.log(`⏳ MQTT reconnect deferred. Socket is currently in readyState: ${mqttWs.readyState}`);
+      }
     }
   }
-}, 30000);
+}, 30000); // Execute check every 30 seconds
 
 function handleMqtt(topic, payload, devices, clientId) {
   const parts = topic.split("/");
@@ -633,30 +674,37 @@ function handleMqtt(topic, payload, devices, clientId) {
       state[sn].status  = "live";
       state[sn].lastSeen = Date.now();
     } else {
+      // offline message — covers both "waiting" and "live" states
       state[sn].status = "offline";
     }
     renderDevices();
     return;
   }
 
+  // quota — merge partial update into accumulated state
   const incoming = msg.param ?? msg.params ?? msg;
   if (!incoming || typeof incoming !== "object") return;
 
   if (!state[sn]) state[sn] = { name, status:"live", data:{}, lastSeen:null };
   Object.assign(state[sn].data, incoming);
+  // Always flip to live when data arrives — fixes stuck-offline after reconnect
   state[sn].status   = "live";
   state[sn].lastSeen = Date.now();
+  // Show power section immediately on first data
   document.getElementById("powerSection").style.display = "";
 
   const data = state[sn].data;
   const watts = (data.powGetPv ?? 0) + (data.powGetPv2 ?? 0);
 
+  // History ring buffer
   if (!hist[sn]) hist[sn] = [];
   hist[sn].push({ ts: Date.now(), watts });
   if (hist[sn].length > MAX_H) hist[sn].shift();
 
+  // Wh accumulation
   accumulateWh(sn, watts);
 
+  // Log
   logRows.unshift({ ts: new Date(), sn, name, data: {...data} });
   if (logRows.length > MAX_LOG) logRows.pop();
 
@@ -668,7 +716,7 @@ function accumulateWh(sn, watts) {
   const d   = new Date();
   const pad = n => String(n).padStart(2,"0");
   const day  = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const hour = `${day} ${pad(d.getHours())}`; 
+  const hour = `${day} ${pad(d.getHours())}`; // local time "YYYY-MM-DD HH"
 
   if (!dailyWh[sn])        dailyWh[sn]        = {};
   if (!dailyWh[sn][day])   dailyWh[sn][day]   = 0;
@@ -686,6 +734,7 @@ function accumulateWh(sn, watts) {
       const wh = ((watts + lastSnap[sn].watts) / 2) * dt;
       dailyWh[sn][day] += wh;
       if (lastHour !== hour) {
+        // Hour boundary crossed — split proportionally by local minutes
         const minIntoHour = d.getMinutes() + d.getSeconds() / 60;
         const fracNew = minIntoHour / 60;
         if (!hourlyWh[sn][lastHour]) hourlyWh[sn][lastHour] = 0;
@@ -695,23 +744,30 @@ function accumulateWh(sn, watts) {
         hourlyWh[sn][hour] += wh;
       }
     }
+    // Gap > 3 min → stale, skip accumulation
   }
 
   lastSnap[sn] = { ts: now, watts };
 }
 
-// ── TIMERS ──────────────────────────────────────────────────────────────────
+// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────────────────────
 let uiRenderIntervalId = null;
 let pwaSaveIntervalId = null;
 let idleTimeoutId = null;
 let currentRenderSpeed = 5000;
+
+// Track rendering phases in RAM to prevent main-thread blocking
 let renderTickCount = 0;
 
+// Central render function pulling from live background memory
 function runUiRender() {
+  // PHASE 1: Fast GUI and log elements are rendered on every interval tick
   if (typeof renderDevices === "function") renderDevices();
   if (typeof renderLog === "function") renderLog();
 
+  // PHASE 2: Heavy charts are time-sliced to distribute CPU load evenly
   if (currentRenderSpeed === 1000) {
+    // Alternating chart updates every 2 seconds during active high-perf mode
     if (renderTickCount % 2 === 0) {
       if (typeof renderPowerChart === "function") renderPowerChart();
     } else {
@@ -719,11 +775,13 @@ function runUiRender() {
     }
     renderTickCount++;
   } else {
+    // In background/idle mode, render everything at once since time permits
     if (typeof renderPowerChart === "function") renderPowerChart();
     if (typeof renderWhChart === "function") renderWhChart();
   }
 }
 
+// Safely update intervals without dropping states
 function setUiRenderSpeed(ms) {
   if (currentRenderSpeed === ms && uiRenderIntervalId) return;
   currentRenderSpeed = ms;
@@ -731,36 +789,53 @@ function setUiRenderSpeed(ms) {
   uiRenderIntervalId = setInterval(runUiRender, ms);
 }
 
+// Triggered on active physical screen interactions
 function resetIdleTimer() {
+  // Switch back to high performance 1s intervals instantly when active
   setUiRenderSpeed(1000); 
+
   clearTimeout(idleTimeoutId);
+  // Drop to power saving mode after 20 seconds of pure layout inactivity
   idleTimeoutId = setTimeout(() => {
+    console.log("🔋 UI is unattended. Dropping UI refresh to 10s to preserve battery.");
     setUiRenderSpeed(10000);
   }, 20000);
 }
 
+// Handle native OS visibility shifts (minimizing, backgrounding, tab switching)
 function handleVisibilityChange() {
   if (document.hidden) {
+    console.log("🔋 PWA moved to background. Locking refresh cycle to 10s.");
     clearTimeout(idleTimeoutId);
-    setUiRenderSpeed(10000); 
+    setUiRenderSpeed(10000); // Instantly drop to 10s when hidden
   } else {
-    resetIdleTimer(); 
+    console.log("⚡ PWA restored to foreground. Boosting fresh live thread.");
+    resetIdleTimer(); // Instantly boost to 1s when window focuses
   }
 }
 
+// Initialize performance timers and orchestrate non-blocking UI/DB threads
 function initPwaPerformanceTimers() {
+  // Establish default high-performance render baseline
   setUiRenderSpeed(1000);
   resetIdleTimer();
 
+  // Setup batch database savings to localStorage twice per minute
   if (pwaSaveIntervalId) clearInterval(pwaSaveIntervalId);
   pwaSaveIntervalId = setInterval(() => {
     requestAnimationFrame(() => {
-      if (typeof saveWh === "function") saveWh();
+      if (typeof saveWh === "function") {
+        saveWh();
+        console.log("💾 RAM database asynchronously persisted to localStorage.");
+      }
     });
   }, 30000);
 
+  // Monitor interaction metrics using lightweight, native browser focus lifecycles
   document.addEventListener("visibilitychange", handleVisibilityChange, { passive: true });
   window.addEventListener("focus", resetIdleTimer, { passive: true });
+  
+  // Real touch and click inputs remain as high-priority awake triggers
   window.addEventListener("touchstart", resetIdleTimer, { passive: true });
   window.addEventListener("click", resetIdleTimer, { passive: true });
   window.addEventListener("keydown", resetIdleTimer, { passive: true });
@@ -772,18 +847,10 @@ function initPwaPerformanceTimers() {
 function setStatus(cls, text) {
   const badge = document.getElementById("statusBadge");
   badge.className = "status-badge " + cls;
-  badge.title = text;
+  badge.title = text; // tooltip on hover/long-press
 }
 
 function cardHtml(sn, s) {
-  const now = new Date();
-  const pad = n => String(n).padStart(2, "0");
-  const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const todaysWh = dailyWh[sn]?.[todayKey] ?? 0;
-  const todaysYieldText = todaysWh >= 1000 
-    ? (todaysWh / 1000).toFixed(2) + " kWh" 
-    : todaysWh.toFixed(0) + " Wh";
-
   const nameDisplay = `
     <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
       <div id="name-${sn}" class="device-name" onclick="editName('${sn}')" title="Click to rename" style="cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
@@ -800,7 +867,7 @@ function cardHtml(sn, s) {
     <div class="offline-msg">
       <div class="offline-icon">🌙</div>
       <div class="offline-text">Device offline - No solar input</div>
-      <div class="offline-since">Last: ${s.lastSeen ? fmtTime(new Date(s.lastSeen)) : "No data"} | ${todaysYieldText ? todaysYieldText : "- Wh"}</div>
+      <div class="offline-since">${s.lastSeen ? "Last: "+fmtTime(new Date(s.lastSeen)) : "No data"}</div>
     </div>`];
 
   if (s.status === "waiting") return [`device-card`, `
@@ -814,7 +881,6 @@ function cardHtml(sn, s) {
   const vol = d.gridConnectionVol??null, freq = d.gridConnectionFreq??null;
   const batSoc = d.batSoc??null;
   const batColor = batSoc===null?"var(--muted)":batSoc>20?"var(--bat)":"var(--bat-low)";
-
   return [`device-card live`, `
     <div class="device-header" style="flex-direction:column;gap:4px;">${nameDisplay}</div>
     <div class="power-flow">
@@ -845,14 +911,14 @@ function cardHtml(sn, s) {
     </div>
     <div class="metrics-footer" title="Tap to toggle details" onclick="toggleMetrics('${sn}', this)">
       <div class="toggle-indicator">${expandedMetrics.has(sn) ? '↑ Hide' : '↓ Details'}</div>
-      <div class="card-today" style="color:${colorFor(sn)}" title="Today's yield">${todaysYieldText}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
 }
 
+// Tracks which device serial numbers have their metrics expanded
 const expandedMetrics = new Set();
 function toggleMetrics(sn, element) {
-  const container = element.classList.contains('metrics') ? element : element.previousElementSibling;
+  const container = element.classList.contains('metrics')  ? element : element.previousElementSibling;
   if (!container) return;
   
   const indicator = element.classList.contains('metrics-footer') ? element.querySelector('.toggle-indicator')
@@ -880,10 +946,6 @@ function renderDevices() {
   const fragment = document.createDocumentFragment();
   let hasNewElements = false;
 
-  const now = new Date();
-  const pad = n => String(n).padStart(2, "0");
-  const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-
   sns.forEach(sn => {
     const s = state[sn];
     const id = `dc-${sn}`;
@@ -893,14 +955,12 @@ function renderDevices() {
     if (!el) {
       el = document.createElement("div");
       el.id = id;
-      fragment.appendChild(el); 
+      fragment.appendChild(el);
       hasNewElements = true;
     }
     
-    const todaysWh = dailyWh[sn]?.[todayKey] ?? 0;
     const key = s.status + (s.lastSeen||0) +
-      (s.data?.powGetPv??0).toFixed(0) + (s.data?.gridConnectionPower??0).toFixed(0) +
-      todaysWh.toFixed(0);
+      (s.data?.powGetPv??0).toFixed(0) + (s.data?.gridConnectionPower??0).toFixed(0);
       
     if (el.dataset.key !== key) {
       el.className = cls;
@@ -1043,20 +1103,22 @@ function renderPowerChart() {
 }
 
 function renderWhChart() {
+  const buckets  = aggregateWh(currentPeriod);
+  const sns      = Object.keys(buckets).filter(sn => Object.keys(buckets[sn]).length > 0);
+  
   const sectionEl = document.getElementById("whSection");
-  if (sectionEl && sectionEl.style.display !== "") {
-    sectionEl.style.display = ""; // Let section stay visible
+  if (!sns.length) {
+    if (sectionEl) sectionEl.style.display = "none";
+    return;
+  }
+  
+  let allLabels = [...new Set(sns.flatMap(sn => Object.keys(buckets[sn])))].sort();
+  if (!allLabels.length) {
+    if (sectionEl) sectionEl.style.display = "none";
+    return;
   }
 
-  const buckets  = aggregateWh(currentPeriod);
-  const canvas   = document.getElementById("whChart");
-  if (!canvas) return;
-
-  const stableSns  = Object.keys(state).length ? Object.keys(state) : Object.keys(buckets);
-  const orderedSns = stableSns.filter(sn => buckets[sn] !== undefined);
-  
-  let allLabels = [...new Set(orderedSns.flatMap(sn => Object.keys(buckets[sn] ?? {})))].sort();
-
+  // Use LOCAL time throughout — fixes 2h timezone offset
   const now      = new Date();
   const pad      = n => String(n).padStart(2,"0");
   const today    = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
@@ -1065,6 +1127,7 @@ function renderWhChart() {
   const monthShort = now.toLocaleString('en', { month: 'short' });
   const thisYear   = now.getFullYear();
 
+  // ── CUTOFF FILTER: Keep only the last 30 days when on the "day" tab ──
   if (currentPeriod === "day") {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -1072,25 +1135,28 @@ function renderWhChart() {
     const cutoffStr = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
     allLabels = allLabels.filter(label => label >= cutoffStr);
   }
+  
+  if (!allLabels.length) return;
 
-  // If no labels remain after filtering (e.g., for Day/Month without data)
-  if (!allLabels.length) {
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    document.getElementById("whTotal").textContent = "No data available";
-    return;
-  }
+  const canvas = document.getElementById("whChart");
+  if (!canvas) return;
 
+  const stableSns = Object.keys(state);
+  const orderedSns = sns.sort((a,b) => stableSns.indexOf(a) - stableSns.indexOf(b));
+  
   const thisKey  = currentPeriod==="hour"   ? nowHour
                  : currentPeriod==="month" ? today.slice(0,7)
                  : currentPeriod==="year"  ? today.slice(0,4)
                  : today;
 
-  const periodWh = orderedSns.reduce((s,sn) => s+(buckets[sn]?.[thisKey]??0), 0);
-  const dataFingerprintKey = `${currentPeriod}|${thisKey}|${periodWh.toFixed(0)}|${allLabels.length}|${orderedSns.map(sn => sn + (buckets[sn]?.[thisKey]??0).toFixed(0)).join("-")}`;
+  const periodWh = orderedSns.reduce((s,sn) => s+(buckets[sn][thisKey]??0), 0);
+  
+  const dataFingerprintKey = `${currentPeriod}|${thisKey}|${periodWh.toFixed(0)}|${allLabels.length}|${orderedSns.map(sn => sn + (buckets[sn][thisKey]??0).toFixed(0)).join("-")}`;
   
   if (canvas.dataset.renderKey === dataFingerprintKey) return;
   canvas.dataset.renderKey = dataFingerprintKey;
+
+  if (sectionEl.style.display !== "") sectionEl.style.display = "";
 
   const periodLabel = currentPeriod==="hour"  ? "Now"
                     : currentPeriod==="day"   ? "Today"
@@ -1139,7 +1205,7 @@ function renderWhChart() {
   
   ctx.fillStyle = "#060c1a"; ctx.fillRect(0, 0, W, H);
   
-  const maxWh = Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn]?.[l]??0)), 100);
+  const maxWh = Math.max(...allLabels.flatMap(l=>orderedSns.map(sn=>buckets[sn][l]??0)), 100);
   
   ctx.strokeStyle = "rgba(30,58,95,.6)"; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
@@ -1172,7 +1238,7 @@ function renderWhChart() {
     const isCurrent = (label === thisKey);
     
     orderedSns.forEach((sn, si) => {
-      const wh = buckets[sn]?.[label] ?? 0;
+      const wh = buckets[sn][label] ?? 0;
       const bH = wh > 0 ? Math.max(2, cH * wh / maxWh) : 0;
       const x = gx + gP + si * bW;
       const y = PT + cH - bH;
@@ -1231,7 +1297,7 @@ function editName(sn) {
   const card = document.getElementById(`dc-${sn}`);
   if (card) card.dataset.key = "";
   renderDevices();
-  renderWhChart(); 
+  renderWhChart();
 }
 
 function renderLog() {
@@ -1245,6 +1311,7 @@ function renderLog() {
   if (powSec.style.display !== targetDisplay) powSec.style.display = targetDisplay;
   
   const logWrap = logSec ? logSec.querySelector(".log-wrap") : null;
+  
   if (logWrap && logWrap.scrollTop > 0 && (logWrap.scrollHeight - logWrap.clientHeight - logWrap.scrollTop) > 5) {
     return;
   }
@@ -1260,7 +1327,7 @@ function renderLog() {
   }
 
   const logChangeKey = recentLogs.map(r => r.ts + "-" + snList.indexOf(r.sn)).join("|");
-  if (body.dataset.key === logChangeKey) return; 
+  if (body.dataset.key === logChangeKey) return;
 
   body.innerHTML = recentLogs.map(r => {
     const snIdx = snList.indexOf(r.sn) % 2;
@@ -1283,16 +1350,37 @@ function renderLog() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  WEATHER
+//  WEATHER (open-meteo, in-memory gps, 'is_day', metric/imperial)
 // ════════════════════════════════════════════════════════════════
 const WMO = {
-  0: ["🌙", "☀️"], 1: ["☁️", "🌤️"], 2: ["☁️", "⛅"], 3: ["☁️", "☁️"],
-  45: ["🌫️", "🌫️"], 48: ["🌫️", "🌫️"], 51: ["🌧️", "🌧️"], 53: ["🌧️", "🌧️"],
-  55: ["🌧️", "🌧️"], 56: ["🥶", "🥶"], 57: ["🥶", "🥶"], 61: ["🌧️", "🌧️"],
-  63: ["🌧️", "🌧️"], 65: ["🌧️", "🌧️"], 66: ["🥶", "🥶"], 67: ["🥶", "🥶"],
-  71: ["🌨️", "🌨️"], 73: ["🌨️", "🌨️"], 75: ["🌨️", "🌨️"], 77: ["🌨️", "🌨️"],
-  80: ["🌧️", "🌦️"], 81: ["🌧️", "🌦️"], 82: ["⛈️", "⛈️"], 85: ["🌨️", "🌨️"],
-  86: ["🌨️", "🌨️"], 95: ["⛈️", "⛈️"], 96: ["⛈️", "⛈️"], 99: ["⛈️", "⛈️"]
+  0: ["🌙", "☀️"],  // Clear sky
+  1: ["☁️", "🌤️"],  // Mainly clear
+  2: ["☁️", "⛅"],  // Partly cloudy
+  3: ["☁️", "☁️"],  // Overcast
+  45: ["🌫️", "🌫️"], // Fog
+  48: ["🌫️", "🌫️"], // Depositing rime fog
+  51: ["🌧️", "🌧️"], // Light drizzle
+  53: ["🌧️", "🌧️"], // Moderate drizzle
+  55: ["🌧️", "🌧️"], // Dense drizzle
+  56: ["🥶", "🥶"], // Light freezing drizzle
+  57: ["🥶", "🥶"], // Dense freezing drizzle
+  61: ["🌧️", "🌧️"], // Light rain
+  63: ["🌧️", "🌧️"], // Moderate rain
+  65: ["🌧️", "🌧️"], // Heavy rain
+  66: ["🥶", "🥶"], // Light freezing rain
+  67: ["🥶", "🥶"], // Heavy freezing rain
+  71: ["🌨️", "🌨️"], // Light snowfall
+  73: ["🌨️", "🌨️"], // Moderate snowfall
+  75: ["🌨️", "🌨️"], // Heavy snowfall
+  77: ["🌨️", "🌨️"], // Snow grains
+  80: ["🌧️", "🌦️"], // Light rain showers
+  81: ["🌧️", "🌦️"], // Moderate rain showers
+  82: ["⛈️", "⛈️"], // Violent rain showers
+  85: ["🌨️", "🌨️"], // Light snow showers
+  86: ["🌨️", "🌨️"], // Heavy snow showers
+  95: ["⛈️", "⛈️"], // Thunderstorm
+  96: ["⛈️", "⛈️"], // Thunderstorm with light hail
+  99: ["⛈️", "⛈️"]  // Thunderstorm with heavy hail
 };
 
 let cachedCoords = null;
@@ -1310,11 +1398,15 @@ async function fetchWeather() {
     if (!cachedCoords) {
       const pos = await new Promise((res) =>
         navigator.geolocation
-          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout: 10000})
+          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout: 30000})
           : res(null)
       );
+      
       if (pos?.coords) {
-        cachedCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        cachedCoords = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude
+        };
       }
     }
 
@@ -1356,18 +1448,18 @@ async function fetchWeather() {
     if (inlineEl) {
       inlineEl.style.display = "flex";
       inlineEl.innerHTML =
-        `<span title="Temperature:${icon} ${temp}${displayTempUnit}">${icon} <b style="color:#ffcc44">${temp}${displayTempUnit}</b></span>` +
-        `<span title="Windspeed: ${speed}${displayWindUnit}">${windArrow}${speed}${displayWindUnit}</span>` +
-        `<span title="Sun Hours: ☀️${sunHours !== null ? sunHours : "0"}hr">☀️${sunHours !== null ? sunHours : "0"}hr</span>` +
-        `<span title="Direct Radiation: 💡${rad}W/m²">💡${rad}W/m²</span>`;
+        `<span title="Temperature">${icon} <b style="color:#ffcc44">${temp}${displayTempUnit}</b></span>` +
+        `&nbsp;<span title="Wind">${windArrow}${speed}${displayWindUnit}</span>` +
+        (sunHours !== null ? `&nbsp;<span title="Sun Hours">☀️${sunHours}h</span>` : "") +
+        (rad !== null ? `&nbsp;<span title="Solar Radiation">💡${rad}W/m²</span>` : "");
     }
   } catch (err) {
-    console.error("Error fetching weather data:", err);
+    console.error("Error fetching or formatting weather data:", err);
   }
 }
 
 // ════════════════════════════════════════════════════════════════
-//  PERIOD TOGGLE & ENERGY HISTORY RENDER
+//  PERIOD TOGGLE (Day / Month / Year)
 // ════════════════════════════════════════════════════════════════
 let currentPeriod = "day";
 
@@ -1375,10 +1467,7 @@ function setPeriod(p) {
   currentPeriod = p;
   ["hour","day","month","year"].forEach(x => {
     const btn = document.getElementById("period"+x[0].toUpperCase()+x.slice(1));
-    if (btn) { 
-      btn.style.color = x===p?"#ffb830":""; 
-      btn.style.borderColor = x===p?"#ffb830":""; 
-    }
+    if (btn) { btn.style.color = x===p?"#ffb830":""; btn.style.borderColor = x===p?"#ffb830":""; }
   });
   renderWhChart();
 }
@@ -1389,41 +1478,18 @@ function aggregateWh(period) {
     const now    = new Date();
     const pad    = n => String(n).padStart(2,"0");
     const validHours = new Set();
-    
-    // Build valid 24h keys
     for (let i = 0; i < 24; i++) {
       const d2  = new Date(now.getTime() - i * 3600000);
       const key = `${d2.getFullYear()}-${pad(d2.getMonth()+1)}-${pad(d2.getDate())} ${pad(d2.getHours())}`;
       validHours.add(key);
     }
-
-    const sns = Object.keys(state).length ? Object.keys(state) : Object.keys(hourlyWh);
-    let hasData = false;
-
-    // Direct collection: Only collect hours that actually exist in storage and have values
-    for (const sn of sns) {
+    for (const [sn, hours] of Object.entries(hourlyWh)) {
       result[sn] = {};
-      if (hourlyWh[sn]) {
-        for (const [hr, wh] of Object.entries(hourlyWh[sn])) {
-          if (validHours.has(hr) && wh > 0) {
-            result[sn][hr] = wh;
-            hasData = true;
-          }
-        }
-      }
+      for (const [hr, wh] of Object.entries(hours))
+        if (validHours.has(hr)) result[sn][hr] = wh;
     }
-
-    // Fallback if no hours have data: ensure at least the current hour exists so section stays visible
-    if (!hasData) {
-      const currentKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}`;
-      for (const sn of sns) {
-        result[sn] = { [currentKey]: 0 };
-      }
-    }
-
     return result;
   }
-
   const result = {};
   for (const [sn, days] of Object.entries(dailyWh)) {
     result[sn] = {};
@@ -1471,10 +1537,11 @@ function downloadHistory(snFilter) {
   a.click(); URL.revokeObjectURL(a.href);
 }
 
+// ── Time formatting — follows browser/OS locale (12h or 24h automatically) ───
 const USE_24H = (() => {
   const test = new Intl.DateTimeFormat(navigator.language, { hour: "numeric" })
     .format(new Date(2000, 0, 1, 13, 0, 0));
-  return !test.includes("1") || test.includes("13"); 
+  return !test.includes("1") || test.includes("13");
 })();
 
 function fmtTime(date) {
@@ -1497,7 +1564,6 @@ async function init() {
   try {
     const devices = await apiGet("/iot-open/sign/device/list");
     const creds   = await apiGet("/iot-open/sign/certification");
-
     devices.forEach((d, i) => {
       snColorMap[d.sn] = COLORS[i % 4];
       const isOnline = d.online === 1;
@@ -1535,10 +1601,12 @@ window.addEventListener("resize", () => {
       el.removeAttribute("data-render-key");
     }
   });
+  
   if (typeof renderPowerChart === "function") renderPowerChart();
   if (typeof renderWhChart === "function") renderWhChart();
 }, { passive: true });
-/*
+
+// ── PWA — service worker for installability ─────────────────────────────────
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const sw = 'self.addEventListener("install",()=>self.skipWaiting());' +
     'self.addEventListener("activate",()=>clients.claim());' +
@@ -1547,7 +1615,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   const swUrl = URL.createObjectURL(new Blob([sw], {type:"text/javascript"}));
   navigator.serviceWorker.register(swUrl, {scope:"./"})
     .then(()=>URL.revokeObjectURL(swUrl)).catch(()=>{});
-}*/
+}
 
 let _installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => {
@@ -1565,21 +1633,28 @@ function installPwa() {
   _installPrompt.prompt();
   _installPrompt.userChoice.then(() => { _installPrompt = null; });
 }
-
+  
+// ── Streamlined Wake Lock (Activation Only) ──────────────────────────────────
 let wakeLock = null;
 async function requestWakeLock() {
   if (!("wakeLock" in navigator)) return;
+  
   if (wakeLock !== null) return; 
 
   try {
     wakeLock = await navigator.wakeLock.request("screen");
+    
     wakeLock.addEventListener("release", () => {
       wakeLock = null;
       document.getElementById("wakeLockIcon").style.opacity = ".3";
       document.getElementById("wakeLockIcon").title = "Screen lock inactive";
+      console.log("Wake Lock was released by the OS.");
     });
+    
     document.getElementById("wakeLockIcon").style.opacity = "1";
     document.getElementById("wakeLockIcon").title = "Screen stays on";
+    console.log("Wake Lock acquired successfully!");
+    
   } catch (err) {
     console.error(`Wake Lock failed: ${err.name} - ${err.message}`);
   }
@@ -1592,21 +1667,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// ── Smart Visibility Watcher ─────────────────────────────────────────────
 let backgroundTimestamp = Date.now();
+
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     backgroundTimestamp = Date.now();
   }
+  
   if (document.visibilityState === "visible") {
     const timeInBackground = Date.now() - backgroundTimestamp;
-    setTimeout(() => { requestWakeLock(); }, 1000);
+
+    setTimeout(() => {
+      requestWakeLock();
+    }, 1000);
+    
     if (mqttWs) {
       const isSocketBroken = (mqttWs.readyState !== 1);
       const wasHiddenLongTime = (timeInBackground > 30000);
+
       if (isSocketBroken || wasHiddenLongTime) {
         if (mqttWs.readyState === 1 || mqttWs.readyState === 0) {
+          console.warn(`MQTT reset triggered (Broken: ${isSocketBroken}, Long Absence: ${wasHiddenLongTime})`);
           try { mqttWs.close(); } catch {}
         }
+      } else {
+        console.log("Short app switch detected. MQTT connection preserved smoothly!");
       }
     }
   }
