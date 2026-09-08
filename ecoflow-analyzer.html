@@ -26,7 +26,7 @@
         --border: rgba(107, 138, 170, 0.2);
     }
 
-    /* 1. BASE STYLES (Mobile First - gilt für alle Bildschirme) */
+    /* 1. BASE STYLES (Mobile First - applies to all screens) */
     body {
         font-family: system-ui, -apple-system, sans-serif;
         background-color: var(--bg);
@@ -146,15 +146,7 @@
         min-width: 0;
     }
 
-    /* Scroll Frame wrapper für lange Tabellen */
-    .table-scroll-frame {
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        margin-top: 15px;
-        overflow-x: auto;
-    }
-
-    /* Tabellen Grundstruktur */
+    /* Basic Table Structure */
     table { 
         width: 100%; 
         border-collapse: separate; 
@@ -167,8 +159,6 @@
         font-size: 0.85rem; 
         word-break: break-word; 
     }
-    
-    /* ALLE Tabellenköpfe wieder global sticky */
     th { 
         color: var(--text-dim); 
         font-weight: normal; 
@@ -181,7 +171,6 @@
     tr:hover { background: rgba(255,255,255,0.02); }
     table td:last-child, table th:last-child { text-align: center; }
 
-    /* Summary Card Container */
     .summary-card {
         background: var(--panel);
         border: 1px solid var(--border);
@@ -190,21 +179,15 @@
         margin-bottom: 15px;
     }
     
-    /* NUR das h3 in der Summary Card wird sticky gemacht */
     .summary-card h3 {
         margin: 0 0 10px 0;
-        padding: 5px 0;
         font-size: 0.9rem;
         color: var(--text-dim);
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        position: sticky;
-        top: 0;
-        background-color: var(--panel);
-        z-index: 11;
     }
 
-    /* Exklusiv für Finanztabelle */
+    /* Exclusive for Financial Table: First column narrower, right column wider */
     .summary-card table {
         table-layout: fixed;
         width: 100%;
@@ -321,7 +304,7 @@
     #scrollToTopBtn.show { opacity: 1; visibility: visible; transform: translateY(0); }
     #scrollToTopBtn:hover { transform: translateY(0) scale(1.08); background-color: rgba(32, 54, 92, 0.98); }
     
-    /* Fixiert SVG Aspect Ratio & Abmessungen */
+    /* Fixes SVG aspect ratio and dimensions */
     #scrollToTopBtn svg { 
         width: 24px; 
         height: 24px; 
@@ -334,13 +317,13 @@
         stroke-linejoin: round; 
     }
 
-    /* 2. TABLET BREAKPOINT (ab 600px) */
+    /* 2. TABLET BREAKPOINT (from 600px) */
     @media (min-width: 600px) {
         body { padding: 20px; }
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 10px; font-size: 0.9rem; }
         
-        /* Allgemeine Tabellen nutzen nowrap, außer der Finanztabelle */
+        /* General tables use nowrap, except for the summary financial table */
         table:not(.summary-card table) td:first-child, 
         table:not(.summary-card table) th:first-child,
         table:not(.summary-card table) td:last-child, 
@@ -349,7 +332,7 @@
         }
     }
 
-    /* 3. DESKTOP BREAKPOINT (ab 850px) */
+    /* 3. DESKTOP BREAKPOINT (from 850px) */
     @media (min-width: 850px) {
         h1 { font-size: 2rem; }
         h2 { font-size: 1.5rem; }
