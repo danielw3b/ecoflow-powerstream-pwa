@@ -3,7 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EcoFlow Gist Sync</title>
+  <title>EcoFlow PWA — Gist Sync Prototype</title>
+
+  <!-- PWA & Mobile Meta Tags -->
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- SVG Favicon & Apple Touch Icon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
+
   <style>
     :root {
       --bg: #0f172a;
@@ -35,6 +45,33 @@
       gap: 16px;
     }
 
+    /* App Header Styling */
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .app-icon {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .app-title h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .app-title p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin: 2px 0 0 0;
+    }
+
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
@@ -50,13 +87,16 @@
       margin-bottom: 12px;
     }
 
+    /* Clean read-only headers without text selection or pointer cursors */
     .card-title {
       font-size: 1.1rem;
       font-weight: 600;
       display: flex;
       align-items: center;
       gap: 8px;
+      cursor: default;
       user-select: none;
+      -webkit-user-select: none;
     }
 
     .badge {
@@ -149,6 +189,15 @@
 
 <div class="container">
 
+  <!-- Main App Header -->
+  <div class="app-header">
+    <img class="app-icon" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" alt="Cloud Icon">
+    <div class="app-title">
+      <h1>EcoFlow Gist Sync</h1>
+      <p>Cloud Synchronization & LocalStorage Merge Tool</p>
+    </div>
+  </div>
+
   <!-- Fixed Height Status Box (Prevents Layout Shift) -->
   <div class="card" id="summaryCard">
     <div class="card-header">
@@ -167,7 +216,8 @@
   <!-- Sync Action Card -->
   <div class="card">
     <div class="card-header">
-      <div class="card-title" id="syncActionHeader" style="cursor: pointer;" title="Click 7 times to unlock settings">
+      <!-- 7-Click Unlock Trigger on Sync Action Header -->
+      <div class="card-title" id="syncActionHeader" title="Click 7 times to unlock settings">
         ⚡ Sync Action
       </div>
       <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
@@ -301,7 +351,6 @@
    */
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
-    const mainBtn = document.getElementById('mainActionBtn');
     const exportOptions = document.getElementById('exportOptionsArea');
 
     if (!gistId) {
