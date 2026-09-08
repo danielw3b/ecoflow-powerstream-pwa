@@ -3,564 +3,279 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
-  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
-  <title>EcoFlow PWA — Gist Sync Prototype</title>
+  <title>EcoFlow Gist Sync</title>
   <style>
     :root {
-      --bg: #0b0f19;
-      --panel: #161f30;
-      --border: #233148;
-      --text: #e2e8f0;
-      --text-dim: #94a3b8;
-      --accent: #10b981;
-      --accent-hover: #059669;
-      --btn-bg: #1e293b;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
     }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 16px;
+      padding: 20px;
       display: flex;
       justify-content: center;
     }
+
     .container {
       width: 100%;
       max-width: 600px;
-    }
-    h1 {
-      font-size: 1.25rem;
-      margin: 0 0 4px 0;
       display: flex;
-      align-items: center;
-      gap: 8px;
+      flex-direction: column;
+      gap: 16px;
     }
-    .subtitle {
-      color: var(--text-dim);
-      font-size: 0.85rem;
-      margin-bottom: 20px;
-    }
+
     .card {
-      background: var(--panel);
+      background-color: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 16px;
-      margin-bottom: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    .card h2 {
-      font-size: 1rem;
-      margin: 0 0 12px 0;
-    }
-    .form-group {
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 12px;
     }
-    label {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    input[type="password"], input[type="text"] {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 10px 12px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 0.9rem;
-      font-family: monospace;
-    }
-    input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    .keys-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .key-item {
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.85rem;
-      background: var(--bg);
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      overflow: auto;
+      user-select: none;
     }
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
-    button {
-      flex: 1;
-      min-width: 120px;
-      padding: 10px 16px;
-      border: none;
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 3px 8px;
       border-radius: 6px;
       font-weight: 600;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
+      text-transform: uppercase;
     }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: var(--accent-hover); }
-    .btn-secondary { background: var(--btn-bg); color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: var(--border); }
-    .hidden { display: none !important; }
-    
-    .status-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
-    .badge-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-    .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-    .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .badge-info { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+    .badge-master { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; }
 
     .summary-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
     }
+
     .summary-table td {
       padding: 6px 0;
       border-bottom: 1px dashed var(--border);
+      vertical-align: middle;
     }
+
     .summary-table td:last-child {
       text-align: right;
       font-family: monospace;
     }
-    .checkbox-option {
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    input[type="text"], input[type="password"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn-success { background-color: var(--success); color: #000; }
+    .btn-warning { background-color: var(--warning); color: #000; }
+    .btn-disabled { background-color: var(--border); color: var(--text-muted); cursor: not-allowed; opacity: 0.6; }
+
+    .checkbox-group {
       display: flex;
       align-items: center;
       gap: 8px;
+      margin-top: 8px;
       font-size: 0.85rem;
-      color: var(--text);
-      cursor: pointer;
-      margin-top: 10px;
+      color: var(--text-muted);
     }
 
-    /* Collapsible accordion styling */
-    details.card summary {
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 1rem;
-      user-select: none;
-      outline: none;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    details.card[open] summary {
-      margin-bottom: 12px;
-    }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>☁️ EcoFlow Gist Sync</h1>
-  <div class="subtitle">Cloud Synchronization & LocalStorage Merge Tool</div>
 
-  <!-- 1. STATUS CARD (POSITIONED AT THE VERY TOP) -->
-  <div id="summaryCard" class="card hidden">
-    <h2 id="statusHeader">📊 Status</h2>
-    <div id="summaryContent"></div>
+  <!-- Fixed Height Status Box (Prevents Layout Shift) -->
+  <div class="card" id="summaryCard">
+    <div class="card-header">
+      <div class="card-title">📊 Status</div>
+      <div id="statusBadgeContainer">
+        <span class="badge badge-info">CHECKING...</span>
+      </div>
+    </div>
+    <div id="summaryContent">
+      <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 12px 0;">
+        Fetching cloud and local metadata...
+      </div>
+    </div>
   </div>
 
-  <form id="gistForm" autocomplete="on" onsubmit="return false;">
-
-    <!-- 2. ACTIONS & SYNC CONTROLS -->
-    <div class="card">
-      <h2>⚡ Sync Controls</h2>
-      
-      <div style="margin-bottom: 8px; font-size: 0.85rem;">
-        <span>Local Sync Date:</span> 
-        <strong id="localTimestampDisplay" style="font-family: monospace;">Never</strong>
+  <!-- Sync Action Card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title" id="syncActionHeader" style="cursor: pointer;" title="Click 7 times to unlock settings">
+        ⚡ Sync Action
       </div>
+      <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
+    </div>
 
-      <div style="margin-bottom: 12px; font-size: 0.85rem;">
-        <span>Gist Cloud Stand:</span> 
-        <strong id="gistTimestampDisplay" style="font-family: monospace;">Checking status...</strong>
+    <!-- Hidden Credentials Area (Unlocked via 7-Click) -->
+    <div id="credentialsArea" class="hidden">
+      <div class="form-group">
+        <label for="gistId">Gist ID</label>
+        <input type="text" id="gistId" placeholder="Enter GitHub Gist ID">
       </div>
-
-      <div class="btn-group">
-        <button type="button" class="btn-secondary" onclick="checkGistStatus()">🔍 Check Status</button>
-        <!-- Disabled initially until startup status check completes -->
-        <button type="button" id="exportBtn" class="btn-primary" onclick="exportToGist()" disabled style="opacity: 0.5; cursor: not-allowed;" title="Checking sync status...">📤 Export to Gist</button>
-        <button type="button" id="importBtn" class="btn-primary hidden" onclick="importFromGist()" style="background: #3b82f6;">📥 Import & Merge</button>
+      <div class="form-group">
+        <label for="githubToken">GitHub Access Token (Master Only)</label>
+        <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
       </div>
     </div>
 
-    <!-- 3. BACKUP & FORMAT OPTIONS ACCORDION -->
-    <details class="card" id="optionsAccordion">
-      <summary>📦 Select LocalStorage Keys & Format</summary>
-      
-      <div id="keysContainer" class="keys-grid">
-        <!-- Dynamically rendered keys -->
+    <!-- Export Specific Options (Only visible when export is needed) -->
+    <div id="exportOptionsArea" class="hidden">
+      <div class="form-group">
+        <label for="storageKeys">Storage Keys (Comma Separated)</label>
+        <input type="text" id="storageKeys" value="ecoflow_wh_hourly, ecoflow_devices">
       </div>
-
-      <label class="checkbox-option">
-        <input type="checkbox" id="useGzipCompression">
-        <span>Compress Backup with Gzip (Base64 encoded)</span>
-      </label>
-    </details>
-
-    <!-- 4. CREDENTIALS ACCORDION (POSITIONED AT THE VERY BOTTOM) -->
-    <details class="card" id="credentialsAccordion">
-      <summary id="credentialsSummary" title="Double click badge/header to unlock token input">
-        <span>🔐 Credentials</span>
-        <span id="credentialsBadge" class="status-badge badge-info" style="font-size:0.7rem; font-weight:normal; cursor:pointer;">Unconfigured</span>
-      </summary>
-      
-      <div class="form-group" style="margin-top: 12px;">
-        <label for="gistId">GitHub Gist ID (Required for Import & Export)</label>
-        <input type="text" id="gistId" name="username" autocomplete="username" placeholder="e.g. 7f8a9b0c1d2e3f4a..." required>
+      <div class="checkbox-group">
+        <input type="checkbox" id="gzipCompress" checked>
+        <label for="gzipCompress">Compress Backup with Gzip (Base64 encoded)</label>
       </div>
-    
-      <!-- Token Group: Dynamically hidden on read-only devices -->
-      <div class="form-group hidden" id="tokenGroup">
-        <label for="gistToken">GitHub Personal Access Token (Master device only)</label>
-        <input type="password" id="gistToken" name="password" autocomplete="current-password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-      </div>
-    
-      <label class="checkbox-option">
-        <input type="checkbox" id="saveCredentialsCheck" checked>
-        <span>Save Credentials locally in LocalStorage</span>
-      </label>
-    </details>
+    </div>
 
-  </form>
+    <!-- Dynamic Single Primary Action Button -->
+    <div style="margin-top: 14px;">
+      <button id="mainActionBtn" class="btn btn-disabled" disabled>
+        ⏳ Checking Status...
+      </button>
+    </div>
+  </div>
+
 </div>
 
 <script>
-  // Key names used internally for sync status and local credentials
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
-  const CRED_GIST_ID = 'ecoflow_gist_id';
-  const CRED_GIST_TOKEN = 'ecoflow_github_token';
+  let clickCounter = 0;
+  let clickTimer = null;
 
-  // Strict exclusion list: Sensitive API keys, local credentials, and device names are excluded
-  const EXCLUDED_KEYS = [
-    'ecoflow_accesskey',
-    'ecoflow_secretkey',
-    'accesskey',
-    'secretkey',
-    'ecoflow_name',
-    'ecoflow_names',
-    'ecoflow_gist_id',
-    'ecoflow_github_token',
-    CRED_GIST_ID,
-    CRED_GIST_TOKEN,
-    LOCAL_SYNC_KEY
-  ];
-
-  document.addEventListener('DOMContentLoaded', async () => {
-    loadCredentials();
-    renderKeySelection();
-    updateTimestampDisplays();
-
-    // 1. Dynamic token input handling with instant LocalStorage cleanup
-    const tokenInput = document.getElementById('gistToken');
-    if (tokenInput) {
-      tokenInput.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        if (!val) {
-          localStorage.removeItem(CRED_GIST_TOKEN);
-        } else if (document.getElementById('saveCredentialsCheck').checked) {
-          localStorage.setItem(CRED_GIST_TOKEN, val);
-        }
-        adjustUIForRole();
-        updateButtonStates();
-      });
-    }
-
-    document.getElementById('gistId').addEventListener('input', () => {
-      adjustUIForRole();
-      updateButtonStates();
-    });
-    
-    adjustUIForRole();
-    updateButtonStates();
-
-    // Automatic startup status check if Gist ID is available
-    const gistId = document.getElementById('gistId').value.trim();
-    if (gistId) {
-      await checkGistStatus();
-    } else {
-      document.getElementById('gistTimestampDisplay').textContent = 'Not checked';
-    }
-
-    // 2. Secret Android-style 7-click developer unlock on the Status header
-    const statusHeader = document.getElementById('statusHeader');
-    const tokenGroup = document.getElementById('tokenGroup');
-    let clickCount = 0;
-    let clickTimer = null;
-
-    if (statusHeader && tokenGroup) {
-      statusHeader.addEventListener('click', () => {
-        clickCount++;
-
-        // Reset counter if clicks are spaced too far apart (more than 1.5s delay)
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => {
-          clickCount = 0;
-        }, 1500);
-
-        // Unlock after 7 clicks
-        if (clickCount === 7) {
-          clickCount = 0;
-          clearTimeout(clickTimer);
-
-          // Toggle visibility of the master token field
-          tokenGroup.classList.toggle('hidden');
-
-          if (!tokenGroup.classList.contains('hidden')) {
-            // Make sure the credentials accordion opens if it was closed
-            const credentialsAccordion = document.getElementById('credentialsAccordion');
-            if (credentialsAccordion) credentialsAccordion.open = true;
-
-            if (tokenInput) tokenInput.focus();
-          }
-        }
-      });
-    }
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSavedSettings();
+    setupEventListeners();
+    checkGistStatus();
   });
+
+  function loadSavedSettings() {
+    const savedGistId = localStorage.getItem('ecoflow_gist_id') || '';
+    const savedToken = localStorage.getItem('ecoflow_github_token') || '';
     
-  /**
-   * Load stored credentials from LocalStorage
-   */
-  function loadCredentials() {
-    const savedId = localStorage.getItem(CRED_GIST_ID);
-    const savedToken = localStorage.getItem(CRED_GIST_TOKEN);
-
-    if (savedId) document.getElementById('gistId').value = savedId;
-    if (savedToken) document.getElementById('gistToken').value = savedToken;
+    document.getElementById('gistId').value = savedGistId;
+    document.getElementById('githubToken').value = savedToken;
   }
 
-  /**
-   * Save credentials to LocalStorage if user checked the option
-   */
-  function persistCredentials(gistId, token) {
-    const shouldSave = document.getElementById('saveCredentialsCheck').checked;
-    if (shouldSave) {
-      if (gistId) localStorage.setItem(CRED_GIST_ID, gistId);
-      if (token !== null) {
-        if (token) {
-          localStorage.setItem(CRED_GIST_TOKEN, token);
-        } else {
-          localStorage.removeItem(CRED_GIST_TOKEN);
-        }
-      }
-    }
-  }
+  function setupEventListeners() {
+    // Save settings on change
+    document.getElementById('gistId').addEventListener('change', (e) => {
+      localStorage.setItem('ecoflow_gist_id', e.target.value.trim());
+      checkGistStatus();
+    });
 
-  /**
-   * Dynamically adjust UI elements depending on master vs read-only device role and update credentials badge
-   */
-  function adjustUIForRole() {
-    const gistId = document.getElementById('gistId').value.trim();
-    const token = document.getElementById('gistToken').value.trim();
-    const exportBtn = document.getElementById('exportBtn');
-    const optionsAccordion = document.getElementById('optionsAccordion');
-    const credBadge = document.getElementById('credentialsBadge');
-  
-    // Update summary badge on the credentials accordion
-    if (!gistId) {
-      credBadge.textContent = 'Unconfigured';
-      credBadge.className = 'status-badge badge-danger';
-    } else if (token) {
-      credBadge.textContent = 'Master Mode';
-      credBadge.className = 'status-badge badge-success';
-    } else {
-      credBadge.textContent = 'Read-Only Mode';
-      credBadge.className = 'status-badge badge-info';
-    }
-  
-    if (!token) {
-      // Read-only Mode (No Token present)
-      if (exportBtn) exportBtn.classList.add('hidden');
-      if (optionsAccordion) optionsAccordion.open = false; // Collapse options accordion
-    } else {
-      // Master Mode (Token present)
-      if (exportBtn) exportBtn.classList.remove('hidden');
-    }
-  }
+    document.getElementById('githubToken').addEventListener('change', (e) => {
+      localStorage.setItem('ecoflow_github_token', e.target.value.trim());
+      adjustUIForRole();
+      checkGistStatus();
+    });
 
-  /**
-   * Filter and render selectable LocalStorage keys, skipping all excluded keys
-   */
-  function renderKeySelection() {
-    const container = document.getElementById('keysContainer');
-    container.innerHTML = '';
-
-    const validKeys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (EXCLUDED_KEYS.includes(key)) continue;
+    // 7-Click Unlock Trigger on Sync Action Header
+    document.getElementById('syncActionHeader').addEventListener('click', () => {
+      clickCounter++;
+      clearTimeout(clickTimer);
       
-      if (key.startsWith('ecoflow_') || key.startsWith('inverter_cfg_')) {
-        validKeys.push(key);
+      if (clickCounter === 7) {
+        const credsArea = document.getElementById('credentialsArea');
+        credsArea.classList.toggle('hidden');
+        clickCounter = 0;
+      } else {
+        clickTimer = setTimeout(() => { clickCounter = 0; }, 2000);
       }
-    }
-
-    if (validKeys.length === 0) {
-      container.innerHTML = '<div style="font-size:0.8rem; color:var(--text-dim);">No EcoFlow keys found in LocalStorage.</div>';
-      return;
-    }
-
-    validKeys.forEach(key => {
-      const item = document.createElement('label');
-      item.className = 'key-item';
-      item.innerHTML = `
-        <input type="checkbox" value="${key}" checked>
-        <span title="${key}">${key}</span>
-      `;
-      container.appendChild(item);
     });
   }
 
-  /**
-   * Update local timestamp UI
-   */
-  function updateTimestampDisplays() {
-    const localTs = localStorage.getItem(LOCAL_SYNC_KEY);
-    document.getElementById('localTimestampDisplay').textContent = localTs ? new Date(localTs).toLocaleString() : 'Never';
-  }
-
-  /**
-   * Enable/Disable visual cues for export button based on token presence and status state
-   */
-  function updateButtonStates() {
-    const token = document.getElementById('gistToken').value.trim();
-    const exportBtn = document.getElementById('exportBtn');
-
-    if (!exportBtn) return;
-
-    if (exportBtn.disabled) {
-      exportBtn.style.opacity = '0.5';
-      exportBtn.style.cursor = 'not-allowed';
-      if (!token) {
-        exportBtn.title = 'Personal Access Token required for Export (Master device mode)';
-      }
+  function adjustUIForRole() {
+    const token = document.getElementById('githubToken').value.trim();
+    const masterBadge = document.getElementById('masterBadge');
+    
+    if (token) {
+      masterBadge.classList.remove('hidden');
     } else {
-      exportBtn.style.opacity = '1';
-      exportBtn.style.cursor = 'pointer';
-      exportBtn.title = '';
+      masterBadge.classList.add('hidden');
     }
   }
 
   /**
-   * Get list of selected keys
-   */
-  function getSelectedKeys() {
-    const checkboxes = document.querySelectorAll('#keysContainer input[type="checkbox"]:checked');
-    return Array.from(checkboxes).map(cb => cb.value);
-  }
-
-  /**
-   * Deep Smart Merge to protect nested historical solar datasets
-   */
-  function applySmartMerge(incomingData) {
-    Object.keys(incomingData).forEach(key => {
-      if (EXCLUDED_KEYS.includes(key)) return;
-  
-      const existingValue = localStorage.getItem(key);
-      if (!existingValue) {
-        const valStr = typeof incomingData[key] === 'object' ? JSON.stringify(incomingData[key]) : incomingData[key];
-        localStorage.setItem(key, valStr);
-        return;
-      }
-  
-      try {
-        const existingObj = JSON.parse(existingValue);
-        const incomingObj = typeof incomingData[key] === 'string' ? JSON.parse(incomingData[key]) : incomingData[key];
-  
-        // Array Merge (e.g. historical log lists) -> Unique items
-        if (Array.isArray(existingObj) && Array.isArray(incomingObj)) {
-          const mergedArray = [...existingObj, ...incomingObj];
-          const uniqueArray = Array.from(new Set(mergedArray.map(item => JSON.stringify(item)))).map(string => JSON.parse(string));
-          localStorage.setItem(key, JSON.stringify(uniqueArray));
-        } 
-        // Deep Object Merge (SN -> Date -> Wh Yields)
-        else if (typeof existingObj === 'object' && typeof incomingObj === 'object' && existingObj !== null && incomingObj !== null) {
-          const mergedObj = { ...existingObj };
-  
-          Object.keys(incomingObj).forEach(snKey => {
-            if (!mergedObj[snKey]) {
-              mergedObj[snKey] = incomingObj[snKey];
-            } else if (typeof mergedObj[snKey] === 'object' && typeof incomingObj[snKey] === 'object') {
-              mergedObj[snKey] = { ...mergedObj[snKey] };
-              Object.keys(incomingObj[snKey]).forEach(dateKey => {
-                const localWh = Number(mergedObj[snKey][dateKey]) || 0;
-                const incomingWh = Number(incomingObj[snKey][dateKey]) || 0;
-                
-                // Monotonicity Rule: Retain maximum accumulated Wh yield per day
-                mergedObj[snKey][dateKey] = Math.max(localWh, incomingWh);
-              });
-            } else {
-              mergedObj[snKey] = incomingObj[snKey];
-            }
-          });
-  
-          localStorage.setItem(key, JSON.stringify(mergedObj));
-        } else {
-          localStorage.setItem(key, typeof incomingData[key] === 'object' ? JSON.stringify(incomingData[key]) : incomingData[key]);
-        }
-      } catch (parseError) {
-        // Fallback for non-JSON text values
-        localStorage.setItem(key, incomingData[key]);
-      }
-    });
-  }
-
-  /**
-   * Helper: Gzip compression
-   */
-  async function compressGzip(text) {
-    const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
-    const response = new Response(stream);
-    const buffer = await response.arrayBuffer();
-    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
-  }
-
-  /**
-   * Helper: Gzip decompression
-   */
-  async function decompressGzip(base64String) {
-    const binary = atob(base64String);
-    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-    const response = new Response(stream);
-    return await response.text();
-  }
-
-  /**
-   * Helper: Find the newest timestamp string in ecoflow_wh_hourly (Format: "YYYY-MM-DD HH")
+   * Helper: Find the newest timestamp string in ecoflow_wh_hourly
    */
   function getLatestDataTimestamp() {
     const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
     if (!hourlyRaw) return null;
-  
+
     try {
       const hourlyData = JSON.parse(hourlyRaw);
       let latestKey = "";
-  
-      // Iterate through all device SNs and find the highest date-hour string
+
       Object.values(hourlyData).forEach(deviceHours => {
         if (typeof deviceHours === 'object' && deviceHours !== null) {
           Object.keys(deviceHours).forEach(timeKey => {
@@ -570,10 +285,9 @@
           });
         }
       });
-  
+
       if (!latestKey) return null;
-  
-      // Convert "YYYY-MM-DD HH" to epoch timestamp
+
       const [datePart, hourPart] = latestKey.split(' ');
       const [year, month, day] = datePart.split('-').map(Number);
       return new Date(year, month - 1, day, parseInt(hourPart, 10), 59, 59).getTime();
@@ -581,299 +295,121 @@
       return null;
     }
   }
-  
+
   /**
-   * Query Gist metadata to check remote timestamp vs local timestamp & local hourly data
+   * Main Status Check & UI Dynamic Router
    */
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
+    const mainBtn = document.getElementById('mainActionBtn');
+    const exportOptions = document.getElementById('exportOptionsArea');
+
     if (!gistId) {
-      alert('Please enter a Gist ID to check status.');
-      return null;
+      renderSummary('WARNING', 'Missing Configuration', 'Please enter a Gist ID in settings.', []);
+      setButtonState('btn-disabled', '⚠️ Gist ID Missing', true, null);
+      exportOptions.classList.add('hidden');
+      return;
     }
-  
+
     try {
       const response = await fetch(`https://api.github.com/gists/${gistId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}: Gist not found or invalid ID`);
-  
+      if (!response.ok) throw new Error(`HTTP ${response.status}: Invalid Gist ID`);
+
       const data = await response.json();
       const gistUpdatedAt = new Date(data.updated_at).getTime();
       const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
-  
-      // Extract file size from API response
+
       const backupFile = data.files['ecoflow_backup.json'];
       const sizeInBytes = backupFile ? backupFile.size : 0;
       const sizeInKB = (sizeInBytes / 1024).toFixed(2);
-  
-      document.getElementById('gistTimestampDisplay').textContent = new Date(data.updated_at).toLocaleString();
-  
-      const importBtn = document.getElementById('importBtn');
-      const exportBtn = document.getElementById('exportBtn');
-  
-      // Grace period (threshold) of 20000ms (20 seconds) to account for GitHub API metadata caching delays
+
       const GRACE_PERIOD_MS = 20000;
       const isRemoteNewer = (gistUpdatedAt - localSyncTs) > GRACE_PERIOD_MS;
-  
-      // Check if new local hourly readings are available since last sync
+
       const latestDataTs = getLatestDataTimestamp();
       const hasNewLocalData = latestDataTs && (!localSyncTs || latestDataTs > localSyncTs);
-  
+
+      adjustUIForRole();
+
       if (!localSyncTs || isRemoteNewer) {
-        // Case 1: Remote cloud data is newer
-        importBtn.classList.remove('hidden');
-  
-        if (exportBtn) {
-          exportBtn.disabled = true;
-          exportBtn.style.opacity = '0.5';
-          exportBtn.style.cursor = 'not-allowed';
-          exportBtn.title = 'Remote data is newer. Please "Import & Merge" first!';
-        }
-  
-        renderSummary('Info', 'Newer Cloud data detected on Gist. Ready to import!', [
+        // CASE 1: Cloud data is newer -> IMPORT ACTION (GREEN)
+        exportOptions.classList.add('hidden');
+        setButtonState('btn-success', '📥 Update LocalStorage', false, () => triggerImport(gistId));
+
+        renderSummary('INFO', 'New Cloud Data Detected', 'Remote backup is newer than local state.', [
           ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
           ['Gist Size', `${sizeInKB} KB`],
           ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
           ['Status', '📥 Import Available']
         ]);
-      } else {
-        // Case 2: Local data is up-to-date or newer than cloud
-        importBtn.classList.add('hidden');
-  
-        if (hasNewLocalData) {
-          // Case 2a: New local hourly readings detected -> Enable Export
-          if (exportBtn) {
-            exportBtn.disabled = false;
-            exportBtn.style.opacity = '1';
-            exportBtn.style.cursor = 'pointer';
-            exportBtn.title = 'New local data detected. Ready to export!';
-          }
-  
-          const formattedLatestData = `<span style="color: #10b981; font-weight: 600;">${new Date(latestDataTs).toLocaleString()}</span>`;
-  
-          renderSummary('Success', 'New local hourly data available for upload!', [
-            ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
-            ['Gist Size', `${sizeInKB} KB`],
-            ['Local Sync State', new Date(localSyncTs).toLocaleString()],
-            ['Latest Data Point', formattedLatestData],
-            ['Status', '📤 Ready for Export']
-          ]);
+
+      } else if (hasNewLocalData) {
+        // CASE 2: Local data is newer -> EXPORT ACTION (ORANGE/WARNING)
+        const hasToken = !!document.getElementById('githubToken').value.trim();
+        
+        if (hasToken) {
+          exportOptions.classList.remove('hidden');
+          setButtonState('btn-warning', '📤 Update Gist', false, () => triggerExport(gistId));
         } else {
-          // Case 2b: No new data since last sync -> Fully synced
-          if (exportBtn) {
-            exportBtn.disabled = true;
-            exportBtn.style.opacity = '0.5';
-            exportBtn.style.cursor = 'not-allowed';
-            exportBtn.title = 'All local data is already synced to Gist.';
-          }
-  
-          const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
-  
-          renderSummary('Success', 'Local data is fully up-to-date with Gist.', [
-            ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
-            ['Gist Size', `${sizeInKB} KB`],
-            ['Local Sync State', new Date(localSyncTs).toLocaleString()],
-            ['Latest Data Point', formattedLatestData],
-            ['Status', '✅ Fully Synced']
-          ]);
+          exportOptions.classList.add('hidden');
+          setButtonState('btn-disabled', '🔒 Read-Only Device (New Local Data)', true, null);
         }
-      }
-  
-      // Ensure export button remains hidden on read-only devices regardless of sync check
-      adjustUIForRole();
-  
-      return gistUpdatedAt;
-    } catch (err) {
-      renderSummary('Danger', `Failed to check Gist status: ${err.message}`, []);
-      return null;
-    }
-  }
 
-  /**
-   * Export LocalStorage data to GitHub Gist with remote timestamp validation safety net
-   */
-  async function exportToGist() {
-    const gistId = document.getElementById('gistId').value.trim();
-    const token = document.getElementById('gistToken').value.trim();
-    const selectedKeys = getSelectedKeys();
-    const useGzip = document.getElementById('useGzipCompression').checked;
+        const formattedLatestData = `<span style="color: var(--success); font-weight: 600;">${new Date(latestDataTs).toLocaleString()}</span>`;
 
-    if (!gistId || !token) {
-      alert('Export requires both Gist ID and Personal Access Token!');
-      return;
-    }
+        renderSummary('SUCCESS', 'New Local Data Ready', 'New local readings available for upload.', [
+          ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
+          ['Gist Size', `${sizeInKB} KB`],
+          ['Local Sync State', new Date(localSyncTs).toLocaleString()],
+          ['Latest Data Point', formattedLatestData],
+          ['Status', '📤 Ready for Export']
+        ]);
 
-    if (selectedKeys.length === 0) {
-      alert('Please select at least one key to export.');
-      return;
-    }
+      } else {
+        // CASE 3: Fully Synced
+        exportOptions.classList.add('hidden');
+        setButtonState('btn-disabled', '✅ Local Data Fully Synced', true, null);
 
-    // Safety check: verify remote timestamp before overwriting Gist
-    const remoteTimestamp = await checkGistStatus();
-    const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
+        const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
 
-    // Apply grace period here as well for overwrite prompt
-    const GRACE_PERIOD_MS = 20000;
-    if (remoteTimestamp && (remoteTimestamp - localSyncTs) > GRACE_PERIOD_MS) {
-      const confirmOverwrite = confirm(
-        `⚠️ WARNING: The Gist has a newer update (${new Date(remoteTimestamp).toLocaleString()}) than your local sync state (${localSyncTs ? new Date(localSyncTs).toLocaleString() : 'Never'}).\n\nDo you really want to export and overwrite the Gist?`
-      );
-      if (!confirmOverwrite) {
-        return; // User canceled export to prevent overwriting newer remote data
-      }
-    }
-
-    persistCredentials(gistId, token);
-
-    const payload = {
-      timestamp: new Date().toISOString(),
-      compressed: useGzip,
-      keys: {}
-    };
-
-    selectedKeys.forEach(key => {
-      const val = localStorage.getItem(key);
-      if (val !== null) {
-        try {
-          payload.keys[key] = JSON.parse(val);
-        } catch {
-          payload.keys[key] = val;
-        }
-      }
-    });
-
-    let finalContent = JSON.stringify(payload, null, 2);
-    if (useGzip) {
-      finalContent = await compressGzip(finalContent);
-    }
-
-    const nowIso = new Date().toISOString();
-
-    try {
-      const response = await fetch(`https://api.github.com/gists/${gistId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `token ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify({
-          description: `EcoFlow Backup - ${nowIso}`,
-          files: {
-            'ecoflow_backup.json': {
-              content: finalContent
-            }
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || `HTTP ${response.status}`);
-      }
-
-      // Parse response to get exact updated_at timestamp generated by GitHub
-      const resData = await response.json();
-      const officialGistTimestamp = resData.updated_at || nowIso;
-
-      // Persist the exact server timestamp locally
-      localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
-      updateTimestampDisplays();
-
-      renderSummary('Success', 'Export to Gist completed successfully!', [
-        ['Timestamp', new Date(officialGistTimestamp).toLocaleString()],
-        ['Exported Keys', selectedKeys.length],
-        ['Format', useGzip ? 'Gzip (Base64)' : 'Raw JSON'],
-        ['Size', `${(finalContent.length / 1024).toFixed(2)} KB`]
-      ]);
-
-      // Hide import button explicitly as local state is now fully in sync
-      document.getElementById('importBtn').classList.add('hidden');
-
-    } catch (err) {
-      renderSummary('Danger', `Export failed: ${err.message}`, []);
-    }
-  }
-
-  /**
-   * Import data from Gist using exact smart merge logic
-   */
-  async function importFromGist() {
-    const gistId = document.getElementById('gistId').value.trim();
-    if (!gistId) {
-      alert('Gist ID is required for import.');
-      return;
-    }
-
-    persistCredentials(gistId, null);
-
-    try {
-      const response = await fetch(`https://api.github.com/gists/${gistId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const data = await response.json();
-      const backupFile = data.files['ecoflow_backup.json'];
-
-      if (!backupFile) {
-        throw new Error('File "ecoflow_backup.json" not found inside Gist.');
-      }
-
-      const sizeInBytes = backupFile.size || 0;
-      const sizeInKB = (sizeInBytes / 1024).toFixed(2);
-
-      let contentStr = backupFile.content;
-      let payload;
-
-      try {
-        payload = JSON.parse(contentStr);
-        if (payload.compressed && typeof payload.keys === 'string') {
-          const decompressed = await decompressGzip(payload.keys);
-          payload = JSON.parse(decompressed);
-        }
-      } catch (e) {
-        const decompressed = await decompressGzip(contentStr);
-        payload = JSON.parse(decompressed);
-      }
-
-      // Execute exact smart merge logic
-      applySmartMerge(payload.keys || {});
-
-      const importTs = payload.timestamp || data.updated_at || new Date().toISOString();
-      localStorage.setItem(LOCAL_SYNC_KEY, importTs);
-
-      updateTimestampDisplays();
-      renderKeySelection();
-
-      renderSummary('Success', 'Import & Smart Merge completed cleanly!', [
-        ['Backup Date', new Date(importTs).toLocaleString()],
-        ['Gist Size', `${sizeInKB} KB`],
-        ['Keys Processed', Object.keys(payload.keys || {}).length],
-        ['Status', '✅ LocalStorage Merged Cleanly']
-      ]);
-
-      document.getElementById('importBtn').classList.add('hidden');
-
-      // Re-enable export button after successful import and merge
-      const exportBtn = document.getElementById('exportBtn');
-      if (exportBtn) {
-        exportBtn.disabled = false;
-        exportBtn.style.cursor = 'pointer';
-        updateButtonStates();
+        renderSummary('SUCCESS', 'Fully Synced', 'Local data is up-to-date with Gist cloud.', [
+          ['Gist Updated', new Date(gistUpdatedAt).toLocaleString()],
+          ['Gist Size', `${sizeInKB} KB`],
+          ['Local Sync State', new Date(localSyncTs).toLocaleString()],
+          ['Latest Data Point', formattedLatestData],
+          ['Status', '✅ Fully Synced']
+        ]);
       }
 
     } catch (err) {
-      renderSummary('Danger', `Import failed: ${err.message}`, []);
+      exportOptions.classList.add('hidden');
+      setButtonState('btn-disabled', '❌ Connection Error', true, null);
+      renderSummary('DANGER', 'Sync Check Failed', err.message, []);
     }
   }
 
-  /**
-   * Render HTML Action Status Card at the top
-   */
-  function renderSummary(type, message, details) {
-    const card = document.getElementById('summaryCard');
-    const content = document.getElementById('summaryContent');
+  function setButtonState(className, text, disabled, onClickHandler) {
+    const btn = document.getElementById('mainActionBtn');
+    btn.className = `btn ${className}`;
+    btn.textContent = text;
+    btn.disabled = disabled;
     
-    card.classList.remove('hidden');
-    const badgeClass = type === 'Success' ? 'badge-success' : type === 'Danger' ? 'badge-danger' : 'badge-info';
+    // Replace event listeners cleanly
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    if (onClickHandler && !disabled) {
+      newBtn.addEventListener('click', onClickHandler);
+    }
+  }
+
+  function renderSummary(badgeType, badgeText, message, details) {
+    const badgeContainer = document.getElementById('statusBadgeContainer');
+    const content = document.getElementById('summaryContent');
+
+    const badgeClass = badgeType === 'SUCCESS' ? 'badge-success' : badgeType === 'DANGER' ? 'badge-danger' : badgeType === 'WARNING' ? 'badge-warning' : 'badge-info';
+
+    badgeContainer.innerHTML = `<span class="badge ${badgeClass}">${badgeText}</span>`;
 
     let tableRows = details.map(([label, val]) => `
       <tr>
@@ -883,12 +419,104 @@
     `).join('');
 
     content.innerHTML = `
-      <div style="margin-bottom: 10px;">
-        <span class="status-badge ${badgeClass}">${type.toUpperCase()}</span>
-        <span style="margin-left: 8px; font-weight: 500;">${message}</span>
-      </div>
+      <div style="margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted);">${message}</div>
       ${details.length > 0 ? `<table class="summary-table">${tableRows}</table>` : ''}
     `;
+  }
+
+  async function triggerImport(gistId) {
+    const btn = document.getElementById('mainActionBtn');
+    btn.textContent = '⏳ Importing...';
+    btn.disabled = true;
+
+    try {
+      const response = await fetch(`https://api.github.com/gists/${gistId}`);
+      if (!response.ok) throw new Error('Failed to fetch Gist data');
+
+      const data = await response.json();
+      const backupFile = data.files['ecoflow_backup.json'];
+      if (!backupFile) throw new Error('ecoflow_backup.json not found in Gist');
+
+      let payload = JSON.parse(backupFile.content);
+      
+      // Standardize strictly on GitHub official server timestamp
+      const officialGistTimestamp = data.updated_at;
+
+      // Restore payload items into localStorage
+      if (payload.data) {
+        Object.keys(payload.data).forEach(key => {
+          const val = typeof payload.data[key] === 'object' ? JSON.stringify(payload.data[key]) : payload.data[key];
+          localStorage.setItem(key, val);
+        });
+      }
+
+      localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
+      
+      // Automatically refresh UI status post-import
+      await checkGistStatus();
+    } catch (err) {
+      alert(`Import failed: ${err.message}`);
+      checkGistStatus();
+    }
+  }
+
+  async function triggerExport(gistId) {
+    const token = document.getElementById('githubToken').value.trim();
+    if (!token) {
+      alert('GitHub Token required for export!');
+      return;
+    }
+
+    const btn = document.getElementById('mainActionBtn');
+    btn.textContent = '⏳ Uploading...';
+    btn.disabled = true;
+
+    try {
+      const keys = document.getElementById('storageKeys').value.split(',').map(k => k.trim());
+      const exportData = {};
+
+      keys.forEach(key => {
+        const item = localStorage.getItem(key);
+        if (item) {
+          try { exportData[key] = JSON.parse(item); } catch (e) { exportData[key] = item; }
+        }
+      });
+
+      const payload = {
+        timestamp: new Date().toISOString(),
+        data: exportData
+      };
+
+      const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: {
+            'ecoflow_backup.json': {
+              content: JSON.stringify(payload, null, 2)
+            }
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}: Export failed`);
+
+      const resData = await response.json();
+      const officialGistTimestamp = resData.updated_at;
+
+      // Always save official GitHub timestamp to local state
+      localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
+
+      // Automatically refresh UI status post-export
+      await checkGistStatus();
+    } catch (err) {
+      alert(`Export failed: ${err.message}`);
+      checkGistStatus();
+    }
   }
 </script>
 
