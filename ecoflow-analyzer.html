@@ -26,7 +26,7 @@
         --border: rgba(107, 138, 170, 0.2);
     }
 
-    /* 1. BASE STYLES (Mobile First - gilt für alle Bildschirme) */
+    /* 1. BASE STYLES (Mobile First - applies to all screens) */
     body {
         font-family: system-ui, -apple-system, sans-serif;
         background-color: var(--bg);
@@ -40,7 +40,7 @@
     h1 { font-size: 1.5rem; }
     h2 { font-size: 1.2rem; }
     
-    /* Generelle Sticky-Einstellung für ALLE h3 Überschriften */
+    /* Sticky positioning for all H3 section titles */
     h3 { 
         font-size: 0.9rem; 
         padding: 8px 0; 
@@ -50,7 +50,7 @@
         position: sticky;
         top: 0;
         background-color: var(--panel);
-        z-index: 12; /* Höher als TH, damit Text nicht durchscheint */
+        z-index: 20; /* High z-index prevents table content from showing underneath */
     }
 
     .container { max-width: 1200px; margin: 0 auto; }
@@ -153,15 +153,16 @@
         min-width: 0;
     }
 
-    /* Table Scroll Frame Kompatibilität mit Sticky Elements */
+    /* Scroll Frame wrapper for large tables */
     .table-scroll-frame {
         border: 1px solid var(--border);
         border-radius: 6px;
-        margin-top: 15px;
+        margin-top: 10px;
         overflow-x: auto;
+        position: relative;
     }
 
-    /* Tabellen Grundstruktur */
+    /* Base Table Structure */
     table { 
         width: 100%; 
         border-collapse: separate; 
@@ -174,12 +175,13 @@
         font-size: 0.85rem; 
         word-break: break-word; 
     }
-    /* ALLE Table Header docken exakt unter dem sticky H3 an */
+
+    /* Standard Sticky Headers inside table containers */
     th { 
         color: var(--text-dim); 
         font-weight: normal; 
         position: sticky; 
-        top: 33px; /* Höhe des sticky H3 */
+        top: 0; 
         background-color: var(--panel); 
         z-index: 10; 
         box-shadow: inset 0 -1px 0 var(--border); 
@@ -187,6 +189,7 @@
     tr:hover { background: rgba(255,255,255,0.02); }
     table td:last-child, table th:last-child { text-align: center; }
 
+    /* Summary Card Styling */
     .summary-card {
         background: var(--panel);
         border: 1px solid var(--border);
@@ -199,7 +202,7 @@
         margin-top: 0;
     }
 
-    /* Exklusiv für Finanztabelle: Spaltenbreiten */
+    /* Custom column width for Financial Table */
     .summary-card table {
         table-layout: fixed;
         width: 100%;
@@ -207,10 +210,14 @@
     .summary-card table td, .summary-card table th {
         white-space: normal !important;
     }
+    .summary-card th {
+        top: 33px; /* Positions TH directly below the sticky H3 in Summary Card */
+    }
     .summary-card th:nth-child(1), .summary-card td:nth-child(1) { width: 34%; text-align: left; }
     .summary-card th:nth-child(2), .summary-card td:nth-child(2) { width: 25%; text-align: right; }
     .summary-card th:nth-child(3), .summary-card td:nth-child(3) { width: 41%; text-align: left; }
 
+    /* Status Indicators and Utility Colors */
     .good { color: var(--accent);}
     .bad { color: var(--danger);}
     .warn { color: var(--warning);}
@@ -265,7 +272,16 @@
     .ratio-accent { font-weight: bold; color: var(--accent); min-width: 65px; }
     .ratio-danger { font-weight: bold; color: var(--danger); min-width: 65px; }
     .context-cell { cursor: help; text-align: center; font-size: 1.1rem; }
-    .table-title-warn { margin: 40px 2px 20px 10px; color: var(--warning); }
+    
+    /* Custom Warning Table Header */
+    .table-title-warn { 
+        margin: 40px 2px 0 10px; 
+        color: var(--warning) !important; 
+        background-color: var(--panel);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
     .title-badge { float: right; font-size: 0.85rem; color: var(--text-dim); }
 
     /* Layout Helper Classes */
@@ -299,7 +315,7 @@
     }
     .show-more-btn:hover { background-color: rgba(255, 255, 255, 0.05); }
 
-    /* Scroll-to-Top Button & SVG Dimension Fix */
+    /* Scroll-to-Top Floating Action Button & SVG sizing */
     #scrollToTopBtn {
         position: fixed;
         bottom: 25px; right: 25px; z-index: 1000;
@@ -328,7 +344,7 @@
         stroke-linejoin: round; 
     }
 
-    /* 2. TABLET BREAKPOINT (ab 600px) */
+    /* 2. TABLET BREAKPOINT (from 600px) */
     @media (min-width: 600px) {
         body { padding: 20px; }
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
@@ -342,7 +358,7 @@
         }
     }
 
-    /* 3. DESKTOP BREAKPOINT (ab 850px) */
+    /* 3. DESKTOP BREAKPOINT (from 850px) */
     @media (min-width: 850px) {
         h1 { font-size: 2rem; }
         h2 { font-size: 1.5rem; }
