@@ -44,11 +44,13 @@
         margin-top: 20px; 
         color: var(--text-dim); 
     }
+    
     /* Mobile Responsive Typography */
     @media (min-width: 600px) {
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-        body {padding: 6px;line-height: 0.5;}
+        body { padding: 6px; line-height: 0.5; }
     }
+    
     /* Desktop Responsive Typography */
     @media (min-width: 850px) {
         h1 { font-size: 2rem; }
@@ -104,7 +106,7 @@
         width: 100%; 
         box-sizing: border-box; 
         height: 34px; 
-        min-width: 0; /* Prevents inputs from overflowing */
+        min-width: 0;
     }
 
     input[type="date"] {
@@ -170,7 +172,7 @@
         min-width: 0;
     }
 
-    /* Below 850px: Blocks use full card width (max 2 fields per row) */
+    /* Below 850px: Blocks use full card width */
     @media (max-width: 849px) {
         .config-row > .grid-2-col,
         .config-row > .span-2 {
@@ -178,7 +180,7 @@
         }
     }
 
-    /* Above 850px (Desktop): 4-column grid for side-by-side blocks */
+    /* Above 850px (Desktop): 4-column grid */
     @media (min-width: 850px) {
         .config-row { 
             grid-template-columns: repeat(4, 1fr); 
@@ -217,6 +219,23 @@
         th, td { padding: 10px; font-size: 0.9rem; }
         table td:first-child, table th:first-child { white-space: nowrap; }
         table td:last-child, table th:last-child { white-space: nowrap; }
+    }
+
+    /* Targeted layout fix exclusively for the 3-column financial table between 600px and 760px */
+    @media (min-width: 600px) and (max-width: 760px) {
+        .summary-card table {
+            table-layout: fixed;
+            width: 100%;
+        }
+        .summary-card table td:first-child, 
+        .summary-card table th:first-child,
+        .summary-card table td:last-child, 
+        .summary-card table th:last-child {
+            white-space: normal !important;
+        }
+        .summary-card th:nth-child(1), .summary-card td:nth-child(1) { width: 42%; }
+        .summary-card th:nth-child(2), .summary-card td:nth-child(2) { width: 25%; text-align: right; }
+        .summary-card th:nth-child(3), .summary-card td:nth-child(3) { width: 33%; text-align: left; }
     }
 
     .good { color: var(--accent);}
