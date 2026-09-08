@@ -72,6 +72,7 @@
       margin: 2px 0 0 0;
     }
 
+    /* Card Layout & Content */
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
@@ -87,7 +88,6 @@
       margin-bottom: 12px;
     }
 
-    /* Clean read-only headers without text selection or pointer cursors */
     .card-title {
       font-size: 1.1rem;
       font-weight: 600;
@@ -96,6 +96,7 @@
       gap: 8px;
     }
 
+    /* Status Badges */
     .badge {
       font-size: 0.75rem;
       padding: 3px 8px;
@@ -110,6 +111,7 @@
     .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
     .badge-master { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; }
 
+    /* Summary Table */
     .summary-table {
       width: 100%;
       border-collapse: collapse;
@@ -127,6 +129,13 @@
       font-family: monospace;
     }
 
+    .summary-msg {
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Forms & Inputs */
     .form-group {
       display: flex;
       flex-direction: column;
@@ -150,6 +159,7 @@
       box-sizing: border-box;
     }
 
+    /* Buttons */
     .btn {
       width: 100%;
       padding: 12px;
@@ -163,6 +173,7 @@
       justify-content: center;
       align-items: center;
       gap: 8px;
+      margin-top: 14px;
     }
 
     .btn:active { transform: scale(0.98); }
@@ -179,12 +190,48 @@
       color: var(--text-muted);
     }
 
+    /* Checkbox & Storage Key List Styling */
+    .storage-key-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .storage-key-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .storage-key-label input[type="checkbox"] {
+      margin-top: 3px;
+      flex-shrink: 0;
+    }
+
+    .border-top-dashed {
+      margin-top: 12px;
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+    }
+
     code {
       background: rgba(255, 255, 255, 0.1);
       padding: 2px 6px;
       border-radius: 4px;
       font-family: monospace;
+      font-size: 0.8rem;
+      word-break: break-all;
+      white-space: normal;
     }
+
+    /* Text Formatting Utilities */
+    .txt-warning-sm { color: var(--warning); font-size: 0.75rem; }
+    .txt-success-bold { color: var(--success); font-weight: 600; }
+    .txt-center-muted { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 12px 0; }
 
     .hidden { display: none !important; }
   </style>
@@ -193,7 +240,7 @@
 
 <div class="container">
 
-  <!-- Main App Header -->
+  <!-- Main Application Header -->
   <div class="app-header">
     <img class="app-icon" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" alt="Cloud Icon">
     <div class="app-title">
@@ -202,7 +249,7 @@
     </div>
   </div>
 
-  <!-- Fixed Height Status Box (Prevents Layout Shift) -->
+  <!-- Sync Status & Metadata Summary -->
   <div class="card" id="summaryCard">
     <div class="card-header">
       <div class="card-title">📊 Status</div>
@@ -211,23 +258,23 @@
       </div>
     </div>
     <div id="summaryContent">
-      <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 12px 0;">
+      <div class="txt-center-muted">
         Fetching cloud and local metadata...
       </div>
     </div>
   </div>
 
-  <!-- Sync Action Card -->
+  <!-- Sync Action Controls -->
   <div class="card">
     <div class="card-header">
-      <!-- 7-Click Unlock Trigger on Sync Action Header -->
+      <!-- Title interaction: 7 clicks reveal the credential input fields -->
       <div class="card-title" id="syncActionHeader" title="Click 7 times to unlock settings">
         ⚡ Sync Action
       </div>
       <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
     </div>
 
-    <!-- Hidden Credentials Area (Unlocked via 7-Click) -->
+    <!-- Hidden Settings Form (Unlocked via secret click trigger) -->
     <div id="credentialsArea" class="hidden">
       <div class="form-group">
         <label for="gistId">Gist ID</label>
@@ -239,28 +286,28 @@
       </div>
     </div>
 
-    <!-- Export Specific Options (Key Checkboxes) -->
+    <!-- Export Specific Selection Options -->
     <div id="exportOptionsArea" class="hidden">
       <div class="form-group">
         <label>Select Storage Keys to Export</label>
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+        <div class="storage-key-list">
           
-          <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
+          <label class="storage-key-label">
             <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh" checked>
             <code>ecoflow_wh</code>
           </label>
     
-          <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
+          <label class="storage-key-label">
             <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh_hourly" checked>
             <code>ecoflow_wh_hourly</code>
           </label>
     
-          <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
+          <label class="storage-key-label">
             <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z11ACH4G5929" checked>
             <code>ecoflow_analyzer_config_BK01Z11ACH4G5929</code>
           </label>
     
-          <label style="display: flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer;">
+          <label class="storage-key-label">
             <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z1SACH2M3738" checked>
             <code>ecoflow_analyzer_config_BK01Z1SACH2M3738</code>
           </label>
@@ -268,25 +315,26 @@
         </div>
       </div>
     
-      <div class="checkbox-group" style="margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px;">
+      <div class="checkbox-group border-top-dashed">
         <input type="checkbox" id="gzipCompress">
         <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
       </div>
     </div>
 
-    <!-- Dynamic Single Primary Action Button -->
-    <div style="margin-top: 14px;">
-      <button id="mainActionBtn" class="btn btn-disabled" disabled>
-        ⏳ Checking Status...
-      </button>
-    </div>
+    <!-- Dynamic Context-Aware Action Button -->
+    <button id="mainActionBtn" class="btn btn-disabled" disabled>
+      ⏳ Checking Status...
+    </button>
   </div>
 
 </div>
 
 <script>
+  // Storage Key Constants
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
   const CHECKBOX_STATES_KEY = 'ecoflow_gist_checkbox_states';
+  
+  // Easter Egg Click Counter State
   let clickCounter = 0;
   let clickTimer = null;
 
@@ -296,43 +344,44 @@
     checkGistStatus();
   });
 
+  /**
+   * Restores user input values and option selection states from LocalStorage.
+   */
   function loadSavedSettings() {
-    // Load Gist ID and Token
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
 
-    // Restore saved Checkbox states
     const savedCheckboxStates = JSON.parse(localStorage.getItem(CHECKBOX_STATES_KEY) || '{}');
 
-    // Storage key checkboxes
     document.querySelectorAll('.storage-key-checkbox').forEach(cb => {
       if (savedCheckboxStates.hasOwnProperty(cb.value)) {
         cb.checked = savedCheckboxStates[cb.value];
       }
     });
 
-    // Gzip checkbox state
     if (savedCheckboxStates.hasOwnProperty('gzipCompress')) {
       document.getElementById('gzipCompress').checked = savedCheckboxStates['gzipCompress'];
     }
   }
 
+  /**
+   * Persists checkbox selection states to LocalStorage to maintain consistency across reloads.
+   */
   function saveCheckboxStates() {
     const checkboxStates = {};
 
-    // Save key selection states
     document.querySelectorAll('.storage-key-checkbox').forEach(cb => {
       checkboxStates[cb.value] = cb.checked;
     });
 
-    // Save gzip state
     checkboxStates['gzipCompress'] = document.getElementById('gzipCompress').checked;
-
     localStorage.setItem(CHECKBOX_STATES_KEY, JSON.stringify(checkboxStates));
   }
 
+  /**
+   * Binds user event handlers for settings changes and interaction patterns.
+   */
   function setupEventListeners() {
-    // Save settings on change
     document.getElementById('gistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_gist_id', e.target.value.trim());
       checkGistStatus();
@@ -344,12 +393,11 @@
       checkGistStatus();
     });
 
-    // Automatically save checkbox states when toggled
     document.querySelectorAll('.storage-key-checkbox, #gzipCompress').forEach(cb => {
       cb.addEventListener('change', saveCheckboxStates);
     });
 
-    // 7-Click Unlock Trigger on Sync Action Header
+    // Hidden Settings Access: Requires 7 rapid clicks within 2 seconds
     document.getElementById('syncActionHeader').addEventListener('click', () => {
       clickCounter++;
       clearTimeout(clickTimer);
@@ -364,6 +412,9 @@
     });
   }
 
+  /**
+   * Toggles UI elements based on authentication role (Master vs Read-Only).
+   */
   function adjustUIForRole() {
     const token = document.getElementById('githubToken').value.trim();
     const masterBadge = document.getElementById('masterBadge');
@@ -376,7 +427,8 @@
   }
 
   /**
-   * Helper: Find the newest timestamp string in ecoflow_wh_hourly
+   * Scans local hourly measurement logs to extract the latest data point timestamp.
+   * @returns {number|null} Unix timestamp in milliseconds or null if no valid data exists.
    */
   function getLatestDataTimestamp() {
     const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
@@ -386,6 +438,7 @@
       const hourlyData = JSON.parse(hourlyRaw);
       let latestKey = "";
 
+      // Iterate over device collections and hourly bucket keys
       Object.values(hourlyData).forEach(deviceHours => {
         if (typeof deviceHours === 'object' && deviceHours !== null) {
           Object.keys(deviceHours).forEach(timeKey => {
@@ -398,6 +451,7 @@
 
       if (!latestKey) return null;
 
+      // Convert format string (e.g., "2026-09-08 10") into Unix timestamp
       const [datePart, hourPart] = latestKey.split(' ');
       const [year, month, day] = datePart.split('-').map(Number);
       return new Date(year, month - 1, day, parseInt(hourPart, 10), 59, 59).getTime();
@@ -407,7 +461,7 @@
   }
 
   /**
-   * Main Status Check & UI Dynamic Router
+   * Primary status evaluator: Checks remote GitHub Gist against LocalStorage state.
    */
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
@@ -432,7 +486,7 @@
       const sizeInBytes = backupFile ? backupFile.size : 0;
       const sizeInKB = (sizeInBytes / 1024).toFixed(2);
 
-      // 1. Content Timestamp (Inhalt des Backups) auslesen
+      // Extract structural payload timestamp from inside the backup JSON
       let backupContentTs = 0;
       let backupContentStr = 'N/A';
 
@@ -446,25 +500,24 @@
         } catch (e) {}
       }
 
-      // 2. Neuesten lokalen Datenpunkt ermitteln
+      // Query latest local measurement point
       const latestDataTs = getLatestDataTimestamp();
       const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
 
-      // Prüfen, ob die Gist-Datei manuell bearbeitet wurde (File modified > Content Timestamp)
+      // Detect manual Gist edits on GitHub (Gist file updated date significantly newer than content payload date)
       const isManualGistEdit = (gistUpdatedAt - backupContentTs) > 30000;
       const modifiedLabel = isManualGistEdit 
-        ? `${new Date(gistUpdatedAt).toLocaleString()} <span style="color: var(--warning); font-size: 0.75rem;">(Manual Edit)</span>`
+        ? `${new Date(gistUpdatedAt).toLocaleString()} <span class="txt-warning-sm">(Manual Edit)</span>`
         : new Date(gistUpdatedAt).toLocaleString();
 
       adjustUIForRole();
 
-      // DECISION MATRIX: Basiert nun auf echten Inhalts-Daten!
-      
+      // DECISION MATRIX (Prioritizes payload timestamps over file meta timestamps)
       const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
       const hasNewLocalData = latestDataTs && latestDataTs > (backupContentTs + 20000);
 
       if (isRemoteContentNewer) {
-        // CASE 1: In der Cloud liegen tatsächlich NEUERE MESSDATEN -> Importieren
+        // CASE 1: Remote backup contains newer measurements -> Download / Import
         exportOptions.classList.add('hidden');
         setButtonState('btn-success', '📥 Update LocalStorage', false, () => triggerImport(gistId));
 
@@ -478,7 +531,7 @@
         ]);
 
       } else if (hasNewLocalData) {
-        // CASE 2: Lokale Messdaten sind neuer -> Exportieren
+        // CASE 2: Local measurements are newer -> Prepare Upload / Export
         const hasToken = !!document.getElementById('githubToken').value.trim();
 
         if (hasToken) {
@@ -489,7 +542,7 @@
           setButtonState('btn-disabled', '🔒 Read-Only Device (New Local Data)', true, null);
         }
 
-        const highlightedLocalData = `<span style="color: var(--success); font-weight: 600;">${formattedLatestData}</span>`;
+        const highlightedLocalData = `<span class="txt-success-bold">${formattedLatestData}</span>`;
 
         renderSummary('SUCCESS', 'New Local Data Ready', 'New local readings available for upload.', [
           ['Gist File Modified', modifiedLabel],
@@ -501,7 +554,7 @@
         ]);
 
       } else {
-        // CASE 3: Datenstand ist vollkommen synchron
+        // CASE 3: State is completely synchronized
         exportOptions.classList.add('hidden');
         setButtonState('btn-disabled', '✅ Local Data Fully Synced', true, null);
 
@@ -522,13 +575,16 @@
     }
   }
 
+  /**
+   * Dynamically configures main button state, styling, and listener events.
+   */
   function setButtonState(className, text, disabled, onClickHandler) {
     const btn = document.getElementById('mainActionBtn');
     btn.className = `btn ${className}`;
     btn.textContent = text;
     btn.disabled = disabled;
     
-    // Replace event listeners cleanly
+    // Re-create DOM Node to purge stale listener events
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
 
@@ -537,6 +593,9 @@
     }
   }
 
+  /**
+   * Renders structured summary status information into the UI overview card.
+   */
   function renderSummary(badgeType, badgeText, message, details) {
     const badgeContainer = document.getElementById('statusBadgeContainer');
     const content = document.getElementById('summaryContent');
@@ -553,11 +612,14 @@
     `).join('');
 
     content.innerHTML = `
-      <div style="margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted);">${message}</div>
+      <div class="summary-msg">${message}</div>
       ${details.length > 0 ? `<table class="summary-table">${tableRows}</table>` : ''}
     `;
   }
 
+  /**
+   * Fetches remote backup from GitHub Gist and merges content into LocalStorage.
+   */
   async function triggerImport(gistId) {
     const btn = document.getElementById('mainActionBtn');
     btn.textContent = '⏳ Importing...';
@@ -574,7 +636,7 @@
       const payload = JSON.parse(backupFile.content);
       const officialGistTimestamp = data.updated_at;
 
-      // Restores payload keys strictly from payload.keys
+      // Extract and write backup key values into LocalStorage
       if (payload.keys) {
         Object.keys(payload.keys).forEach(key => {
           const val = typeof payload.keys[key] === 'object' 
@@ -584,10 +646,7 @@
         });
       }
 
-      // Save official GitHub server timestamp
       localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
-      
-      // Refresh status UI
       await checkGistStatus();
     } catch (err) {
       alert(`Import failed: ${err.message}`);
@@ -595,73 +654,72 @@
     }
   }
 
+  /**
+   * Packs selected LocalStorage keys and uploads payload to GitHub Gist.
+   */
   async function triggerExport(gistId) {
-      const token = document.getElementById('githubToken').value.trim();
-      if (!token) {
-        alert('GitHub Token required for export!');
-        return;
-      }
-  
-      // Dynamic boolean from UI checkbox state
-      const isGzipChecked = document.getElementById('gzipCompress').checked;
-  
-      // Collect checked storage keys
-      const checkedBoxes = document.querySelectorAll('.storage-key-checkbox:checked');
-      const selectedKeys = Array.from(checkedBoxes).map(cb => cb.value);
-  
-      if (selectedKeys.length === 0) {
-        alert('Please select at least one Storage Key to export!');
-        return;
-      }
-  
-      const btn = document.getElementById('mainActionBtn');
-      btn.textContent = '⏳ Uploading...';
-      btn.disabled = true;
-  
-      try {
-        const exportData = {};
-  
-        selectedKeys.forEach(key => {
-          const item = localStorage.getItem(key);
-          if (item) {
-            try { exportData[key] = JSON.parse(item); } catch (e) { exportData[key] = item; }
-          }
-        });
-  
-        // Payload building with dynamic compressed flag
-        const payload = {
-          timestamp: new Date().toISOString(),
-          compressed: isGzipChecked,
-          keys: exportData
-        };
-  
-        const response = await fetch(`https://api.github.com/gists/${gistId}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `token ${token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            files: {
-              'ecoflow_backup.json': {
-                content: JSON.stringify(payload, null, 2)
-              }
-            }
-          })
-        });
-  
-        if (!response.ok) throw new Error(`HTTP ${response.status}: Export failed`);
-  
-        const resData = await response.json();
-        localStorage.setItem(LOCAL_SYNC_KEY, resData.updated_at);
-  
-        await checkGistStatus();
-      } catch (err) {
-        alert(`Export failed: ${err.message}`);
-        checkGistStatus();
-      }
+    const token = document.getElementById('githubToken').value.trim();
+    if (!token) {
+      alert('GitHub Token required for export!');
+      return;
     }
+
+    const isGzipChecked = document.getElementById('gzipCompress').checked;
+    const checkedBoxes = document.querySelectorAll('.storage-key-checkbox:checked');
+    const selectedKeys = Array.from(checkedBoxes).map(cb => cb.value);
+
+    if (selectedKeys.length === 0) {
+      alert('Please select at least one Storage Key to export!');
+      return;
+    }
+
+    const btn = document.getElementById('mainActionBtn');
+    btn.textContent = '⏳ Uploading...';
+    btn.disabled = true;
+
+    try {
+      const exportData = {};
+
+      selectedKeys.forEach(key => {
+        const item = localStorage.getItem(key);
+        if (item) {
+          try { exportData[key] = JSON.parse(item); } catch (e) { exportData[key] = item; }
+        }
+      });
+
+      const payload = {
+        timestamp: new Date().toISOString(),
+        compressed: isGzipChecked,
+        keys: exportData
+      };
+
+      const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: {
+            'ecoflow_backup.json': {
+              content: JSON.stringify(payload, null, 2)
+            }
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}: Export failed`);
+
+      const resData = await response.json();
+      localStorage.setItem(LOCAL_SYNC_KEY, resData.updated_at);
+
+      await checkGistStatus();
+    } catch (err) {
+      alert(`Export failed: ${err.message}`);
+      checkGistStatus();
+    }
+  }
 </script>
 
 </body>
