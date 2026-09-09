@@ -16,15 +16,16 @@
 
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
+      /* Monochrome Palette */
+      --bg: #0b0f19;
+      --card-bg: #161e2e;
+      --border: #2a364f;
+      --text: #f1f5f9;
       --text-muted: #94a3b8;
-      --primary: #3b82f6;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
+      --accent: #38bdf8;
+      --btn-bg: #222f43;
+      --btn-hover: #2d3e58;
+      --btn-disabled: #1b2433;
     }
 
     body {
@@ -57,13 +58,15 @@
       width: 32px;
       height: 32px;
       flex-shrink: 0;
+      opacity: 0.9;
     }
 
     .app-title h1 {
       font-size: 1.25rem;
-      font-weight: 700;
+      font-weight: 600;
       margin: 0;
       color: var(--text);
+      letter-spacing: -0.02em;
     }
 
     .app-title p {
@@ -78,7 +81,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .card-header {
@@ -89,49 +92,55 @@
     }
 
     .card-title {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
       display: flex;
       align-items: center;
       gap: 8px;
+      color: var(--text);
     }
 
-    /* Status Badges */
+    /* Monochrome Status Badges */
     .badge {
-      font-size: 0.75rem;
-      padding: 3px 8px;
-      border-radius: 6px;
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      border-radius: 4px;
       font-weight: 600;
       text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid var(--border);
     }
 
-    .badge-success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
-    .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-    .badge-info { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
-    .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-    .badge-master { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid #ab6e07; }
+    .badge-master {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
 
     /* Summary Table */
     .summary-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
 
     .summary-table td {
-      padding: 6px 0;
-      border-bottom: 1px dashed var(--border);
+      padding: 8px 0;
+      border-bottom: 1px dotted var(--border);
       vertical-align: middle;
+      color: var(--text-muted);
     }
 
     .summary-table td:last-child {
       text-align: right;
       font-family: monospace;
+      color: var(--text);
     }
 
     .summary-msg {
-      margin-bottom: 8px;
-      font-size: 0.9rem;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
       color: var(--text-muted);
     }
 
@@ -144,7 +153,7 @@
     }
 
     label {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
     }
 
@@ -154,21 +163,27 @@
       color: var(--text);
       padding: 10px;
       border-radius: 6px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       width: 100%;
       box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.2s;
     }
 
-    /* Buttons */
+    input[type="text"]:focus, input[type="password"]:focus {
+      border-color: var(--accent);
+    }
+
+    /* Monochrome Buttons */
     .btn {
       width: 100%;
       padding: 12px;
-      border: none;
+      border: 1px solid var(--border);
       border-radius: 8px;
-      font-weight: 600;
-      font-size: 1rem;
+      font-weight: 500;
+      font-size: 0.95rem;
       cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
+      transition: all 0.2s ease;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -176,44 +191,57 @@
       margin-top: 14px;
       text-decoration: none;
       box-sizing: border-box;
+      background-color: var(--btn-bg);
+      color: var(--text);
     }
 
-    .btn:active { transform: scale(0.98); }
-    .btn-success { background-color: var(--success); color: #000; }
-    .btn-warning { background-color: var(--warning); color: #000; }
-    .btn-disabled { background-color: var(--border); color: var(--text-muted); cursor: not-allowed; opacity: 0.6; }
+    .btn:hover:not(:disabled) {
+      background-color: var(--btn-hover);
+      border-color: var(--accent);
+    }
 
-    /* Secondary Nav Buttons */
+    .btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    .btn-disabled {
+      background-color: var(--btn-disabled);
+      color: var(--text-muted);
+      border-color: transparent;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    /* Nav Buttons Grid */
     .nav-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-top: 12px;
-      padding-top: 12px;
+      margin-top: 14px;
+      padding-top: 14px;
       border-top: 1px dashed var(--border);
     }
 
     .btn-secondary {
       background-color: var(--bg);
       border: 1px solid var(--border);
-      color: var(--text);
+      color: var(--text-muted);
       font-size: 0.85rem;
       padding: 10px;
       margin-top: 0;
       text-align: center;
-      transition: all 0.2s ease;
     }
 
     .btn-secondary:hover {
-      border-color: var(--primary);
-      color: var(--primary);
+      color: var(--text);
+      border-color: var(--accent);
     }
 
-    /* Pulse effect to guide mobile users after import */
+    /* Discreet Highlight Post-Import */
     .highlight-nav {
-      border-color: var(--success) !important;
-      color: var(--success) !important;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+      border-color: var(--accent) !important;
+      color: var(--text) !important;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.15);
     }
 
     .checkbox-group {
@@ -245,6 +273,7 @@
     .storage-key-label input[type="checkbox"] {
       margin-top: 3px;
       flex-shrink: 0;
+      accent-color: var(--accent);
     }
 
     .border-top-dashed {
@@ -254,19 +283,19 @@
     }
 
     code {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
       padding: 2px 6px;
       border-radius: 4px;
       font-family: monospace;
       font-size: 0.8rem;
+      color: var(--text);
       word-break: break-all;
       white-space: normal;
     }
 
-    /* Text Formatting Utilities */
-    .txt-warning-sm { color: var(--warning); font-size: 0.75rem; }
-    .txt-success-bold { color: var(--success); font-weight: 600; }
-    .txt-center-muted { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 12px 0; }
+    /* Text Utilities */
+    .txt-accent-bold { color: var(--accent); font-weight: 600; }
+    .txt-center-muted { color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 12px 0; }
 
     .hidden { display: none !important; }
   </style>
@@ -277,7 +306,7 @@
 
   <!-- Main Application Header -->
   <div class="app-header">
-    <img class="app-icon" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" alt="Cloud Icon">
+    <img class="app-icon" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" alt="Cloud Icon">
     <div class="app-title">
       <h1>EcoFlow Gist Sync</h1>
       <p>Cloud & LocalStorage Synchronization</p>
@@ -287,9 +316,9 @@
   <!-- Sync Status & Metadata Summary -->
   <div class="card" id="summaryCard">
     <div class="card-header">
-      <div class="card-title">📊 Status</div>
+      <div class="card-title">Status</div>
       <div id="statusBadgeContainer">
-        <span class="badge badge-info">CHECKING...</span>
+        <span class="badge">CHECKING...</span>
       </div>
     </div>
     <div id="summaryContent">
@@ -302,9 +331,8 @@
   <!-- Sync Action Controls -->
   <div class="card">
     <div class="card-header">
-      <!-- Title interaction: 7 clicks reveal the credential input fields -->
       <div class="card-title" id="syncActionHeader" title="Click 7 times to unlock settings">
-        ⚡ Sync Action
+        Sync Action
       </div>
       <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
     </div>
@@ -356,18 +384,18 @@
       </div>
     </div>
 
-    <!-- Dynamic Context-Aware Action Button -->
+    <!-- Dynamic Action Button -->
     <button id="mainActionBtn" class="btn btn-disabled" disabled>
-      ⏳ Checking Status...
+      Checking Status...
     </button>
 
-    <!-- Quick Navigation Links (Mobile Friendly Shortcuts) -->
+    <!-- Quick Navigation Links -->
     <div class="nav-grid" id="quickNavArea">
-      <a href="ecoflow_monitor.html" class="btn btn-secondary nav-link">
-        📱 EcoFlow Monitor
+      <a href="/" class="btn btn-secondary nav-link">
+        EcoFlow Monitor
       </a>
       <a href="ecoflow_analyzer.html" class="btn btn-secondary nav-link">
-        📈 EcoFlow Analyzer
+        EcoFlow Analyzer
       </a>
     </div>
 
@@ -376,11 +404,9 @@
 </div>
 
 <script>
-  // Storage Key Constants
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
   const CHECKBOX_STATES_KEY = 'ecoflow_gist_checkbox_states';
   
-  // Easter Egg Click Counter State
   let clickCounter = 0;
   let clickTimer = null;
 
@@ -390,9 +416,6 @@
     checkGistStatus();
   });
 
-  /**
-   * Restores user input values and option selection states from LocalStorage.
-   */
   function loadSavedSettings() {
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
@@ -410,9 +433,6 @@
     }
   }
 
-  /**
-   * Persists checkbox selection states to LocalStorage to maintain consistency across reloads.
-   */
   function saveCheckboxStates() {
     const checkboxStates = {};
 
@@ -424,9 +444,6 @@
     localStorage.setItem(CHECKBOX_STATES_KEY, JSON.stringify(checkboxStates));
   }
 
-  /**
-   * Binds user event handlers for settings changes and interaction patterns.
-   */
   function setupEventListeners() {
     document.getElementById('gistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_gist_id', e.target.value.trim());
@@ -443,7 +460,6 @@
       cb.addEventListener('change', saveCheckboxStates);
     });
 
-    // Hidden Settings Access: Requires 7 rapid clicks within 2 seconds
     document.getElementById('syncActionHeader').addEventListener('click', () => {
       clickCounter++;
       clearTimeout(clickTimer);
@@ -458,9 +474,6 @@
     });
   }
 
-  /**
-   * Toggles UI elements based on authentication role (Master vs Read-Only).
-   */
   function adjustUIForRole() {
     const token = document.getElementById('githubToken').value.trim();
     const masterBadge = document.getElementById('masterBadge');
@@ -472,10 +485,6 @@
     }
   }
 
-  /**
-   * Scans local hourly measurement logs to extract the latest data point timestamp.
-   * @returns {number|null} Unix timestamp in milliseconds or null if no valid data exists.
-   */
   function getLatestDataTimestamp() {
     const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
     if (!hourlyRaw) return null;
@@ -484,7 +493,6 @@
       const hourlyData = JSON.parse(hourlyRaw);
       let latestKey = "";
 
-      // Iterate over device collections and hourly bucket keys
       Object.values(hourlyData).forEach(deviceHours => {
         if (typeof deviceHours === 'object' && deviceHours !== null) {
           Object.keys(deviceHours).forEach(timeKey => {
@@ -497,7 +505,6 @@
 
       if (!latestKey) return null;
 
-      // Convert format string (e.g., "2026-09-08 10") into Unix timestamp
       const [datePart, hourPart] = latestKey.split(' ');
       const [year, month, day] = datePart.split('-').map(Number);
       return new Date(year, month - 1, day, parseInt(hourPart, 10), 59, 59).getTime();
@@ -506,9 +513,6 @@
     }
   }
 
-  /**
-   * Highlights navigation links post-import for immediate visual guidance.
-   */
   function setNavHighlight(active) {
     const links = document.querySelectorAll('.nav-link');
     links.forEach(link => {
@@ -520,16 +524,13 @@
     });
   }
 
-  /**
-   * Primary status evaluator: Checks remote GitHub Gist against LocalStorage state.
-   */
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
     const exportOptions = document.getElementById('exportOptionsArea');
 
     if (!gistId) {
-      renderSummary('WARNING', 'Missing Configuration', 'Please enter a Gist ID in settings.', []);
-      setButtonState('btn-disabled', '⚠️ Gist ID Missing', true, null);
+      renderSummary('Gist ID Missing', 'Please enter a Gist ID in settings.', []);
+      setButtonState('btn-disabled', 'Gist ID Missing', true, null);
       exportOptions.classList.add('hidden');
       setNavHighlight(false);
       return;
@@ -547,7 +548,6 @@
       const sizeInBytes = backupFile ? backupFile.size : 0;
       const sizeInKB = (sizeInBytes / 1024).toFixed(2);
 
-      // Extract structural payload timestamp from inside the backup JSON
       let backupContentTs = 0;
       let backupContentStr = 'N/A';
 
@@ -561,94 +561,84 @@
         } catch (e) {}
       }
 
-      // Query latest local measurement point
       const latestDataTs = getLatestDataTimestamp();
       const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
 
-      // Detect manual Gist edits on GitHub
       const isManualGistEdit = (gistUpdatedAt - backupContentTs) > 30000;
       const modifiedLabel = isManualGistEdit 
-        ? `${new Date(gistUpdatedAt).toLocaleString()} <span class="txt-warning-sm">(Manual Edit)</span>`
+        ? `${new Date(gistUpdatedAt).toLocaleString()} (Manual Edit)`
         : new Date(gistUpdatedAt).toLocaleString();
 
       adjustUIForRole();
 
-      // DECISION MATRIX
       const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
       const hasNewLocalData = latestDataTs && latestDataTs > (backupContentTs + 20000);
 
       if (isRemoteContentNewer) {
-        // CASE 1: Remote backup contains newer measurements -> Download / Import
         exportOptions.classList.add('hidden');
         setNavHighlight(false);
-        setButtonState('btn-success', '📥 Update LocalStorage', false, () => triggerImport(gistId));
+        setButtonState('', 'Import Data to LocalStorage', false, () => triggerImport(gistId));
 
-        renderSummary('INFO', 'New Cloud Data Available', 'Remote backup contains newer measurements.', [
+        renderSummary('Update Available', 'Remote backup contains newer measurements.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
           ['Gist Size', `${sizeInKB} KB`],
           ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
           ['Latest Data Point', formattedLatestData],
-          ['Status', '📥 Import Available']
+          ['Status', 'Import Available']
         ]);
 
       } else if (hasNewLocalData) {
-        // CASE 2: Local measurements are newer -> Prepare Upload / Export
         setNavHighlight(false);
         const hasToken = !!document.getElementById('githubToken').value.trim();
 
         if (hasToken) {
           exportOptions.classList.remove('hidden');
-          setButtonState('btn-warning', '📤 Update Gist', false, () => triggerExport(gistId));
+          setButtonState('', 'Export Local Data to Gist', false, () => triggerExport(gistId));
         } else {
           exportOptions.classList.add('hidden');
-          setButtonState('btn-disabled', '🔒 Read-Only Device (New Local Data)', true, null);
+          setButtonState('btn-disabled', 'Read-Only Device (New Local Data)', true, null);
         }
 
-        const highlightedLocalData = `<span class="txt-success-bold">${formattedLatestData}</span>`;
+        const highlightedLocalData = `<span class="txt-accent-bold">${formattedLatestData}</span>`;
 
-        renderSummary('SUCCESS', 'New Local Data Ready', 'New local readings available for upload.', [
+        renderSummary('New Data Ready', 'New local readings available for upload.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
           ['Gist Size', `${sizeInKB} KB`],
           ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
           ['Latest Data Point', highlightedLocalData],
-          ['Status', '📤 Ready for Export']
+          ['Status', 'Ready for Export']
         ]);
 
       } else {
-        // CASE 3: State is completely synchronized
         exportOptions.classList.add('hidden');
-        setButtonState('btn-disabled', '✅ Local Data Fully Synced', true, null);
+        setButtonState('btn-disabled', 'Local Data Synced', true, null);
 
-        renderSummary('SUCCESS', 'Fully Synced', 'Local data is up-to-date with Gist cloud.', [
+        renderSummary('Synced', 'Local data is up-to-date with Gist cloud.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
           ['Gist Size', `${sizeInKB} KB`],
           ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
           ['Latest Data Point', formattedLatestData],
-          ['Status', '✅ Fully Synced']
+          ['Status', 'Fully Synced']
         ]);
       }
 
     } catch (err) {
       exportOptions.classList.add('hidden');
       setNavHighlight(false);
-      setButtonState('btn-disabled', '❌ Connection Error', true, null);
-      renderSummary('DANGER', 'Sync Check Failed', err.message, []);
+      setButtonState('btn-disabled', 'Connection Error', true, null);
+      renderSummary('Sync Failed', err.message, []);
     }
   }
 
-  /**
-   * Dynamically configures main button state, styling, and listener events.
-   */
   function setButtonState(className, text, disabled, onClickHandler) {
     const btn = document.getElementById('mainActionBtn');
     btn.className = `btn ${className}`;
     btn.textContent = text;
     btn.disabled = disabled;
     
-    // Re-create DOM Node to purge stale listener events
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
 
@@ -657,16 +647,11 @@
     }
   }
 
-  /**
-   * Renders structured summary status information into the UI overview card.
-   */
-  function renderSummary(badgeType, badgeText, message, details) {
+  function renderSummary(badgeText, message, details) {
     const badgeContainer = document.getElementById('statusBadgeContainer');
     const content = document.getElementById('summaryContent');
 
-    const badgeClass = badgeType === 'SUCCESS' ? 'badge-success' : badgeType === 'DANGER' ? 'badge-danger' : badgeType === 'WARNING' ? 'badge-warning' : 'badge-info';
-
-    badgeContainer.innerHTML = `<span class="badge ${badgeClass}">${badgeText}</span>`;
+    badgeContainer.innerHTML = `<span class="badge">${badgeText}</span>`;
 
     let tableRows = details.map(([label, val]) => `
       <tr>
@@ -681,12 +666,9 @@
     `;
   }
 
-  /**
-   * Fetches remote backup from GitHub Gist and merges content into LocalStorage.
-   */
   async function triggerImport(gistId) {
     const btn = document.getElementById('mainActionBtn');
-    btn.textContent = '⏳ Importing...';
+    btn.textContent = 'Importing...';
     btn.disabled = true;
 
     try {
@@ -700,7 +682,6 @@
       const payload = JSON.parse(backupFile.content);
       const officialGistTimestamp = data.updated_at;
 
-      // Extract and write backup key values into LocalStorage
       if (payload.keys) {
         Object.keys(payload.keys).forEach(key => {
           const val = typeof payload.keys[key] === 'object' 
@@ -712,7 +693,6 @@
 
       localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
       
-      // Update status and highlight navigation buttons for mobile users
       await checkGistStatus();
       setNavHighlight(true);
 
@@ -722,9 +702,6 @@
     }
   }
 
-  /**
-   * Packs selected LocalStorage keys and uploads payload to GitHub Gist.
-   */
   async function triggerExport(gistId) {
     const token = document.getElementById('githubToken').value.trim();
     if (!token) {
@@ -742,7 +719,7 @@
     }
 
     const btn = document.getElementById('mainActionBtn');
-    btn.textContent = '⏳ Uploading...';
+    btn.textContent = 'Uploading...';
     btn.disabled = true;
 
     try {
