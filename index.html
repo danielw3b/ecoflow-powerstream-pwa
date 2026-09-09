@@ -1679,6 +1679,173 @@ renderWhChart();
 fetchWeather();
 setInterval(fetchWeather, 600000);
 init();
+
+// =========================================================================
+// Autonomous Background Gist Synchronization Engine (15-Minute Interval)
+// =========================================================================
+(function initGistBackgroundSync() {
+  const SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+  const EXPORT_THRESHOLD_WH = 100;
+  const MAX_LOG_ENTRIES = 20;
+
+  const SYNC_KEYS = [
+    'ecoflow_wh',
+    'ecoflow_wh_hourly',
+    'ecoflow_analyzer_config_BK01Z11ACH4G5929',
+    'ecoflow_analyzer_config_BK01Z1SACH2M3738'
+  ];
+
+  async function runAutoSync() {
+    const autoGistId = localStorage.getItem('ecoflow_auto_gist_id');
+    const token = localStorage.getItem('ecoflow_github_token');
+    const isWriter = !!token;
+
+    // Safety guard: double check in case key was removed during runtime
+    if (!autoGistId) return;
+
+    try {
+      const res = await fetch(`https://api.github.com/gists/${autoGistId}?_nocache=${Date.now()}`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const backupFile = data.files['ecoflow_auto_backup.json'];
+      if (!backupFile || !backupFile.content) return;
+
+      const remotePayload = JSON.parse(backupFile.content);
+      const remoteTs = new Date(remotePayload.timestamp || data.updated_at).getTime();
+      const localSyncTs = new Date(localStorage.getItem('ecoflow_gist_last_sync') || 0).getTime();
+
+      // Reader Node: Silent Import
+      if (!isWriter) {
+        if (remoteTs > localSyncTs + 10000) {
+          if (remotePayload.keys) {
+            Object.keys(remotePayload.keys).forEach(key => {
+              const val = typeof remotePayload.keys[key] === 'object' 
+                ? JSON.stringify(remotePayload.keys[key]) 
+                : remotePayload.keys[key];
+              localStorage.setItem(key, val);
+            });
+
+            const nowIso = new Date().toISOString();
+            localStorage.setItem('ecoflow_gist_last_sync', remotePayload.timestamp || data.updated_at);
+            localStorage.setItem('ecoflow_gist_last_import_ts', nowIso);
+
+            if (typeof loadWh === 'function') {
+              loadWh();
+              console.log('[AutoSync] Reader: Remote data imported & loadWh() executed.');
+            }
+          }
+        }
+        return;
+      }
+
+      // Writer Node: Silent Export
+      if (isWriter) {
+        const localTotalWh = getLocalWhSum();
+        const remoteTotalWh = getRemoteWhSum(remotePayload);
+        const whDifference = localTotalWh - remoteTotalWh;
+
+        if (whDifference >= EXPORT_THRESHOLD_WH) {
+          await executeSilentExport(autoGistId, token, localTotalWh, whDifference);
+          console.log(`[AutoSync] Writer: Export completed (+${whDifference} Wh yield increase).`);
+        }
+      }
+
+    } catch (err) {
+      console.warn('[AutoSync] Background sync network error:', err);
+    }
+  }
+
+  async function executeSilentExport(gistId, token, currentWh, whDiff) {
+    const exportData = {};
+    SYNC_KEYS.forEach(key => {
+      const item = localStorage.getItem(key);
+      if (item) {
+        try { exportData[key] = JSON.parse(item); } catch (e) { exportData[key] = item; }
+      }
+    });
+
+    const nowIso = new Date().toISOString();
+    const writerLogs = localStorage.getItem('ecoflow_auto_export_log');
+
+    const payload = {
+      timestamp: nowIso,
+      writer_last_export: nowIso,
+      writer_export_history: writerLogs ? JSON.parse(writerLogs) : [],
+      keys: exportData
+    };
+
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        files: {
+          'ecoflow_auto_backup.json': { content: JSON.stringify(payload, null, 2) }
+        }
+      })
+    });
+
+    if (res.ok) {
+      const resData = await res.json();
+      localStorage.setItem('ecoflow_gist_last_sync', resData.updated_at);
+      localStorage.setItem('ecoflow_gist_last_export_ts', nowIso);
+
+      appendSyncLog('ecoflow_auto_export_log', { 
+        status: 'SUCCESS', 
+        ts: nowIso, 
+        totalWh: currentWh, 
+        diffWh: whDiff 
+      });
+    }
+  }
+
+  function appendSyncLog(logKey, logEntry) {
+    try {
+      const raw = localStorage.getItem(logKey);
+      let logs = raw ? JSON.parse(raw) : [];
+      logEntry.date = new Date().toLocaleTimeString();
+      logs.unshift(logEntry);
+      if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
+      localStorage.setItem(logKey, JSON.stringify(logs));
+    } catch (e) { console.warn('Log append error', e); }
+  }
+
+  function getLocalWhSum() {
+    try {
+      const raw = localStorage.getItem('ecoflow_wh');
+      if (!raw) return 0;
+      let sum = 0;
+      Object.values(JSON.parse(raw)).forEach(val => sum += (Number(val) || 0));
+      return sum;
+    } catch (e) { return 0; }
+  }
+
+  function getRemoteWhSum(payload) {
+    try {
+      if (!payload.keys || !payload.keys.ecoflow_wh) return 0;
+      let sum = 0;
+      Object.values(payload.keys.ecoflow_wh).forEach(val => sum += (Number(val) || 0));
+      return sum;
+    } catch (e) { return 0; }
+  }
+
+  // --- BOOTSTRAP CHECK ---
+  // Do NOT start timer if auto-sync Gist ID is missing!
+  const initialAutoGistId = localStorage.getItem('ecoflow_auto_gist_id');
+  if (!initialAutoGistId) {
+    return; // Completely disables auto-sync logic for inactive clients
+  }
+
+  // Start initial trigger and recurring 15-min interval ONLY if configured
+  setTimeout(runAutoSync, 3000);
+  setInterval(runAutoSync, SYNC_INTERVAL_MS);
+
+})();
+  
 </script>
 </body>
 </html>
