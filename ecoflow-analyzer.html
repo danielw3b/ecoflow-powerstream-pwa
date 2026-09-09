@@ -32,7 +32,7 @@
         background-color: var(--bg);
         color: var(--text);
         margin: 0;
-        padding: 5px 4px; /* Reduced mobile padding for maximum usable screen space */
+        padding: 5px 4px;
         line-height: 1.4;
     }
 
@@ -52,7 +52,7 @@
         background: var(--panel); 
         border: 1px solid var(--border); 
         border-radius: 8px; 
-        padding: 10px 8px; /* Compact padding for mobile view */
+        padding: 10px 8px;
         margin-bottom: 15px; 
     }
     
@@ -159,11 +159,10 @@
         font-size: 0.85rem; 
         word-break: break-word; 
     }
+    
     th { 
         color: var(--text-dim); 
         font-weight: normal; 
-        position: sticky; 
-        top: 0; 
         background-color: var(--panel); 
         z-index: 10; 
         box-shadow: inset 0 -1px 0 var(--border); 
@@ -171,39 +170,70 @@
     tr:hover { background: rgba(255,255,255,0.02); }
     table td:last-child, table th:last-child { text-align: center; }
 
-    /* Container wrapping table 1 and table 2 */
+    /* Prevents vertical scrollbars inside table containers */
+    .table-scroll-frame {
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+
+    /* Container wrapping Table 1 and Table 2 */
     .card.table-card {
-        padding: 12px;
+        padding: 10px 8px;
         margin-bottom: 20px;
     }
 
-    /* Sticky behavior targeting only table headers inside table-cards */
+    /* Sticky H3 and TH for Table 1 and Table 2 with extra vertical spacing */
     .card.table-card h3 {
         position: sticky;
         top: 0;
         background-color: var(--panel);
-        z-index: 11;
-        margin: 0 0 10px 0;
-        padding: 6px 0;
+        z-index: 12;
+        margin: 0;
+        padding: 8px 0 12px 0; /* More space towards th */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 5px;
     }
 
+    .card.table-card th {
+        position: sticky;
+        top: 40px; /* Offset to sit cleanly below the taller h3 */
+        z-index: 11;
+        background-color: var(--panel);
+    }
+
+    /* Summary Card Sticky Adjustments */
     .summary-card {
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 10px 8px; /* Compact padding for mobile view */
+        padding: 10px 8px;
         margin-bottom: 15px;
     }
     
     .summary-card h3 {
-        margin: 0 0 10px 0;
+        position: sticky;
+        top: 0;
+        background-color: var(--panel);
+        z-index: 12;
+        margin: 0;
+        padding: 6px 0 10px 0;
         font-size: 0.9rem;
         color: var(--text-dim);
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
 
-    /* Exclusive for Financial Table: First column narrower, right column wider */
+    .summary-card th {
+        position: sticky;
+        top: 32px;
+        z-index: 11;
+        background-color: var(--panel);
+    }
+
+    /* Exclusive for Financial Table */
     .summary-card table {
         table-layout: fixed;
         width: 100%;
@@ -269,8 +299,8 @@
     .ratio-accent { font-weight: bold; color: var(--accent); min-width: 65px; }
     .ratio-danger { font-weight: bold; color: var(--danger); min-width: 65px; }
     .context-cell { cursor: help; text-align: center; font-size: 1.1rem; }
-    .table-title-warn { padding-left: 5px; color: var(--warning); }
-    .title-badge { float: right; font-size: 0.85rem; color: var(--text-dim); }
+    .table-title-warn { color: var(--warning); }
+    .title-badge { font-size: 0.8rem; color: var(--text-dim); font-weight: normal; }
 
     /* Layout Helper Classes */
     .subtitle { color: var(--text-dim); }
