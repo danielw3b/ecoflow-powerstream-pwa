@@ -109,7 +109,6 @@
     .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
     .badge-info { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
     .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-    /*.badge-master { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; }*/
     .badge-master { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid #ab6e07; }
 
     /* Summary Table */
@@ -175,12 +174,47 @@
       align-items: center;
       gap: 8px;
       margin-top: 14px;
+      text-decoration: none;
+      box-sizing: border-box;
     }
 
     .btn:active { transform: scale(0.98); }
     .btn-success { background-color: var(--success); color: #000; }
     .btn-warning { background-color: var(--warning); color: #000; }
     .btn-disabled { background-color: var(--border); color: var(--text-muted); cursor: not-allowed; opacity: 0.6; }
+
+    /* Secondary Nav Buttons */
+    .nav-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.85rem;
+      padding: 10px;
+      margin-top: 0;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Pulse effect to guide mobile users after import */
+    .highlight-nav {
+      border-color: var(--success) !important;
+      color: var(--success) !important;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    }
 
     .checkbox-group {
       display: flex;
@@ -326,6 +360,17 @@
     <button id="mainActionBtn" class="btn btn-disabled" disabled>
       ⏳ Checking Status...
     </button>
+
+    <!-- Quick Navigation Links (Mobile Friendly Shortcuts) -->
+    <div class="nav-grid" id="quickNavArea">
+      <a href="ecoflow_monitor.html" class="btn btn-secondary nav-link">
+        📱 EcoFlow Monitor
+      </a>
+      <a href="ecoflow_analyzer.html" class="btn btn-secondary nav-link">
+        📈 EcoFlow Analyzer
+      </a>
+    </div>
+
   </div>
 
 </div>
@@ -462,6 +507,20 @@
   }
 
   /**
+   * Highlights navigation links post-import for immediate visual guidance.
+   */
+  function setNavHighlight(active) {
+    const links = document.querySelectorAll('.nav-link');
+    links.forEach(link => {
+      if (active) {
+        link.classList.add('highlight-nav');
+      } else {
+        link.classList.remove('highlight-nav');
+      }
+    });
+  }
+
+  /**
    * Primary status evaluator: Checks remote GitHub Gist against LocalStorage state.
    */
   async function checkGistStatus() {
@@ -472,6 +531,7 @@
       renderSummary('WARNING', 'Missing Configuration', 'Please enter a Gist ID in settings.', []);
       setButtonState('btn-disabled', '⚠️ Gist ID Missing', true, null);
       exportOptions.classList.add('hidden');
+      setNavHighlight(false);
       return;
     }
 
@@ -505,7 +565,7 @@
       const latestDataTs = getLatestDataTimestamp();
       const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
 
-      // Detect manual Gist edits on GitHub (Gist file updated date significantly newer than content payload date)
+      // Detect manual Gist edits on GitHub
       const isManualGistEdit = (gistUpdatedAt - backupContentTs) > 30000;
       const modifiedLabel = isManualGistEdit 
         ? `${new Date(gistUpdatedAt).toLocaleString()} <span class="txt-warning-sm">(Manual Edit)</span>`
@@ -513,13 +573,14 @@
 
       adjustUIForRole();
 
-      // DECISION MATRIX (Prioritizes payload timestamps over file meta timestamps)
+      // DECISION MATRIX
       const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
       const hasNewLocalData = latestDataTs && latestDataTs > (backupContentTs + 20000);
 
       if (isRemoteContentNewer) {
         // CASE 1: Remote backup contains newer measurements -> Download / Import
         exportOptions.classList.add('hidden');
+        setNavHighlight(false);
         setButtonState('btn-success', '📥 Update LocalStorage', false, () => triggerImport(gistId));
 
         renderSummary('INFO', 'New Cloud Data Available', 'Remote backup contains newer measurements.', [
@@ -533,6 +594,7 @@
 
       } else if (hasNewLocalData) {
         // CASE 2: Local measurements are newer -> Prepare Upload / Export
+        setNavHighlight(false);
         const hasToken = !!document.getElementById('githubToken').value.trim();
 
         if (hasToken) {
@@ -571,6 +633,7 @@
 
     } catch (err) {
       exportOptions.classList.add('hidden');
+      setNavHighlight(false);
       setButtonState('btn-disabled', '❌ Connection Error', true, null);
       renderSummary('DANGER', 'Sync Check Failed', err.message, []);
     }
@@ -648,7 +711,11 @@
       }
 
       localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
+      
+      // Update status and highlight navigation buttons for mobile users
       await checkGistStatus();
+      setNavHighlight(true);
+
     } catch (err) {
       alert(`Import failed: ${err.message}`);
       checkGistStatus();
@@ -714,7 +781,7 @@
 
       const resData = await response.json();
       localStorage.setItem(LOCAL_SYNC_KEY, resData.updated_at);
-      // Short delay (500ms) for stable API-Response
+      
       setTimeout(async () => {
         await checkGistStatus();
       }, 500);
