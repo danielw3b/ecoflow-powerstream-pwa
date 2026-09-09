@@ -337,7 +337,7 @@
   <!-- Status Card -->
   <div class="card" id="summaryCard">
     <div class="card-header">
-      <div class="card-title">Status</div>
+      <div class="card-title">📊 Status</div>
       <div id="statusBadgeContainer">
         <span class="badge">CHECKING...</span>
       </div>
@@ -413,10 +413,10 @@
     <!-- Quick Navigation Links (Revealed ONLY after successful import) -->
     <div class="nav-grid hidden" id="quickNavArea">
       <a href="index.html" class="btn btn-secondary nav-link highlight-nav">
-        📊 EcoFlow Monitor
+        EcoFlow Monitor
       </a>
       <a href="ecoflow-analyzer.html" class="btn btn-secondary nav-link highlight-nav">
-        📈 EcoFlow Analyzer
+        EcoFlow Analyzer
       </a>
     </div>
 
@@ -585,8 +585,8 @@
 
       if (isRemoteContentNewer) {
         exportOptions.classList.add('hidden');
-        setButtonState('btn-import', '🚀 Import Data to LocalStorage', false, () => triggerImport(gistId));
-
+        setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
+        
         renderSummary('badge badge-update', '🔄 UPDATE AVAILABLE', 'Remote backup contains newer measurements.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
@@ -595,21 +595,21 @@
           ['Latest Data Point', formattedLatestData],
           ['Status', '<span class="txt-sky">Import Available</span>']
         ]);
-
+        
       } else if (hasNewLocalData) {
         const hasToken = !!document.getElementById('githubToken').value.trim();
-
+        
         if (hasToken) {
           exportOptions.classList.remove('hidden');
-          setButtonState('btn-export', '📤 Export Local Data to Gist', false, () => triggerExport(gistId));
+          setButtonState('btn-export', 'Update Gist', false, () => triggerExport(gistId));
         } else {
           exportOptions.classList.add('hidden');
           setButtonState('btn-disabled', 'Read-Only Device (New Local Data)', true, null);
         }
-
+        
         const highlightedLocalData = `<span class="txt-amber">${formattedLatestData}</span>`;
-
-        renderSummary('badge badge-master', '📤 NEW DATA READY', 'New local readings available for upload.', [
+        
+        renderSummary('badge badge-master', '🆕 NEW DATA READY', 'New local readings available for upload.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
           ['Gist Size', `${sizeInKB} KB`],
@@ -617,11 +617,11 @@
           ['Latest Data Point', highlightedLocalData],
           ['Status', '<span class="txt-amber">Ready for Export</span>']
         ]);
-
+        
       } else {
         exportOptions.classList.add('hidden');
-        setButtonState('btn-disabled', '🟢 Local Data Synced', true, null);
-
+        setButtonState('btn-disabled', 'Local Data Synced', true, null);
+        
         renderSummary('badge badge-synced', '🟢 SYNCED', 'Local data is up-to-date with Gist cloud.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
@@ -631,7 +631,6 @@
           ['Status', '<span class="txt-emerald">Fully Synced</span>']
         ]);
       }
-
     } catch (err) {
       exportOptions.classList.add('hidden');
       setButtonState('btn-disabled', 'Connection Error', true, null);
