@@ -185,7 +185,7 @@
         background-color: var(--panel);
         z-index: 12;
         margin: 0;
-        padding: 6px 0 10px 0;
+        padding: 6px 0 8px 0;
         font-size: 0.9rem;
         color: var(--text-dim);
         text-transform: uppercase;
@@ -194,7 +194,7 @@
 
     .summary-card th {
         position: sticky;
-        top: 32px;
+        top: 30px;
         z-index: 11;
         background-color: var(--panel);
     }
@@ -222,11 +222,10 @@
         background-color: var(--panel);
         z-index: 20;
         margin: 0;
-        padding: 8px 0 10px 0;
+        padding: 6px 0 8px 0;
         display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
+        justify-content: space-between;
+        align-items: center;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
@@ -238,7 +237,7 @@
 
     .card.table-card th {
         position: sticky;
-        top: 56px; /* Dynamic offset for wrapped 2-line headings on mobile */
+        top: 34px; /* Perfect offset for short single-line H3 on mobile */
         z-index: 15;
         background-color: var(--panel);
         box-shadow: inset 0 -1px 0 var(--border);
@@ -370,16 +369,13 @@
         .summary-card { padding: 15px; }
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 10px; font-size: 0.9rem; }
-        
+
         .card.table-card h3 {
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
             padding-bottom: 12px;
         }
 
         .card.table-card th {
-            top: 40px; /* Reset to 40px offset when H3 headers switch back to single line */
+            top: 40px;
         }
 
         table:not(.summary-card table) td:first-child, 
@@ -1139,7 +1135,7 @@
       // Table 1: Daily Efficiency Tracker
       html += `
       <div class="card table-card">
-          <h3 class="table-title-warn">✅️ Daily Efficiency Tracker</h3>
+          <h3 class="table-title-warn">✅️ Efficiency Tracker</h3>
           <table>
               <thead>
                   <tr><th>Date</th><th>Temp °C</th><th>RADN kWh/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Indicator</th></tr>
@@ -1156,9 +1152,9 @@
           html += `
       <div class="card table-card">
           <h3 class="table-title-warn">
-              🟠 Daily Anomaly & Weather Context
+              🟠 Anomaly & Weather Context
               <span class="title-badge">
-                  Issues: <span class="bad fw-bold">${criticalCount}</span> | <span class="subtitle">${weatherCount} Weather</span>
+                  <span>${criticalCount}⚠️</span> | <span class="subtitle">${weatherCount}⛅</span>
               </span>
           </h3>
           <table>
