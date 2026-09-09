@@ -914,11 +914,11 @@ function toggleMetrics(sn, element) {
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     container.classList.remove('expanded');
-    if (indicator) indicator.textContent = '↓ Details';
+    if (indicator) indicator.textContent = '∨ Details';
   } else {
     expandedMetrics.add(sn);
     container.classList.add('expanded');
-    if (indicator) indicator.textContent = '↑ Hide';
+    if (indicator) indicator.textContent = '∧ Hide';
   }
 }
 
