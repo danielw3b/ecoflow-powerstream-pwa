@@ -332,8 +332,12 @@
     <!-- Master Mode Configuration (Hidden by default) -->
     <div id="credentialsArea" class="hidden">
       <div class="form-group">
-        <label for="gistId">Gist ID</label>
-        <input type="text" id="gistId" placeholder="Enter GitHub Gist ID">
+        <label for="gistId">Manual Backup Gist ID</label>
+        <input type="text" id="gistId" placeholder="Enter GitHub Gist ID for Manual Backups">
+      </div>
+      <div class="form-group">
+        <label for="autoGistId">Auto-Sync Gist ID (Background Sync)</label>
+        <input type="text" id="autoGistId" placeholder="Enter dedicated Gist ID for 15-Min Auto-Sync">
       </div>
       <div class="form-group">
         <label for="githubToken">GitHub Access Token (Master Only)</label>
@@ -392,6 +396,7 @@
   // Restore credentials and compression setting from LocalStorage
   function loadSavedSettings() {
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
+    document.getElementById('autoGistId').value = localStorage.getItem('ecoflow_auto_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
     
     const isGzipEnabled = localStorage.getItem(GZIP_SETTING_KEY);
@@ -405,6 +410,10 @@
     document.getElementById('gistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_gist_id', e.target.value.trim());
       checkGistStatus();
+    });
+
+    document.getElementById('autoGistId').addEventListener('change', (e) => {
+      localStorage.setItem('ecoflow_auto_gist_id', e.target.value.trim());
     });
 
     document.getElementById('githubToken').addEventListener('change', (e) => {
@@ -501,7 +510,7 @@
     const hasToken = !!document.getElementById('githubToken').value.trim();
 
     if (!gistId) {
-      renderSummary('badge', 'Gist ID Missing', 'Please enter a Gist ID in settings.', []);
+      renderSummary('badge', 'Gist ID Missing', 'Please enter a Manual Gist ID in settings.', []);
       setButtonState('btn-disabled', 'Gist ID Missing', true, null);
       return;
     }
