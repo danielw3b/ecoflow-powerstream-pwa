@@ -1871,7 +1871,7 @@ init();
     } catch (e) { console.warn('Log append error', e); }
   }
 
-  // Calculate local yield sum using stable cumulative key 'ecoflow_wh'
+  // Calculate local yield sum using stable cumulative key 'ecoflow_wh' (supports nested date structures)
   function getLocalWhSum() {
     try {
       const raw = localStorage.getItem('ecoflow_wh');
@@ -1880,8 +1880,14 @@ init();
       let sum = 0;
 
       if (typeof parsed === 'object' && parsed !== null) {
-        Object.values(parsed).forEach(val => {
-          sum += (Number(val) || 0);
+        Object.values(parsed).forEach(deviceData => {
+          if (typeof deviceData === 'object' && deviceData !== null) {
+            Object.values(deviceData).forEach(dayWh => {
+              sum += (Number(dayWh) || 0);
+            });
+          } else {
+            sum += (Number(deviceData) || 0);
+          }
         });
       } else {
         sum = Number(parsed) || 0;
@@ -1898,8 +1904,14 @@ init();
 
       let sum = 0;
       if (typeof targetData === 'object' && targetData !== null) {
-        Object.values(targetData).forEach(val => {
-          sum += (Number(val) || 0);
+        Object.values(targetData).forEach(deviceData => {
+          if (typeof deviceData === 'object' && deviceData !== null) {
+            Object.values(deviceData).forEach(dayWh => {
+              sum += (Number(dayWh) || 0);
+            });
+          } else {
+            sum += (Number(deviceData) || 0);
+          }
         });
       } else {
         sum = Number(targetData) || 0;
