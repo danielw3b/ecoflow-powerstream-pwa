@@ -181,27 +181,29 @@
         padding: 10px 8px;
         margin-bottom: 20px;
     }
-
-    /* Sticky H3 and TH for Table 1 and Table 2 with extra vertical spacing */
+    
+    /* Table 1 & 2 Sticky H3 Title */
     .card.table-card h3 {
         position: sticky;
         top: 0;
         background-color: var(--panel);
-        z-index: 12;
+        z-index: 20;
         margin: 0;
-        padding: 8px 0 12px 0; /* More space towards th */
+        padding: 8px 0 12px 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
         gap: 5px;
     }
-
+    
+    /* Table 1 & 2 Sticky TH Headers (sits directly below H3) */
     .card.table-card th {
         position: sticky;
-        top: 40px; /* Offset to sit cleanly below the taller h3 */
-        z-index: 11;
+        top: 40px; /* Perfekter Abstand unter dem H3 */
+        z-index: 15;
         background-color: var(--panel);
+        box-shadow: inset 0 -1px 0 var(--border);
     }
 
     /* Summary Card Sticky Adjustments */
@@ -1130,12 +1132,14 @@
       html += `
       <div class="card table-card">
           <h3 class="table-title-warn">✅️ Daily Efficiency Tracker</h3>
-          <div class="table-scroll-frame">
-              <table>
+          <table>
+              <thead>
                   <tr><th>Date</th><th>Temp °C</th><th>RADN kWh/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Indicator</th></tr>
+              </thead>
+              <tbody>
                   ${tableRowsHtml}
-              </table>
-          </div>
+              </tbody>
+          </table>
           ${hasMoreTable1 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable1} remaining)</button>` : ''}
       </div>`;
       
@@ -1149,12 +1153,14 @@
                   Issues: <span class="bad fw-bold">${criticalCount}</span> | <span class="subtitle">${weatherCount} Weather</span>
               </span>
           </h3>
-          <div class="table-scroll-frame">
-              <table>
+          <table>
+              <thead>
                   <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Eff. %</th><th>Clouds %</th><th>Sun hr</th><th>MaxPeak W/m²</th><th>Context</th></tr>
+              </thead>
+              <tbody>
                   ${subTableRowsHtml}
-              </table>
-          </div>
+              </tbody>
+          </table>
           ${hasMoreTable2 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable2} remaining)</button>` : ''}
       </div>`;
       }
