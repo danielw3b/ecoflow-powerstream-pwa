@@ -237,7 +237,7 @@
 
     .card.table-card th {
         position: sticky;
-        top: 34px; /* Perfect offset for short single-line H3 on mobile */
+        top: 34px; /* Fixed offset matching single-line H3 across all viewports */
         z-index: 15;
         background-color: var(--panel);
         box-shadow: inset 0 -1px 0 var(--border);
@@ -369,14 +369,6 @@
         .summary-card { padding: 15px; }
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 10px; font-size: 0.9rem; }
-
-        .card.table-card h3 {
-            padding-bottom: 12px;
-        }
-
-        .card.table-card th {
-            top: 40px;
-        }
 
         table:not(.summary-card table) td:first-child, 
         table:not(.summary-card table) th:first-child,
