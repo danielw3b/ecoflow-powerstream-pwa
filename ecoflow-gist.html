@@ -15,6 +15,7 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
 
   <style>
+    /* CSS Variables & Palette Definition */
     :root {
       --bg: #0f172a;
       --card-bg: #1e293b;
@@ -22,7 +23,7 @@
       --text: #f8fafc;
       --text-muted: #94a3b8;
       
-      /* Accent Colors */
+      /* Contextual Accent Colors */
       --sky: #38bdf8;
       --emerald: #10b981;
       --emerald-light: #34d399;
@@ -52,7 +53,7 @@
       gap: 16px;
     }
 
-    /* Header */
+    /* Header Layout */
     .app-header {
       display: flex;
       align-items: center;
@@ -80,7 +81,7 @@
       margin: 2px 0 0 0;
     }
 
-    /* Cards */
+    /* Cards & Containers */
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
@@ -105,7 +106,7 @@
       color: var(--text);
     }
 
-    /* Badges */
+    /* Status Badges */
     .badge {
       font-size: 0.7rem;
       padding: 4px 8px;
@@ -137,7 +138,7 @@
       font-weight: 600;
     }
 
-    /* Table */
+    /* Metadata Table Styles */
     .summary-table {
       width: 100%;
       border-collapse: collapse;
@@ -163,7 +164,7 @@
       color: var(--text-muted);
     }
 
-    /* Forms & Inputs */
+    /* Input Fields & Master Mode Forms */
     .form-group {
       display: flex;
       flex-direction: column;
@@ -193,7 +194,7 @@
       border-color: var(--sky);
     }
 
-    /* Buttons (No Emojis for Clean Look) */
+    /* Action Buttons (Text-Only Design) */
     .btn {
       width: 100%;
       padding: 12px;
@@ -236,7 +237,7 @@
       opacity: 0.6;
     }
 
-    /* Nav Buttons Grid */
+    /* Quick Navigation Area */
     .nav-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -266,6 +267,7 @@
       color: var(--text) !important;
     }
 
+    /* Accordion & Storage Key Checkboxes */
     .checkbox-group {
       display: flex;
       align-items: center;
@@ -291,7 +293,7 @@
       font-size: 0.85rem;
     }
 
-    /* Checkbox Neutral Accent Sky */
+    /* Checkbox Accent Adjustment (Sky Blue) */
     .storage-key-label input[type="checkbox"] {
       margin-top: 3px;
       flex-shrink: 0;
@@ -315,7 +317,7 @@
       word-break: break-all;
     }
 
-    /* Accordion Details Styling */
+    /* Collapsible Details Styling */
     details#exportOptionsArea {
       margin-top: 10px;
       border: 1px solid var(--border);
@@ -337,7 +339,7 @@
       color: var(--text);
     }
 
-    /* Text Helper Classes */
+    /* Text & Highlight Helpers */
     .txt-sky { color: var(--sky); font-weight: 600; }
     .txt-emerald { color: var(--emerald-light); font-weight: 600; }
     .txt-amber { color: var(--amber-light); font-weight: 600; }
@@ -350,7 +352,7 @@
 
 <div class="container">
 
-  <!-- Header -->
+  <!-- Application Header -->
   <div class="app-header">
     <img class="app-icon" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" alt="Cloud Icon">
     <div class="app-title">
@@ -359,10 +361,10 @@
     </div>
   </div>
 
-  <!-- Status Card -->
+  <!-- Status Summary Card -->
   <div class="card" id="summaryCard">
     <div class="card-header">
-      <div class="card-title">📊 Status</div>
+      <div class="card-title">Status</div>
       <div id="statusBadgeContainer">
         <span class="badge">CHECKING...</span>
       </div>
@@ -374,16 +376,17 @@
     </div>
   </div>
 
-  <!-- Sync Action Card -->
+  <!-- Primary Sync Action Card -->
   <div class="card">
     <div class="card-header">
+      <!-- Secret 7-click trigger for Master Mode credentials -->
       <div class="card-title" id="syncActionHeader" title="Click 7 times to unlock settings">
-        ⚡ Sync Action
+        Sync Action
       </div>
-      <span id="masterBadge" class="badge badge-master hidden">🔑 MASTER MODE</span>
+      <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
     </div>
 
-    <!-- Hidden Settings Form -->
+    <!-- Master Mode Configuration (Hidden by default) -->
     <div id="credentialsArea" class="hidden">
       <div class="form-group">
         <label for="gistId">Gist ID</label>
@@ -395,9 +398,9 @@
       </div>
     </div>
 
-    <!-- Collapsible Advanced Export Settings Accordion -->
+    <!-- Collapsible Export & Storage Key Settings -->
     <details id="exportOptionsArea" class="hidden">
-      <summary>⚙️ Advanced Export Settings</summary>
+      <summary>Select Compressed Backup & Storage Keys</summary>
       <div style="margin-top: 10px;">
         <div class="form-group">
           <label>Select Storage Keys to Export</label>
@@ -433,12 +436,12 @@
       </div>
     </details>
 
-    <!-- Action Button (Text Only) -->
+    <!-- Contextual Main Action Button -->
     <button id="mainActionBtn" class="btn btn-disabled" disabled>
       Checking Status...
     </button>
 
-    <!-- Quick Navigation Links (Text Only) -->
+    <!-- Post-Import Quick Navigation (Revealed after successful sync) -->
     <div class="nav-grid hidden" id="quickNavArea">
       <a href="index.html" class="btn btn-secondary nav-link highlight-nav">
         EcoFlow Monitor
@@ -453,9 +456,11 @@
 </div>
 
 <script>
+  // Storage keys for sync metadata & persistent UI state
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
   const CHECKBOX_STATES_KEY = 'ecoflow_gist_checkbox_states';
   
+  // Master Mode 7-click unlock counter
   let clickCounter = 0;
   let clickTimer = null;
 
@@ -465,6 +470,7 @@
     checkGistStatus();
   });
 
+  // Restore credentials and checkbox states from LocalStorage
   function loadSavedSettings() {
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
@@ -482,6 +488,7 @@
     }
   }
 
+  // Persist selected key selections
   function saveCheckboxStates() {
     const checkboxStates = {};
 
@@ -493,6 +500,7 @@
     localStorage.setItem(CHECKBOX_STATES_KEY, JSON.stringify(checkboxStates));
   }
 
+  // Setup UI event handlers & Master Mode secret unlock
   function setupEventListeners() {
     document.getElementById('gistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_gist_id', e.target.value.trim());
@@ -509,6 +517,7 @@
       cb.addEventListener('change', saveCheckboxStates);
     });
 
+    // Secret 7-click unlock for Master Mode form
     document.getElementById('syncActionHeader').addEventListener('click', () => {
       clickCounter++;
       clearTimeout(clickTimer);
@@ -523,6 +532,7 @@
     });
   }
 
+  // Toggle Master Mode badge based on GitHub Token presence
   function adjustUIForRole() {
     const token = document.getElementById('githubToken').value.trim();
     const masterBadge = document.getElementById('masterBadge');
@@ -534,6 +544,7 @@
     }
   }
 
+  // Find the most recent timestamp key across all hourly inverter records
   function getLatestDataTimestamp() {
     const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
     if (!hourlyRaw) return null;
@@ -562,6 +573,7 @@
     }
   }
 
+  // Calculate total local Wh count to detect new data even within the same hour bucket
   function getLocalDataHashSum() {
     const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
     if (!hourlyRaw) return 0;
@@ -583,6 +595,7 @@
     }
   }
 
+  // Primary state engine: evaluates remote Gist vs local measurements
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
     const exportOptions = document.getElementById('exportOptionsArea');
@@ -610,6 +623,7 @@
       let backupContentStr = 'N/A';
       let remoteTotalWh = 0;
 
+      // Extract internal backup timestamp & total remote Wh sum
       if (backupFile && backupFile.content) {
         try {
           const parsed = JSON.parse(backupFile.content);
@@ -634,6 +648,7 @@
       const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
       const localTotalWh = getLocalDataHashSum();
 
+      // Detect manual edits via GitHub Web UI vs automated app updates
       const isManualGistEdit = (gistUpdatedAt - backupContentTs) > 30000;
       const modifiedLabel = isManualGistEdit 
         ? `${new Date(gistUpdatedAt).toLocaleString()} (Manual Edit)`
@@ -641,14 +656,16 @@
 
       adjustUIForRole();
 
+      // Core State Decision Rules
       const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
       const hasNewLocalData = localTotalWh > remoteTotalWh || (latestDataTs && latestDataTs > (backupContentTs + 20000));
 
       if (isRemoteContentNewer) {
+        // STATE 1: Remote cloud backup contains newer data -> Trigger Import
         exportOptions.classList.add('hidden');
         setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
 
-        renderSummary('badge badge-update', '🔄 UPDATE AVAILABLE', 'Remote backup contains newer measurements.', [
+        renderSummary('badge badge-update', 'UPDATE AVAILABLE', 'Remote backup contains newer measurements.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
           ['Gist Size', `${sizeInKB} KB`],
@@ -658,6 +675,7 @@
         ]);
 
       } else if (hasNewLocalData) {
+        // STATE 2: Local data is newer than Gist -> Trigger Export (Master Mode only)
         const hasToken = !!document.getElementById('githubToken').value.trim();
 
         if (hasToken) {
@@ -670,7 +688,7 @@
 
         const highlightedLocalData = `<span class="txt-amber">${formattedLatestData}</span>`;
 
-        renderSummary('badge badge-master', '📤 NEW DATA READY', 'New local readings available for upload.', [
+        renderSummary('badge badge-master', 'NEW DATA READY', 'New local readings available for upload.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
           ['Gist Size', `${sizeInKB} KB`],
@@ -680,10 +698,11 @@
         ]);
 
       } else {
+        // STATE 3: Local storage and Gist are in full sync
         exportOptions.classList.add('hidden');
         setButtonState('btn-disabled', 'Local Data Synced', true, null);
 
-        renderSummary('badge badge-synced', '🟢 SYNCED', 'Local data is up-to-date with Gist cloud.', [
+        renderSummary('badge badge-synced', 'SYNCED', 'Local data is up-to-date with Gist cloud.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
           ['Gist Size', `${sizeInKB} KB`],
@@ -700,6 +719,7 @@
     }
   }
 
+  // Update button state and clear stale click listeners
   function setButtonState(className, text, disabled, onClickHandler) {
     const btn = document.getElementById('mainActionBtn');
     btn.className = `btn ${className}`;
@@ -714,6 +734,7 @@
     }
   }
 
+  // Render metadata status card content
   function renderSummary(badgeClass, badgeText, message, details) {
     const badgeContainer = document.getElementById('statusBadgeContainer');
     const content = document.getElementById('summaryContent');
@@ -733,6 +754,7 @@
     `;
   }
 
+  // Import flow: Pull Gist contents and overwrite local storage keys
   async function triggerImport(gistId) {
     const btn = document.getElementById('mainActionBtn');
     btn.textContent = 'Importing...';
@@ -762,7 +784,7 @@
       
       await checkGistStatus();
       
-      // Reveal navigation buttons after import
+      // Reveal navigation buttons upon successful import
       document.getElementById('quickNavArea').classList.remove('hidden');
 
     } catch (err) {
@@ -771,6 +793,7 @@
     }
   }
 
+  // Export flow: Collect selected LocalStorage keys and PATCH to GitHub Gist
   async function triggerExport(gistId) {
     const token = document.getElementById('githubToken').value.trim();
     if (!token) {
