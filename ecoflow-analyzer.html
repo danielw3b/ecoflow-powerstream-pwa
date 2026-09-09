@@ -254,19 +254,59 @@
     .sum-warn { border: 1px solid var(--warning); }
     .sum-bad { border: 1px solid var(--danger); }
     
+    /* --- OPTIMIZED LEGEND BOX --- */
     .legend-box {
         margin-top: 20px;
-        padding: 12px;
-        background: rgba(255, 255, 255, 0.01);
+        padding: 14px 16px;
+        background: rgba(13, 24, 43, 0.6);
         border: 1px solid var(--border);
-        border-radius: 6px;
+        border-radius: 8px;
         font-size: 0.82rem;
         color: var(--text-dim);
-        line-height: 1.6;
-        display: inline-grid;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
     }
-    .legend-box strong { color: #fff; }
-    .legend-title { margin-top: 5px; display: inline-block; }
+
+    .legend-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .legend-title {
+        color: #fff;
+        font-weight: bold;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    /* Wrap items nicely like inline tags/pill labels */
+    .legend-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        line-height: 1.5;
+    }
+
+    .legend-items span {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(107, 138, 170, 0.15);
+        white-space: nowrap;
+    }
+
+    .legend-footer {
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+        gap: 4px;
+    }
+
+    .legend-footer strong {
+        color: var(--text);
+    }
     #results { margin-top: 30px; }
 
     .loader { display: none; margin: 20px 0 0 0; color: var(--accent); font-weight: bold; text-align: center; }
@@ -1164,10 +1204,35 @@
       
       html += `
       <div class="legend-box">
-          <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
-          <strong class="legend-title">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
-          <strong class="legend-title">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
-          <strong class="legend-title">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
+          <div class="legend-group">
+              <span class="legend-title">📋 System Indicators</span>
+              <div class="legend-items">
+                  <span>✅ Optimal</span>
+                  <span>🟢 Normal</span>
+                  <span>🟠 Loss</span>
+                  <span>❌ Hardware Fail</span>
+                  <span>⏳ Pre-Install</span>
+              </div>
+          </div>
+  
+          <div class="legend-group">
+              <span class="legend-title">🌤️ Weather Micro-Context</span>
+              <div class="legend-items">
+                  <span>⛅ ☀️ Partly Cloudy</span>
+                  <span>☁️ ⛅ Overcast & Sun Breaks</span>
+                  <span>☁️ ☁️ Overcast & Diffuse</span>
+                  <span>🌧️ ☁️ Heavy Cloud / Rain</span>
+                  <span>☁️ 🌫️ High Diffuse Light</span>
+                  <span>🌡️ 🥵 Heat Derating (&ge;33&deg;C)</span>
+                  <span>📶 ⚠️ Connection Drop</span>
+                  <span>❌ 🔌 Hardware Drop</span>
+              </div>
+          </div>
+  
+          <div class="legend-group legend-footer">
+              <div><strong>📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).</div>
+              <div><strong>🔬 Solar Methodology:</strong> Liu & Jordan (1960) empirical regression principles.</div>
+          </div>
       </div></div>`;    
         
       // Final Assembly of global CSV export structure
