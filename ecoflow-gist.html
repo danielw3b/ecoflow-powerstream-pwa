@@ -332,12 +332,8 @@
     <!-- Master Mode Configuration (Hidden by default) -->
     <div id="credentialsArea" class="hidden">
       <div class="form-group">
-        <label for="gistId">Manual Backup Gist ID</label>
-        <input type="text" id="gistId" placeholder="Enter GitHub Gist ID for Manual Backups">
-      </div>
-      <div class="form-group">
-        <label for="autoGistId">Auto-Sync Gist ID (Background Sync)</label>
-        <input type="text" id="autoGistId" placeholder="Enter dedicated Gist ID for 15-Min Auto-Sync">
+        <label for="gistId">Gist ID</label>
+        <input type="text" id="gistId" placeholder="Enter GitHub Gist ID">
       </div>
       <div class="form-group">
         <label for="githubToken">GitHub Access Token (Master Only)</label>
@@ -396,7 +392,6 @@
   // Restore credentials and compression setting from LocalStorage
   function loadSavedSettings() {
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
-    document.getElementById('autoGistId').value = localStorage.getItem('ecoflow_auto_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
     
     const isGzipEnabled = localStorage.getItem(GZIP_SETTING_KEY);
@@ -410,10 +405,6 @@
     document.getElementById('gistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_gist_id', e.target.value.trim());
       checkGistStatus();
-    });
-
-    document.getElementById('autoGistId').addEventListener('change', (e) => {
-      localStorage.setItem('ecoflow_auto_gist_id', e.target.value.trim());
     });
 
     document.getElementById('githubToken').addEventListener('change', (e) => {
@@ -510,7 +501,7 @@
     const hasToken = !!document.getElementById('githubToken').value.trim();
 
     if (!gistId) {
-      renderSummary('badge', 'Gist ID Missing', 'Please enter a Manual Gist ID in settings.', []);
+      renderSummary('badge', 'Gist ID Missing', 'Please enter a Gist ID in settings.', []);
       setButtonState('btn-disabled', 'Gist ID Missing', true, null);
       return;
     }
@@ -651,7 +642,7 @@
     `;
   }
 
-  // Import flow: Pull Gist contents and overwrite local storage keys
+  // Import flow: Pull Gist contents and DEEP MERGE with local storage keys
   async function triggerImport(gistId) {
     const btn = document.getElementById('mainActionBtn');
     btn.textContent = 'Importing...';
@@ -670,9 +661,23 @@
 
       if (payload.keys) {
         Object.keys(payload.keys).forEach(key => {
-          const val = typeof payload.keys[key] === 'object' 
-            ? JSON.stringify(payload.keys[key]) 
-            : payload.keys[key];
+          const remoteVal = payload.keys[key];
+          const localRaw = localStorage.getItem(key);
+
+          // Perform Deep Merge for nested objects (e.g. ecoflow_wh_hourly / ecoflow_wh)
+          if (typeof remoteVal === 'object' && remoteVal !== null && localRaw) {
+            try {
+              const localVal = JSON.parse(localRaw);
+              const merged = mergeDeep(localVal, remoteVal);
+              localStorage.setItem(key, JSON.stringify(merged));
+              return;
+            } catch (e) {
+              // Fallback to direct overwrite on parse error
+            }
+          }
+
+          // Standard storage setter for scalar values or new keys
+          const val = typeof remoteVal === 'object' ? JSON.stringify(remoteVal) : remoteVal;
           localStorage.setItem(key, val);
         });
       }
@@ -688,6 +693,34 @@
       alert(`Import failed: ${err.message}`);
       checkGistStatus();
     }
+  }
+
+  // Recursive Deep Merge helper ensuring highest numerical yield values win
+  function mergeDeep(target, source) {
+    const output = Object.assign({}, target);
+    if (isObject(target) && isObject(source)) {
+      Object.keys(source).forEach(key => {
+        if (isObject(source[key])) {
+          if (!(key in target)) Object.assign(output, { [key]: source[key] });
+          else output[key] = mergeDeep(target[key], source[key]);
+        } else {
+          // Compare numbers to preserve highest yield value
+          const targetNum = Number(target[key]);
+          const sourceNum = Number(source[key]);
+
+          if (!isNaN(targetNum) && !isNaN(sourceNum)) {
+            output[key] = Math.max(targetNum, sourceNum);
+          } else {
+            output[key] = source[key];
+          }
+        }
+      });
+    }
+    return output;
+  }
+
+  function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
   }
 
   // Export flow: Collect hardcoded LocalStorage keys and PATCH to GitHub Gist
