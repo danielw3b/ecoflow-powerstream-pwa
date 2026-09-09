@@ -237,11 +237,10 @@
       border-color: var(--accent);
     }
 
-    /* Discreet Highlight Post-Import */
+    /* Subtle Accent Line Post-Import */
     .highlight-nav {
       border-color: var(--accent) !important;
       color: var(--text) !important;
-      box-shadow: 0 0 6px rgba(56, 189, 248, 0.15);
     }
 
     .checkbox-group {
@@ -389,12 +388,12 @@
       Checking Status...
     </button>
 
-    <!-- Quick Navigation Links -->
-    <div class="nav-grid" id="quickNavArea">
-      <a href="/" class="btn btn-secondary nav-link">
+    <!-- Quick Navigation Links (Hidden by default, revealed ONLY after successful import) -->
+    <div class="nav-grid hidden" id="quickNavArea">
+      <a href="index.html" class="btn btn-secondary nav-link highlight-nav">
         EcoFlow Monitor
       </a>
-      <a href="ecoflow_analyzer.html" class="btn btn-secondary nav-link">
+      <a href="ecoflow-analyzer.html" class="btn btn-secondary nav-link highlight-nav">
         EcoFlow Analyzer
       </a>
     </div>
@@ -513,17 +512,6 @@
     }
   }
 
-  function setNavHighlight(active) {
-    const links = document.querySelectorAll('.nav-link');
-    links.forEach(link => {
-      if (active) {
-        link.classList.add('highlight-nav');
-      } else {
-        link.classList.remove('highlight-nav');
-      }
-    });
-  }
-
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
     const exportOptions = document.getElementById('exportOptionsArea');
@@ -532,7 +520,6 @@
       renderSummary('Gist ID Missing', 'Please enter a Gist ID in settings.', []);
       setButtonState('btn-disabled', 'Gist ID Missing', true, null);
       exportOptions.classList.add('hidden');
-      setNavHighlight(false);
       return;
     }
 
@@ -576,7 +563,6 @@
 
       if (isRemoteContentNewer) {
         exportOptions.classList.add('hidden');
-        setNavHighlight(false);
         setButtonState('', 'Import Data to LocalStorage', false, () => triggerImport(gistId));
 
         renderSummary('Update Available', 'Remote backup contains newer measurements.', [
@@ -589,7 +575,6 @@
         ]);
 
       } else if (hasNewLocalData) {
-        setNavHighlight(false);
         const hasToken = !!document.getElementById('githubToken').value.trim();
 
         if (hasToken) {
@@ -627,7 +612,6 @@
 
     } catch (err) {
       exportOptions.classList.add('hidden');
-      setNavHighlight(false);
       setButtonState('btn-disabled', 'Connection Error', true, null);
       renderSummary('Sync Failed', err.message, []);
     }
@@ -694,7 +678,9 @@
       localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
       
       await checkGistStatus();
-      setNavHighlight(true);
+      
+      // REVEAL NAVIGATION BUTTONS ONLY AFTER IMPORT
+      document.getElementById('quickNavArea').classList.remove('hidden');
 
     } catch (err) {
       alert(`Import failed: ${err.message}`);
