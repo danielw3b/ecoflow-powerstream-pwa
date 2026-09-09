@@ -1711,7 +1711,14 @@ init();
       const backupFile = data.files['ecoflow_auto_backup.json'];
       if (!backupFile || !backupFile.content) return;
 
-      const remotePayload = JSON.parse(backupFile.content);
+      // Safe JSON parsing to prevent Uncaught SyntaxError on empty or invalid Gist content
+      let remotePayload = {};
+      try {
+        remotePayload = JSON.parse(backupFile.content);
+      } catch (parseErr) {
+        remotePayload = {};
+      }
+
       const remoteTs = new Date(remotePayload.timestamp || data.updated_at).getTime();
       const localSyncTs = new Date(localStorage.getItem('ecoflow_gist_last_sync') || 0).getTime();
 
@@ -1761,9 +1768,12 @@ init();
         const remoteTotalWh = getRemoteWhSum(remotePayload);
         const whDifference = localTotalWh - remoteTotalWh;
 
-        if (whDifference >= EXPORT_THRESHOLD_WH) {
+        // Detect fresh or uninitialized Gist to force an initial baseline push
+        const isBrandNewGist = !remotePayload.keys || Object.keys(remotePayload.keys).length === 0;
+
+        if (isBrandNewGist || whDifference >= EXPORT_THRESHOLD_WH) {
           await executeSilentExport(autoGistId, token, localTotalWh, whDifference);
-          console.log(`[AutoSync] Writer: Export completed (+${whDifference} Wh yield increase).`);
+          console.log(`[AutoSync] Writer: Export completed (+${whDifference} Wh yield increase / Initial Push).`);
         }
       }
 
@@ -1771,6 +1781,9 @@ init();
       console.warn('[AutoSync] Background sync network error:', err);
     }
   }
+
+  // Expose runAutoSync to the global scope for manual console execution
+  window.runAutoSync = runAutoSync;
 
   // Recursive Deep Merge helper ensuring highest numerical yield values win
   function mergeDeep(target, source) {
@@ -1858,21 +1871,39 @@ init();
     } catch (e) { console.warn('Log append error', e); }
   }
 
+  // Calculate local yield sum using stable cumulative key 'ecoflow_wh'
   function getLocalWhSum() {
     try {
       const raw = localStorage.getItem('ecoflow_wh');
       if (!raw) return 0;
+      const parsed = JSON.parse(raw);
       let sum = 0;
-      Object.values(JSON.parse(raw)).forEach(val => sum += (Number(val) || 0));
+
+      if (typeof parsed === 'object' && parsed !== null) {
+        Object.values(parsed).forEach(val => {
+          sum += (Number(val) || 0);
+        });
+      } else {
+        sum = Number(parsed) || 0;
+      }
       return sum;
     } catch (e) { return 0; }
   }
 
+  // Calculate remote yield sum from Gist payload using cumulative key 'ecoflow_wh'
   function getRemoteWhSum(payload) {
     try {
-      if (!payload.keys || !payload.keys.ecoflow_wh) return 0;
+      if (!payload || !payload.keys || !payload.keys.ecoflow_wh) return 0;
+      const targetData = payload.keys.ecoflow_wh;
+
       let sum = 0;
-      Object.values(payload.keys.ecoflow_wh).forEach(val => sum += (Number(val) || 0));
+      if (typeof targetData === 'object' && targetData !== null) {
+        Object.values(targetData).forEach(val => {
+          sum += (Number(val) || 0);
+        });
+      } else {
+        sum = Number(targetData) || 0;
+      }
       return sum;
     } catch (e) { return 0; }
   }
