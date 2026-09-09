@@ -1720,9 +1720,25 @@ init();
         if (remoteTs > localSyncTs + 10000) {
           if (remotePayload.keys) {
             Object.keys(remotePayload.keys).forEach(key => {
-              const val = typeof remotePayload.keys[key] === 'object' 
-                ? JSON.stringify(remotePayload.keys[key]) 
-                : remotePayload.keys[key];
+              const remoteVal = remotePayload.keys[key];
+              const localRaw = localStorage.getItem(key);
+
+              // Perform Deep Merge for nested objects
+              if (typeof remoteVal === 'object' && remoteVal !== null && localRaw) {
+                try {
+                  const localVal = JSON.parse(localRaw);
+                  const merged = mergeDeep(localVal, remoteVal);
+                  localStorage.setItem(key, JSON.stringify(merged));
+                  return;
+                } catch (e) {
+                  // Fallback to direct overwrite on parse error
+                }
+              }
+
+              // Standard storage setter for scalar values or new keys
+              const val = typeof remoteVal === 'object' 
+                ? JSON.stringify(remoteVal) 
+                : remoteVal;
               localStorage.setItem(key, val);
             });
 
@@ -1754,6 +1770,34 @@ init();
     } catch (err) {
       console.warn('[AutoSync] Background sync network error:', err);
     }
+  }
+
+  // Recursive Deep Merge helper ensuring highest numerical yield values win
+  function mergeDeep(target, source) {
+    const output = Object.assign({}, target);
+    if (isObject(target) && isObject(source)) {
+      Object.keys(source).forEach(key => {
+        if (isObject(source[key])) {
+          if (!(key in target)) Object.assign(output, { [key]: source[key] });
+          else output[key] = mergeDeep(target[key], source[key]);
+        } else {
+          // Compare numbers to preserve highest yield value
+          const targetNum = Number(target[key]);
+          const sourceNum = Number(source[key]);
+
+          if (!isNaN(targetNum) && !isNaN(sourceNum)) {
+            output[key] = Math.max(targetNum, sourceNum);
+          } else {
+            output[key] = source[key];
+          }
+        }
+      });
+    }
+    return output;
+  }
+
+  function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
   }
 
   async function executeSilentExport(gistId, token, currentWh, whDiff) {
