@@ -331,16 +331,25 @@
 
     <!-- Master Mode Configuration (Hidden by default) -->
     <div id="credentialsArea" class="hidden">
+      <!-- 1. Manual Backup Gist ID -->
       <div class="form-group">
-        <label for="gistId">Gist ID</label>
+        <label for="gistId">Gist ID (Manual Backup)</label>
         <input type="text" id="gistId" placeholder="Enter GitHub Gist ID">
       </div>
+
+      <!-- 2. GitHub Access Token -->
       <div class="form-group">
         <label for="githubToken">GitHub Access Token (Master Only)</label>
         <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
       </div>
+
+      <!-- 3. Auto-Sync Gist ID (Background Engine) -->
+      <div class="form-group">
+        <label for="autoGistId">Auto-Sync Gist ID (Background Engine)</label>
+        <input type="text" id="autoGistId" placeholder="Enter Auto-Sync Gist ID">
+      </div>
       
-      <!-- Compression Option directly under Master Token -->
+      <!-- Compression Option directly under Master Settings -->
       <div class="checkbox-group">
         <input type="checkbox" id="gzipCompress">
         <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
@@ -393,6 +402,7 @@
   function loadSavedSettings() {
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
+    document.getElementById('autoGistId').value = localStorage.getItem('ecoflow_auto_gist_id') || '';
     
     const isGzipEnabled = localStorage.getItem(GZIP_SETTING_KEY);
     if (isGzipEnabled !== null) {
@@ -411,6 +421,10 @@
       localStorage.setItem('ecoflow_github_token', e.target.value.trim());
       adjustUIForRole();
       checkGistStatus();
+    });
+
+    document.getElementById('autoGistId').addEventListener('change', (e) => {
+      localStorage.setItem('ecoflow_auto_gist_id', e.target.value.trim());
     });
 
     document.getElementById('gzipCompress').addEventListener('change', (e) => {
