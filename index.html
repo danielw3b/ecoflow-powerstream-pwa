@@ -897,7 +897,7 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2)+" Hz":"—"}</span></div>
     </div>
     <div class="metrics-footer" title="Tap to toggle details" onclick="toggleMetrics('${sn}', this)">
-      <div class="toggle-indicator">${expandedMetrics.has(sn) ? '↑ Hide' : '↓ Details'}</div>
+      <div class="toggle-indicator">${expandedMetrics.has(sn) ? '∧ Hide' : '∨ Details'}</div>
       <div class="card-today" style="color:${colorFor(sn)}" title="Today's yield">${todaysYieldText}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
