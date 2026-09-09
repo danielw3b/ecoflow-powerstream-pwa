@@ -194,7 +194,7 @@
       border-color: var(--sky);
     }
 
-    /* Action Buttons (Text-Only Design) */
+    /* Action Buttons */
     .btn {
       width: 100%;
       padding: 12px;
@@ -267,76 +267,19 @@
       color: var(--text) !important;
     }
 
-    /* Accordion & Storage Key Checkboxes */
+    /* Checkbox Option Container */
     .checkbox-group {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 8px;
+      margin-top: 4px;
       font-size: 0.85rem;
       color: var(--text-muted);
     }
 
-    .storage-key-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .storage-key-label {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      color: var(--text);
-      cursor: pointer;
-      font-size: 0.85rem;
-    }
-
-    /* Checkbox Accent Adjustment (Sky Blue) */
-    .storage-key-label input[type="checkbox"] {
-      margin-top: 3px;
-      flex-shrink: 0;
+    .checkbox-group input[type="checkbox"] {
       accent-color: var(--sky);
-    }
-
-    .border-top-dashed {
-      margin-top: 12px;
-      border-top: 1px dashed var(--border);
-      padding-top: 10px;
-    }
-
-    code {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      word-break: break-all;
-    }
-
-    /* Collapsible Details Styling */
-    details#exportOptionsArea {
-      margin-top: 10px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.15);
-    }
-
-    details#exportOptionsArea summary {
-      font-size: 0.8rem;
-      color: var(--text-muted);
       cursor: pointer;
-      user-select: none;
-      outline: none;
-      font-weight: 500;
-    }
-
-    details#exportOptionsArea summary:hover {
-      color: var(--text);
     }
 
     /* Text & Highlight Helpers */
@@ -396,45 +339,13 @@
         <label for="githubToken">GitHub Access Token (Master Only)</label>
         <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
       </div>
-    </div>
-
-    <!-- Collapsible Export & Storage Key Settings -->
-    <details id="exportOptionsArea" class="hidden">
-      <summary>Select Backup Mode & Storage Keys</summary>
-      <div style="margin-top: 10px;">
-        <div class="form-group">
-          <label>Select Storage Keys to Export</label>
-          <div class="storage-key-list">
-            
-            <label class="storage-key-label">
-              <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh" checked>
-              <code>ecoflow_wh</code>
-            </label>
       
-            <label class="storage-key-label">
-              <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh_hourly" checked>
-              <code>ecoflow_wh_hourly</code>
-            </label>
-      
-            <label class="storage-key-label">
-              <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z11ACH4G5929" checked>
-              <code>ecoflow_analyzer_config_BK01Z11ACH4G5929</code>
-            </label>
-      
-            <label class="storage-key-label">
-              <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z1SACH2M3738" checked>
-              <code>ecoflow_analyzer_config_BK01Z1SACH2M3738</code>
-            </label>
-      
-          </div>
-        </div>
-      
-        <div class="checkbox-group border-top-dashed">
-          <input type="checkbox" id="gzipCompress">
-          <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
-        </div>
+      <!-- Compression Option directly under Master Token -->
+      <div class="checkbox-group">
+        <input type="checkbox" id="gzipCompress">
+        <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
       </div>
-    </details>
+    </div>
 
     <!-- Contextual Main Action Button -->
     <button id="mainActionBtn" class="btn btn-disabled" disabled>
@@ -456,9 +367,17 @@
 </div>
 
 <script>
-  // Storage keys for sync metadata & persistent UI state
+  // Storage keys for sync metadata
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
-  const CHECKBOX_STATES_KEY = 'ecoflow_gist_checkbox_states';
+  const GZIP_SETTING_KEY = 'ecoflow_gist_gzip_enabled';
+
+  // Hardcoded storage keys to always synchronize
+  const EXPORT_KEYS = [
+    'ecoflow_wh',
+    'ecoflow_wh_hourly',
+    'ecoflow_analyzer_config_BK01Z11ACH4G5929',
+    'ecoflow_analyzer_config_BK01Z1SACH2M3738'
+  ];
   
   // Master Mode 7-click unlock counter
   let clickCounter = 0;
@@ -470,34 +389,15 @@
     checkGistStatus();
   });
 
-  // Restore credentials and checkbox states from LocalStorage
+  // Restore credentials and compression setting from LocalStorage
   function loadSavedSettings() {
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
-
-    const savedCheckboxStates = JSON.parse(localStorage.getItem(CHECKBOX_STATES_KEY) || '{}');
-
-    document.querySelectorAll('.storage-key-checkbox').forEach(cb => {
-      if (savedCheckboxStates.hasOwnProperty(cb.value)) {
-        cb.checked = savedCheckboxStates[cb.value];
-      }
-    });
-
-    if (savedCheckboxStates.hasOwnProperty('gzipCompress')) {
-      document.getElementById('gzipCompress').checked = savedCheckboxStates['gzipCompress'];
+    
+    const isGzipEnabled = localStorage.getItem(GZIP_SETTING_KEY);
+    if (isGzipEnabled !== null) {
+      document.getElementById('gzipCompress').checked = (isGzipEnabled === 'true');
     }
-  }
-
-  // Persist selected key selections
-  function saveCheckboxStates() {
-    const checkboxStates = {};
-
-    document.querySelectorAll('.storage-key-checkbox').forEach(cb => {
-      checkboxStates[cb.value] = cb.checked;
-    });
-
-    checkboxStates['gzipCompress'] = document.getElementById('gzipCompress').checked;
-    localStorage.setItem(CHECKBOX_STATES_KEY, JSON.stringify(checkboxStates));
   }
 
   // Setup UI event handlers & Master Mode secret unlock
@@ -513,8 +413,8 @@
       checkGistStatus();
     });
 
-    document.querySelectorAll('.storage-key-checkbox, #gzipCompress').forEach(cb => {
-      cb.addEventListener('change', saveCheckboxStates);
+    document.getElementById('gzipCompress').addEventListener('change', (e) => {
+      localStorage.setItem(GZIP_SETTING_KEY, e.target.checked);
     });
 
     // Secret 7-click unlock for Master Mode form
@@ -599,12 +499,10 @@
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
     const hasToken = !!document.getElementById('githubToken').value.trim();
-    const exportOptions = document.getElementById('exportOptionsArea');
 
     if (!gistId) {
       renderSummary('badge', 'Gist ID Missing', 'Please enter a Gist ID in settings.', []);
       setButtonState('btn-disabled', 'Gist ID Missing', true, null);
-      exportOptions.classList.add('hidden');
       return;
     }
 
@@ -659,12 +557,10 @@
 
       // Core State Decision Rules
       const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
-      // Local new data is ONLY evaluated if this device currently has a Master Access Token
       const hasNewLocalData = hasToken && (localTotalWh > remoteTotalWh || (latestDataTs && latestDataTs > (backupContentTs + 20000)));
 
       if (isRemoteContentNewer) {
         // STATE 1: Remote cloud backup contains newer data -> Trigger Import
-        exportOptions.classList.add('hidden');
         setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
 
         renderSummary('badge badge-update', 'UPDATE AVAILABLE', 'Remote backup contains newer measurements.', [
@@ -678,15 +574,7 @@
 
       } else if (hasNewLocalData) {
         // STATE 2: Local data is newer than Gist -> Trigger Export (Master Mode only)
-        const hasToken = !!document.getElementById('githubToken').value.trim();
-
-        if (hasToken) {
-          exportOptions.classList.remove('hidden');
-          setButtonState('btn-export', 'Update Gist', false, () => triggerExport(gistId));
-        } else {
-          exportOptions.classList.add('hidden');
-          setButtonState('btn-disabled', 'Read-Only Device (New Local Data)', true, null);
-        }
+        setButtonState('btn-export', 'Update Gist', false, () => triggerExport(gistId));
 
         const highlightedLocalData = `<span class="txt-amber">${formattedLatestData}</span>`;
 
@@ -701,7 +589,6 @@
 
       } else {
         // STATE 3: Local storage and Gist are in full sync
-        exportOptions.classList.add('hidden');
         setButtonState('btn-disabled', 'Local Data Synced', true, null);
 
         renderSummary('badge badge-synced', 'SYNCED', 'Local data is up-to-date with Gist cloud.', [
@@ -715,7 +602,6 @@
       }
 
     } catch (err) {
-      exportOptions.classList.add('hidden');
       setButtonState('btn-disabled', 'Connection Error', true, null);
       renderSummary('badge', 'ERROR', err.message, []);
     }
@@ -795,7 +681,7 @@
     }
   }
 
-  // Export flow: Collect selected LocalStorage keys and PATCH to GitHub Gist
+  // Export flow: Collect hardcoded LocalStorage keys and PATCH to GitHub Gist
   async function triggerExport(gistId) {
     const token = document.getElementById('githubToken').value.trim();
     if (!token) {
@@ -804,13 +690,6 @@
     }
 
     const isGzipChecked = document.getElementById('gzipCompress').checked;
-    const checkedBoxes = document.querySelectorAll('.storage-key-checkbox:checked');
-    const selectedKeys = Array.from(checkedBoxes).map(cb => cb.value);
-
-    if (selectedKeys.length === 0) {
-      alert('Please select at least one Storage Key to export!');
-      return;
-    }
 
     const btn = document.getElementById('mainActionBtn');
     btn.textContent = 'Uploading...';
@@ -819,7 +698,7 @@
     try {
       const exportData = {};
 
-      selectedKeys.forEach(key => {
+      EXPORT_KEYS.forEach(key => {
         const item = localStorage.getItem(key);
         if (item) {
           try { exportData[key] = JSON.parse(item); } catch (e) { exportData[key] = item; }
