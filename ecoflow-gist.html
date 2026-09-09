@@ -658,7 +658,8 @@
 
       // Core State Decision Rules
       const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
-      const hasNewLocalData = localTotalWh > remoteTotalWh || (latestDataTs && latestDataTs > (backupContentTs + 20000));
+      // Local new data is ONLY evaluated if this device currently has a Master Access Token
+      const hasNewLocalData = hasToken && (localTotalWh > remoteTotalWh || (latestDataTs && latestDataTs > (backupContentTs + 20000)));
 
       if (isRemoteContentNewer) {
         // STATE 1: Remote cloud backup contains newer data -> Trigger Import
