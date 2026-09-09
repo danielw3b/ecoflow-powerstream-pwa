@@ -32,7 +32,7 @@
         background-color: var(--bg);
         color: var(--text);
         margin: 0;
-        padding: 15px;
+        padding: 5px 4px; /* Reduced mobile padding for maximum usable screen space */
         line-height: 1.4;
     }
 
@@ -52,8 +52,8 @@
         background: var(--panel); 
         border: 1px solid var(--border); 
         border-radius: 8px; 
-        padding: 20px; 
-        margin-bottom: 20px; 
+        padding: 10px 8px; /* Compact padding for mobile view */
+        margin-bottom: 15px; 
     }
     
     .grid { 
@@ -171,11 +171,27 @@
     tr:hover { background: rgba(255,255,255,0.02); }
     table td:last-child, table th:last-child { text-align: center; }
 
+    /* Container wrapping table 1 and table 2 */
+    .card.table-card {
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+
+    /* Sticky behavior targeting only table headers inside table-cards */
+    .card.table-card h3 {
+        position: sticky;
+        top: 0;
+        background-color: var(--panel);
+        z-index: 11;
+        margin: 0 0 10px 0;
+        padding: 6px 0;
+    }
+
     .summary-card {
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 15px;
+        padding: 10px 8px; /* Compact padding for mobile view */
         margin-bottom: 15px;
     }
     
@@ -320,6 +336,8 @@
     /* 2. TABLET BREAKPOINT (from 600px) */
     @media (min-width: 600px) {
         body { padding: 20px; }
+        .card { padding: 20px; }
+        .summary-card { padding: 15px; }
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 10px; font-size: 0.9rem; }
         
@@ -1078,44 +1096,47 @@
       if (typeof renderFinancialReportHtml === 'function') {
         html += renderFinancialReportHtml(deviceDaily, csvFinancial);
       }
-    
       // Table 1: Daily Efficiency Tracker
       html += `
-                    <h3 class="table-title-warn">✅️ Daily Efficiency Tracker</h3>
-                    <div class="table-scroll-frame">
-                        <table>
-                            <tr><th>Date</th><th>Temp °C</th><th>RADN kWh/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Indicator</th></tr>
-                            ${tableRowsHtml}
-                        </table>
-                    </div>
-                    ${hasMoreTable1 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable1} remaining)</button>` : ''}`;
-    
+      <div class="card table-card">
+          <h3 class="table-title-warn">✅️ Daily Efficiency Tracker</h3>
+          <div class="table-scroll-frame">
+              <table>
+                  <tr><th>Date</th><th>Temp °C</th><th>RADN kWh/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Indicator</th></tr>
+                  ${tableRowsHtml}
+              </table>
+          </div>
+          ${hasMoreTable1 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable1} remaining)</button>` : ''}
+      </div>`;
+      
       // Table 2: Anomaly & Weather Context
       if (anomalyRowIndex > 0) {
-        html += `
-                    <h3 class="table-title-warn">
-                        🟠 Daily Anomaly & Weather Context
-                        <span class="title-badge">
-                            Issues: <span class="bad fw-bold">${criticalCount}</span> | <span class="subtitle">${weatherCount} Weather</span>
-                        </span>
-                    </h3>
-                    <div class="table-scroll-frame">
-                        <table>
-                            <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Eff. %</th><th>Clouds %</th><th>Sun hr</th><th>MaxPeak W/m²</th><th>Context</th></tr>
-                            ${subTableRowsHtml}
-                        </table>
-                    </div>
-                    ${hasMoreTable2 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable2} remaining)</button>` : ''}`;
+          html += `
+      <div class="card table-card">
+          <h3 class="table-title-warn">
+              🟠 Daily Anomaly & Weather Context
+              <span class="title-badge">
+                  Issues: <span class="bad fw-bold">${criticalCount}</span> | <span class="subtitle">${weatherCount} Weather</span>
+              </span>
+          </h3>
+          <div class="table-scroll-frame">
+              <table>
+                  <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Eff. %</th><th>Clouds %</th><th>Sun hr</th><th>MaxPeak W/m²</th><th>Context</th></tr>
+                  ${subTableRowsHtml}
+              </table>
+          </div>
+          ${hasMoreTable2 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable2} remaining)</button>` : ''}
+      </div>`;
       }
-    
+      
       html += `
-                <div class="legend-box">
-                    <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
-                    <strong class="legend-title">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
-                    <strong class="legend-title">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
-                    <strong class="legend-title">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
-                </div></div>`;
-    
+      <div class="legend-box">
+          <strong>📋 System Indicators:</strong> ✅ Optimal | 🟢 Normal | 🟠 Loss | ❌ Hardware Fail | ⏳ Pre-Install<br>
+          <strong class="legend-title">🌤️ Weather Micro-Context:</strong> ⛅ ☀️ Partly Cloudy | ☁️ ⛅ Overcast & Sun Breaks | ☁️ ☁️ Overcast & Diffuse | 🌧️ ☁️ Heavy Cloud / Rain | ☁️ 🌫️ High Diffuse Light | 🌡️ 🥵 Heat Derating (&ge;33&deg;C) | 📶 ⚠️ Connection Drop | ❌ 🔌 Hardware Drop<br>
+          <strong class="legend-title">📊 Panel Baselines:</strong> Bifacial (14.0%+) & Standard Mono (8%+).
+          <strong class="legend-title">🔬 Solar Methodology (Liu-Jordan Model):</strong> Liu & Jordan (1960) empirical regression principles.<br>
+      </div></div>`;    
+        
       // Final Assembly of global CSV export structure
       globalCsvRows = [
             ...csvHeader,
