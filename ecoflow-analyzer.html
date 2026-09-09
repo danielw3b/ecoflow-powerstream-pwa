@@ -26,7 +26,7 @@
         --border: rgba(107, 138, 170, 0.2);
     }
 
-    /* 1. BASE STYLES (Mobile First - applies to all screens) */
+    /* 1. BASE STYLES (Mobile First) */
     body {
         font-family: system-ui, -apple-system, sans-serif;
         background-color: var(--bg);
@@ -170,43 +170,7 @@
     tr:hover { background: rgba(255,255,255,0.02); }
     table td:last-child, table th:last-child { text-align: center; }
 
-    /* Prevents vertical scrollbars inside table containers */
-    .table-scroll-frame {
-        overflow-x: auto;
-        overflow-y: visible;
-    }
-
-    /* Container wrapping Table 1 and Table 2 */
-    .card.table-card {
-        padding: 10px 8px;
-        margin-bottom: 20px;
-    }
-    
-    /* Table 1 & 2 Sticky H3 Title */
-    .card.table-card h3 {
-        position: sticky;
-        top: 0;
-        background-color: var(--panel);
-        z-index: 20;
-        margin: 0;
-        padding: 8px 0 12px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 5px;
-    }
-    
-    /* Table 1 & 2 Sticky TH Headers (sits directly below H3) */
-    .card.table-card th {
-        position: sticky;
-        top: 40px; /* Perfekter Abstand unter dem H3 */
-        z-index: 15;
-        background-color: var(--panel);
-        box-shadow: inset 0 -1px 0 var(--border);
-    }
-
-    /* Summary Card Sticky Adjustments */
+    /* --- SUMMARY CARD STYLES --- */
     .summary-card {
         background: var(--panel);
         border: 1px solid var(--border);
@@ -235,7 +199,6 @@
         background-color: var(--panel);
     }
 
-    /* Exclusive for Financial Table */
     .summary-card table {
         table-layout: fixed;
         width: 100%;
@@ -247,6 +210,43 @@
     .summary-card th:nth-child(2), .summary-card td:nth-child(2) { width: 25%; text-align: right; }
     .summary-card th:nth-child(3), .summary-card td:nth-child(3) { width: 41%; text-align: left; }
 
+    /* --- TABLE 1 & 2 STYLES (DAILY TRACKER & ANOMALY) --- */
+    .card.table-card {
+        padding: 10px 8px;
+        margin-bottom: 20px;
+    }
+
+    .card.table-card h3 {
+        position: sticky;
+        top: 0;
+        background-color: var(--panel);
+        z-index: 20;
+        margin: 0;
+        padding: 8px 0 10px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .card.table-card h3 .title-badge {
+        text-transform: none;
+        letter-spacing: normal;
+    }
+
+    .card.table-card th {
+        position: sticky;
+        top: 56px; /* Dynamic offset for wrapped 2-line headings on mobile */
+        z-index: 15;
+        background-color: var(--panel);
+        box-shadow: inset 0 -1px 0 var(--border);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    /* System Status Indicators & Colors */
     .good { color: var(--accent);}
     .bad { color: var(--danger);}
     .warn { color: var(--warning);}
@@ -271,7 +271,6 @@
 
     .loader { display: none; margin: 20px 0 0 0; color: var(--accent); font-weight: bold; text-align: center; }
 
-    /* Status Card Metrics & Indicators */
     .status-primary-row {
         display: flex;
         gap: 18px;
@@ -304,7 +303,7 @@
     .table-title-warn { color: var(--warning); }
     .title-badge { font-size: 0.8rem; color: var(--text-dim); font-weight: normal; }
 
-    /* Layout Helper Classes */
+    /* Helper Classes */
     .subtitle { color: var(--text-dim); }
     .span-2 { grid-column: span 2; }
     .location-group { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
@@ -335,7 +334,7 @@
     }
     .show-more-btn:hover { background-color: rgba(255, 255, 255, 0.05); }
 
-    /* Scroll-to-Top Button & SVG Dimension Fix */
+    /* Scroll-to-Top Button */
     #scrollToTopBtn {
         position: fixed;
         bottom: 25px; right: 25px; z-index: 1000;
@@ -352,7 +351,6 @@
     #scrollToTopBtn.show { opacity: 1; visibility: visible; transform: translateY(0); }
     #scrollToTopBtn:hover { transform: translateY(0) scale(1.08); background-color: rgba(32, 54, 92, 0.98); }
     
-    /* Fixes SVG aspect ratio and dimensions */
     #scrollToTopBtn svg { 
         width: 24px; 
         height: 24px; 
@@ -365,7 +363,7 @@
         stroke-linejoin: round; 
     }
 
-    /* 2. TABLET BREAKPOINT (from 600px) */
+    /* 2. TABLET BREAKPOINT (min 600px) */
     @media (min-width: 600px) {
         body { padding: 20px; }
         .card { padding: 20px; }
@@ -373,7 +371,17 @@
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 10px; font-size: 0.9rem; }
         
-        /* General tables use nowrap, except for the summary financial table */
+        .card.table-card h3 {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+        }
+
+        .card.table-card th {
+            top: 40px; /* Reset to 40px offset when H3 headers switch back to single line */
+        }
+
         table:not(.summary-card table) td:first-child, 
         table:not(.summary-card table) th:first-child,
         table:not(.summary-card table) td:last-child, 
@@ -382,7 +390,7 @@
         }
     }
 
-    /* 3. DESKTOP BREAKPOINT (from 850px) */
+    /* 3. DESKTOP BREAKPOINT (min 850px) */
     @media (min-width: 850px) {
         h1 { font-size: 2rem; }
         h2 { font-size: 1.5rem; }
