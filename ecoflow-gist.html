@@ -598,6 +598,7 @@
   // Primary state engine: evaluates remote Gist vs local measurements
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
+    const hasToken = !!document.getElementById('githubToken').value.trim();
     const exportOptions = document.getElementById('exportOptionsArea');
 
     if (!gistId) {
