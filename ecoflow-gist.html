@@ -131,9 +131,10 @@
     }
 
     .badge-master {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--amber-light);
-      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.25);
+      font-weight: 600;
     }
 
     /* Table */
@@ -192,7 +193,7 @@
       border-color: var(--sky);
     }
 
-    /* Buttons */
+    /* Buttons (No Emojis for Clean Look) */
     .btn {
       width: 100%;
       padding: 12px;
@@ -290,10 +291,11 @@
       font-size: 0.85rem;
     }
 
+    /* Checkbox Neutral Accent Sky */
     .storage-key-label input[type="checkbox"] {
       margin-top: 3px;
       flex-shrink: 0;
-      accent-color: var(--amber);
+      accent-color: var(--sky);
     }
 
     .border-top-dashed {
@@ -303,13 +305,36 @@
     }
 
     code {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
       padding: 2px 6px;
       border-radius: 4px;
       font-family: monospace;
       font-size: 0.8rem;
-      color: var(--text);
+      color: var(--text-muted);
       word-break: break-all;
+    }
+
+    /* Accordion Details Styling */
+    details#exportOptionsArea {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    details#exportOptionsArea summary {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      outline: none;
+      font-weight: 500;
+    }
+
+    details#exportOptionsArea summary:hover {
+      color: var(--text);
     }
 
     /* Text Helper Classes */
@@ -370,47 +395,50 @@
       </div>
     </div>
 
-    <!-- Export Selection Options -->
-    <div id="exportOptionsArea" class="hidden">
-      <div class="form-group">
-        <label>Select Storage Keys to Export</label>
-        <div class="storage-key-list">
-          
-          <label class="storage-key-label">
-            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh" checked>
-            <code>ecoflow_wh</code>
-          </label>
-    
-          <label class="storage-key-label">
-            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh_hourly" checked>
-            <code>ecoflow_wh_hourly</code>
-          </label>
-    
-          <label class="storage-key-label">
-            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z11ACH4G5929" checked>
-            <code>ecoflow_analyzer_config_BK01Z11ACH4G5929</code>
-          </label>
-    
-          <label class="storage-key-label">
-            <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z1SACH2M3738" checked>
-            <code>ecoflow_analyzer_config_BK01Z1SACH2M3738</code>
-          </label>
-    
+    <!-- Collapsible Advanced Export Settings Accordion -->
+    <details id="exportOptionsArea" class="hidden">
+      <summary>⚙️ Advanced Export Settings</summary>
+      <div style="margin-top: 10px;">
+        <div class="form-group">
+          <label>Select Storage Keys to Export</label>
+          <div class="storage-key-list">
+            
+            <label class="storage-key-label">
+              <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh" checked>
+              <code>ecoflow_wh</code>
+            </label>
+      
+            <label class="storage-key-label">
+              <input type="checkbox" class="storage-key-checkbox" value="ecoflow_wh_hourly" checked>
+              <code>ecoflow_wh_hourly</code>
+            </label>
+      
+            <label class="storage-key-label">
+              <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z11ACH4G5929" checked>
+              <code>ecoflow_analyzer_config_BK01Z11ACH4G5929</code>
+            </label>
+      
+            <label class="storage-key-label">
+              <input type="checkbox" class="storage-key-checkbox" value="ecoflow_analyzer_config_BK01Z1SACH2M3738" checked>
+              <code>ecoflow_analyzer_config_BK01Z1SACH2M3738</code>
+            </label>
+      
+          </div>
+        </div>
+      
+        <div class="checkbox-group border-top-dashed">
+          <input type="checkbox" id="gzipCompress">
+          <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
         </div>
       </div>
-    
-      <div class="checkbox-group border-top-dashed">
-        <input type="checkbox" id="gzipCompress">
-        <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
-      </div>
-    </div>
+    </details>
 
-    <!-- Action Button -->
+    <!-- Action Button (Text Only) -->
     <button id="mainActionBtn" class="btn btn-disabled" disabled>
       Checking Status...
     </button>
 
-    <!-- Quick Navigation Links (Revealed ONLY after successful import) -->
+    <!-- Quick Navigation Links (Text Only) -->
     <div class="nav-grid hidden" id="quickNavArea">
       <a href="index.html" class="btn btn-secondary nav-link highlight-nav">
         EcoFlow Monitor
@@ -534,6 +562,27 @@
     }
   }
 
+  function getLocalDataHashSum() {
+    const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
+    if (!hourlyRaw) return 0;
+    
+    try {
+      const hourlyData = JSON.parse(hourlyRaw);
+      let totalWh = 0;
+      
+      Object.values(hourlyData).forEach(deviceHours => {
+        if (typeof deviceHours === 'object' && deviceHours !== null) {
+          Object.values(deviceHours).forEach(wh => {
+            totalWh += (Number(wh) || 0);
+          });
+        }
+      });
+      return totalWh;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
     const exportOptions = document.getElementById('exportOptionsArea');
@@ -559,6 +608,7 @@
 
       let backupContentTs = 0;
       let backupContentStr = 'N/A';
+      let remoteTotalWh = 0;
 
       if (backupFile && backupFile.content) {
         try {
@@ -567,11 +617,22 @@
             backupContentTs = new Date(parsed.timestamp).getTime();
             backupContentStr = new Date(parsed.timestamp).toLocaleString();
           }
+
+          if (parsed.keys && parsed.keys.ecoflow_wh_hourly) {
+            Object.values(parsed.keys.ecoflow_wh_hourly).forEach(deviceHours => {
+              if (typeof deviceHours === 'object' && deviceHours !== null) {
+                Object.values(deviceHours).forEach(wh => {
+                  remoteTotalWh += (Number(wh) || 0);
+                });
+              }
+            });
+          }
         } catch (e) {}
       }
 
       const latestDataTs = getLatestDataTimestamp();
       const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
+      const localTotalWh = getLocalDataHashSum();
 
       const isManualGistEdit = (gistUpdatedAt - backupContentTs) > 30000;
       const modifiedLabel = isManualGistEdit 
@@ -581,12 +642,12 @@
       adjustUIForRole();
 
       const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
-      const hasNewLocalData = latestDataTs && latestDataTs > (backupContentTs + 20000);
+      const hasNewLocalData = localTotalWh > remoteTotalWh || (latestDataTs && latestDataTs > (backupContentTs + 20000));
 
       if (isRemoteContentNewer) {
         exportOptions.classList.add('hidden');
         setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
-        
+
         renderSummary('badge badge-update', '🔄 UPDATE AVAILABLE', 'Remote backup contains newer measurements.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
@@ -595,10 +656,10 @@
           ['Latest Data Point', formattedLatestData],
           ['Status', '<span class="txt-sky">Import Available</span>']
         ]);
-        
+
       } else if (hasNewLocalData) {
         const hasToken = !!document.getElementById('githubToken').value.trim();
-        
+
         if (hasToken) {
           exportOptions.classList.remove('hidden');
           setButtonState('btn-export', 'Update Gist', false, () => triggerExport(gistId));
@@ -606,10 +667,10 @@
           exportOptions.classList.add('hidden');
           setButtonState('btn-disabled', 'Read-Only Device (New Local Data)', true, null);
         }
-        
+
         const highlightedLocalData = `<span class="txt-amber">${formattedLatestData}</span>`;
-        
-        renderSummary('badge badge-master', '🆕 NEW DATA READY', 'New local readings available for upload.', [
+
+        renderSummary('badge badge-master', '📤 NEW DATA READY', 'New local readings available for upload.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
           ['Gist Size', `${sizeInKB} KB`],
@@ -617,11 +678,11 @@
           ['Latest Data Point', highlightedLocalData],
           ['Status', '<span class="txt-amber">Ready for Export</span>']
         ]);
-        
+
       } else {
         exportOptions.classList.add('hidden');
         setButtonState('btn-disabled', 'Local Data Synced', true, null);
-        
+
         renderSummary('badge badge-synced', '🟢 SYNCED', 'Local data is up-to-date with Gist cloud.', [
           ['Gist File Modified', modifiedLabel],
           ['Backup Content Date', backupContentStr],
@@ -631,6 +692,7 @@
           ['Status', '<span class="txt-emerald">Fully Synced</span>']
         ]);
       }
+
     } catch (err) {
       exportOptions.classList.add('hidden');
       setButtonState('btn-disabled', 'Connection Error', true, null);
@@ -673,7 +735,7 @@
 
   async function triggerImport(gistId) {
     const btn = document.getElementById('mainActionBtn');
-    btn.textContent = '⏳ Importing...';
+    btn.textContent = 'Importing...';
     btn.disabled = true;
 
     try {
@@ -726,7 +788,7 @@
     }
 
     const btn = document.getElementById('mainActionBtn');
-    btn.textContent = '⏳ Uploading...';
+    btn.textContent = 'Uploading...';
     btn.disabled = true;
 
     try {
