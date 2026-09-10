@@ -40,7 +40,7 @@
       background-color: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 20px;
+      padding: 6px;
       display: flex;
       justify-content: center;
     }
@@ -50,7 +50,7 @@
       max-width: 600px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 8px;
     }
 
     /* Header Layout */
@@ -289,6 +289,12 @@
     .txt-center-muted { color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 12px 0; }
 
     .hidden { display: none !important; }
+
+    /* min 600px */
+    @media (min-width: 600px) {
+        body { padding: 20px; }
+        .container {gap: 16px;}
+    }
   </style>
 </head>
 <body>
