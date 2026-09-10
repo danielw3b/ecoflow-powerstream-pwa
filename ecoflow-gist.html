@@ -313,7 +313,7 @@
   <!-- Status Summary Card -->
   <div class="card" id="summaryCard">
     <div class="card-header">
-      <div class="card-title">Status</div>
+      <div class="card-title" id="syncActionHeader">Status</div>
       <div id="statusBadgeContainer">
         <span class="badge">CHECKING...</span>
       </div>
@@ -329,7 +329,7 @@
   <div class="card">
     <div class="card-header">
       <!-- Secret 7-click trigger for Master Mode credentials -->
-      <div class="card-title" id="syncActionHeader" title="Click 7 times to unlock settings">
+      <div class="card-title">
         Sync Action
       </div>
       <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
@@ -394,7 +394,7 @@
     'ecoflow_analyzer_3738'
   ];
   
-  // Master Mode 7-click unlock counter
+  // Master Mode
   let clickCounter = 0;
   let clickTimer = null;
 
