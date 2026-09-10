@@ -1695,6 +1695,51 @@ init();
     'ecoflow_analyzer_config_BK01Z1SACH2M3738'
   ];
 
+  // Fetches today's sunset using local GPS config with fallback
+  async function getOrFetchSunset() {
+    const today = new Date().toISOString().split('T')[0];
+    const cached = localStorage.getItem('pwa_sunset_cache');
+    
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.date === today) return new Date(parsed.sunset);
+      } catch (e) {}
+    }
+
+    let lat = null, lon = null;
+    const rawConfig = localStorage.getItem('ecoflow_analyzer_config_BK01Z11ACH4G5929');
+    if (rawConfig) {
+      try {
+        const parsedConfig = JSON.parse(rawConfig);
+        if (parsedConfig.lat && parsedConfig.lon) {
+          lat = parsedConfig.lat;
+          lon = parsedConfig.lon;
+        }
+      } catch (e) {}
+    }
+
+    if (lat && lon) {
+      try {
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunset&timezone=auto`);
+        const data = await res.json();
+        const sunsetDate = new Date(data.daily.sunset[0]);
+
+        localStorage.setItem('pwa_sunset_cache', JSON.stringify({
+          date: today,
+          sunset: sunsetDate.toISOString()
+        }));
+        return sunsetDate;
+      } catch (e) {
+        console.warn('[AutoSync] Sunset API fetch failed', e);
+      }
+    }
+
+    const fallback = new Date();
+    fallback.setHours(20, 0, 0, 0);
+    return fallback;
+  }
+
   async function runAutoSync() {
     const autoGistId = localStorage.getItem('ecoflow_auto_gist_id');
     const token = localStorage.getItem('ecoflow_github_token');
@@ -1722,7 +1767,7 @@ init();
       const remoteTs = new Date(remotePayload.timestamp || data.updated_at).getTime();
       const localSyncTs = new Date(localStorage.getItem('ecoflow_gist_last_sync') || 0).getTime();
 
-      // Priority Import Check: Runs regardless of token if Gist contains newer or higher yield data
+      // Priority Import Check: Runs if Gist contains newer or higher yield data
       if (remoteTs > localSyncTs + 10000 || remoteTotalWh > localTotalWh) {
         if (remotePayload.keys) {
           let hasMergedData = false;
@@ -1758,14 +1803,27 @@ init();
         if (remoteTotalWh >= localTotalWh) return;
       }
 
-      // Silent Export Check: Only executes if this device has a token AND holds higher local yield data
+      // Silent Export Check: Token required + trigger via threshold, sunset closeout, or new day
       if (hasToken) {
         const whDifference = localTotalWh - remoteTotalWh;
         const isBrandNewGist = !remotePayload.keys || Object.keys(remotePayload.keys).length === 0;
 
-        if (isBrandNewGist || whDifference >= EXPORT_THRESHOLD_WH) {
+        const now = new Date();
+        const sunsetTime = await getOrFetchSunset();
+        const isPastSunset = now > sunsetTime;
+
+        const localDateStr = now.toLocaleDateString();
+        const lastSyncDateStr = localSyncTs ? new Date(localSyncTs).toLocaleDateString() : '';
+        const isNewDay = localSyncTs ? (localDateStr !== lastSyncDateStr) : false;
+
+        const shouldExport = isBrandNewGist || 
+                             whDifference >= EXPORT_THRESHOLD_WH || 
+                             (isPastSunset && whDifference > 0) || 
+                             (isNewDay && whDifference > 0);
+
+        if (shouldExport) {
           await executeSilentExport(autoGistId, token, localTotalWh, whDifference);
-          console.log(`[AutoSync] Smart-Node: Export completed (+${whDifference} Wh).`);
+          console.log(`[AutoSync] Smart-Node: Export completed (+${whDifference.toFixed(2)} Wh).`);
         }
       }
 
