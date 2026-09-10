@@ -1684,9 +1684,9 @@ init();
 // Autonomous Background Gist Synchronization Engine (15-Minute Interval)
 // =========================================================================
 (function initGistBackgroundSync() {
-  const SYNC_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+  const SYNC_INTERVAL_MS = 15 * 60 * 1000;
   const EXPORT_THRESHOLD_WH = 100;
-  const MAX_LOG_ENTRIES = 20;
+  const MAX_LOG_ENTRIES = 200;
 
   const SYNC_KEYS = [
     'ecoflow_wh',
@@ -1698,9 +1698,8 @@ init();
   async function runAutoSync() {
     const autoGistId = localStorage.getItem('ecoflow_auto_gist_id');
     const token = localStorage.getItem('ecoflow_github_token');
-    const isWriter = !!token;
+    const hasToken = !!token;
 
-    // Safety guard: double check in case key was removed during runtime
     if (!autoGistId) return;
 
     try {
@@ -1711,7 +1710,6 @@ init();
       const backupFile = data.files['ecoflow_auto_backup.json'];
       if (!backupFile || !backupFile.content) return;
 
-      // Safe JSON parsing to prevent Uncaught SyntaxError on empty or invalid Gist content
       let remotePayload = {};
       try {
         remotePayload = JSON.parse(backupFile.content);
@@ -1719,73 +1717,66 @@ init();
         remotePayload = {};
       }
 
+      const remoteTotalWh = getRemoteWhSum(remotePayload);
+      const localTotalWh = getLocalWhSum();
       const remoteTs = new Date(remotePayload.timestamp || data.updated_at).getTime();
       const localSyncTs = new Date(localStorage.getItem('ecoflow_gist_last_sync') || 0).getTime();
 
-      // Reader Node: Silent Import
-      if (!isWriter) {
-        if (remoteTs > localSyncTs + 10000) {
-          if (remotePayload.keys) {
-            Object.keys(remotePayload.keys).forEach(key => {
-              const remoteVal = remotePayload.keys[key];
-              const localRaw = localStorage.getItem(key);
+      // Priority Import Check: Runs regardless of token if Gist contains newer or higher yield data
+      if (remoteTs > localSyncTs + 10000 || remoteTotalWh > localTotalWh) {
+        if (remotePayload.keys) {
+          let hasMergedData = false;
+          Object.keys(remotePayload.keys).forEach(key => {
+            const remoteVal = remotePayload.keys[key];
+            const localRaw = localStorage.getItem(key);
 
-              // Perform Deep Merge for nested objects
-              if (typeof remoteVal === 'object' && remoteVal !== null && localRaw) {
-                try {
-                  const localVal = JSON.parse(localRaw);
-                  const merged = mergeDeep(localVal, remoteVal);
-                  localStorage.setItem(key, JSON.stringify(merged));
-                  return;
-                } catch (e) {
-                  // Fallback to direct overwrite on parse error
-                }
-              }
-
-              // Standard storage setter for scalar values or new keys
-              const val = typeof remoteVal === 'object' 
-                ? JSON.stringify(remoteVal) 
-                : remoteVal;
-              localStorage.setItem(key, val);
-            });
-
-            const nowIso = new Date().toISOString();
-            localStorage.setItem('ecoflow_gist_last_sync', remotePayload.timestamp || data.updated_at);
-            localStorage.setItem('ecoflow_gist_last_import_ts', nowIso);
-
-            if (typeof loadWh === 'function') {
-              loadWh();
-              console.log('[AutoSync] Reader: Remote data imported & loadWh() executed.');
+            if (typeof remoteVal === 'object' && remoteVal !== null && localRaw) {
+              try {
+                const localVal = JSON.parse(localRaw);
+                const merged = mergeDeep(localVal, remoteVal);
+                localStorage.setItem(key, JSON.stringify(merged));
+                hasMergedData = true;
+                return;
+              } catch (e) {}
             }
+
+            const val = typeof remoteVal === 'object' ? JSON.stringify(remoteVal) : remoteVal;
+            localStorage.setItem(key, val);
+            hasMergedData = true;
+          });
+
+          const nowIso = new Date().toISOString();
+          localStorage.setItem('ecoflow_gist_last_sync', remotePayload.timestamp || data.updated_at);
+          localStorage.setItem('ecoflow_gist_last_import_ts', nowIso);
+
+          if (hasMergedData && typeof loadWh === 'function') {
+            loadWh();
+            console.log('[AutoSync] Smart-Node: Remote data imported & loadWh() executed.');
           }
         }
-        return;
+
+        if (remoteTotalWh >= localTotalWh) return;
       }
 
-      // Writer Node: Silent Export
-      if (isWriter) {
-        const localTotalWh = getLocalWhSum();
-        const remoteTotalWh = getRemoteWhSum(remotePayload);
+      // Silent Export Check: Only executes if this device has a token AND holds higher local yield data
+      if (hasToken) {
         const whDifference = localTotalWh - remoteTotalWh;
-
-        // Detect fresh or uninitialized Gist to force an initial baseline push
         const isBrandNewGist = !remotePayload.keys || Object.keys(remotePayload.keys).length === 0;
 
         if (isBrandNewGist || whDifference >= EXPORT_THRESHOLD_WH) {
           await executeSilentExport(autoGistId, token, localTotalWh, whDifference);
-          console.log(`[AutoSync] Writer: Export completed (+${whDifference} Wh yield increase / Initial Push).`);
+          console.log(`[AutoSync] Smart-Node: Export completed (+${whDifference} Wh).`);
         }
       }
 
     } catch (err) {
-      console.warn('[AutoSync] Background sync network error:', err);
+      console.warn('[AutoSync] Network error:', err);
     }
   }
 
-  // Expose runAutoSync to the global scope for manual console execution
   window.runAutoSync = runAutoSync;
 
-  // Recursive Deep Merge helper ensuring highest numerical yield values win
+  // Helper for deep merging nested yield objects based on highest value
   function mergeDeep(target, source) {
     const output = Object.assign({}, target);
     if (isObject(target) && isObject(source)) {
@@ -1794,10 +1785,8 @@ init();
           if (!(key in target)) Object.assign(output, { [key]: source[key] });
           else output[key] = mergeDeep(target[key], source[key]);
         } else {
-          // Compare numbers to preserve highest yield value
           const targetNum = Number(target[key]);
           const sourceNum = Number(source[key]);
-
           if (!isNaN(targetNum) && !isNaN(sourceNum)) {
             output[key] = Math.max(targetNum, sourceNum);
           } else {
@@ -1813,6 +1802,7 @@ init();
     return (item && typeof item === 'object' && !Array.isArray(item));
   }
 
+  // Sends updated state to Gist via PATCH
   async function executeSilentExport(gistId, token, currentWh, whDiff) {
     const exportData = {};
     SYNC_KEYS.forEach(key => {
@@ -1860,6 +1850,7 @@ init();
     }
   }
 
+  // Maintains a rolling sync execution log
   function appendSyncLog(logKey, logEntry) {
     try {
       const raw = localStorage.getItem(logKey);
@@ -1871,66 +1862,46 @@ init();
     } catch (e) { console.warn('Log append error', e); }
   }
 
-  // Calculate local yield sum using stable cumulative key 'ecoflow_wh' (supports nested date structures)
+  // Sums local yields including nested date objects
   function getLocalWhSum() {
     try {
       const raw = localStorage.getItem('ecoflow_wh');
       if (!raw) return 0;
       const parsed = JSON.parse(raw);
       let sum = 0;
-
       if (typeof parsed === 'object' && parsed !== null) {
         Object.values(parsed).forEach(deviceData => {
           if (typeof deviceData === 'object' && deviceData !== null) {
-            Object.values(deviceData).forEach(dayWh => {
-              sum += (Number(dayWh) || 0);
-            });
-          } else {
-            sum += (Number(deviceData) || 0);
-          }
+            Object.values(deviceData).forEach(dayWh => { sum += (Number(dayWh) || 0); });
+          } else { sum += (Number(deviceData) || 0); }
         });
-      } else {
-        sum = Number(parsed) || 0;
-      }
+      } else { sum = Number(parsed) || 0; }
       return sum;
     } catch (e) { return 0; }
   }
 
-  // Calculate remote yield sum from Gist payload using cumulative key 'ecoflow_wh'
+  // Sums remote yields from payload structure
   function getRemoteWhSum(payload) {
     try {
       if (!payload || !payload.keys || !payload.keys.ecoflow_wh) return 0;
       const targetData = payload.keys.ecoflow_wh;
-
       let sum = 0;
       if (typeof targetData === 'object' && targetData !== null) {
         Object.values(targetData).forEach(deviceData => {
           if (typeof deviceData === 'object' && deviceData !== null) {
-            Object.values(deviceData).forEach(dayWh => {
-              sum += (Number(dayWh) || 0);
-            });
-          } else {
-            sum += (Number(deviceData) || 0);
-          }
+            Object.values(deviceData).forEach(dayWh => { sum += (Number(dayWh) || 0); });
+          } else { sum += (Number(deviceData) || 0); }
         });
-      } else {
-        sum = Number(targetData) || 0;
-      }
+      } else { sum = Number(targetData) || 0; }
       return sum;
     } catch (e) { return 0; }
   }
 
-  // --- BOOTSTRAP CHECK ---
-  // Do NOT start timer if auto-sync Gist ID is missing!
   const initialAutoGistId = localStorage.getItem('ecoflow_auto_gist_id');
-  if (!initialAutoGistId) {
-    return; // Completely disables auto-sync logic for inactive clients
-  }
+  if (!initialAutoGistId) return;
 
-  // Start initial trigger and recurring 15-min interval ONLY if configured
   setTimeout(runAutoSync, 3000);
   setInterval(runAutoSync, SYNC_INTERVAL_MS);
-
 })();
   
 </script>
