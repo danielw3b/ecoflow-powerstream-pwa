@@ -247,7 +247,7 @@
         letter-spacing: 0.03em;
     }
 
-    /* System Status Indicators & Colors */
+    /* System Status & Colors */
     .good { color: var(--accent);}
     .bad { color: var(--danger);}
     .warn { color: var(--warning);}
@@ -1174,7 +1174,7 @@ function getStorageKey() {
           <h3 class="table-title-warn">✅️ Efficiency Tracker</h3>
           <table>
               <thead>
-                  <tr><th>Date</th><th>Temp °C</th><th>RADN kWh/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Indicator</th></tr>
+                  <tr><th>Date</th><th>Temp °C</th><th>RADN kWh/m²</th><th>Soll | Real kWh</th><th>Eff. Ratio %</th><th>Status</th></tr>
               </thead>
               <tbody>
                   ${tableRowsHtml}
@@ -1208,7 +1208,7 @@ function getStorageKey() {
       html += `
       <div class="legend-box">
           <div class="legend-group">
-              <span class="legend-title">📋 System Indicators</span>
+              <span class="legend-title">📋 System Status</span>
               <div class="legend-items">
                   <span>✅ Optimal</span>
                   <span>🟢 Normal</span>
