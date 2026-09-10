@@ -1680,6 +1680,35 @@ fetchWeather();
 setInterval(fetchWeather, 600000);
 init();
 
+
+// Self-executing migration script for analyzer config keys
+(function autoMigrateAnalyzerConfigKeys() {
+  const CONFIG_MAPPING = {
+    'ecoflow_analyzer_config_BK01Z11ACH4G5929': 'ecoflow_analyzer_5929',
+    'ecoflow_analyzer_config_BK01Z1SACH2M3738': 'ecoflow_analyzer_3738'
+  };
+
+  Object.keys(CONFIG_MAPPING).forEach(oldKey => {
+    const newKey = CONFIG_MAPPING[oldKey];
+    const rawData = localStorage.getItem(oldKey);
+
+    if (rawData) {
+      try {
+        // Save the untouched JSON string under the new short key
+        localStorage.setItem(newKey, rawData);
+        
+        // Remove the old long-form key to clear local storage & gist payloads
+        localStorage.removeItem(oldKey);
+
+        console.log(`[Migration] Key auto-migrated: ${oldKey} -> ${newKey}`);
+      } catch (e) {
+        console.warn(`[Migration] Failed to migrate key ${oldKey}`, e);
+      }
+    }
+  });
+})();
+
+  
 // =========================================================================
 // Autonomous Background Gist Synchronization Engine (15-Minute Interval)
 // =========================================================================
