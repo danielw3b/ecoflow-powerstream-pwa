@@ -561,10 +561,13 @@
     let globalCsvRows = [];
     let globalConfig = {};
 
-    function getStorageKey() {
-        const sn = document.getElementById('cfg_inverter')?.value;
-        return sn ? `ecoflow_analyzer_${sn}` : null;;
-    }
+function getStorageKey() {
+    const sn = document.getElementById('cfg_inverter')?.value;
+    if (!sn) return null;
+    // only last 4 suffix
+    const suffix = sn.length > 4 ? sn.slice(-4) : sn;
+    return `ecoflow_analyzer_${suffix}`;
+}
         
     function initInverters() {
         const select = document.getElementById('cfg_inverter');
