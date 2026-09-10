@@ -563,7 +563,7 @@
 
     function getStorageKey() {
         const sn = document.getElementById('cfg_inverter')?.value;
-        return sn ? `ecoflow_analyzer_config_${sn}` : 'ecoflow_analyzer_config_default';
+        return sn ? `ecoflow_analyzer_${sn}` : null;;
     }
         
     function initInverters() {
