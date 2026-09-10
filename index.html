@@ -1720,8 +1720,8 @@ init();
   const SYNC_KEYS = [
     'ecoflow_wh',
     'ecoflow_wh_hourly',
-    'ecoflow_analyzer_config_BK01Z11ACH4G5929',
-    'ecoflow_analyzer_config_BK01Z1SACH2M3738'
+    'ecoflow_analyzer_3738',
+    'ecoflow_analyzer_5929'
   ];
 
   // Fetches today's sunset using local GPS config with fallback
@@ -1737,7 +1737,7 @@ init();
     }
 
     let lat = null, lon = null;
-    const rawConfig = localStorage.getItem('ecoflow_analyzer_config_BK01Z11ACH4G5929');
+    const rawConfig = localStorage.getItem('ecoflow_analyzer_3738');
     if (rawConfig) {
       try {
         const parsedConfig = JSON.parse(rawConfig);
