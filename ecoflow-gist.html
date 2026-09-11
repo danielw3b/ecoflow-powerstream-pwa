@@ -592,28 +592,32 @@
 
       adjustUIForRole();
 
-      // Prepare UI tables for both Gists
+      // Color coding for timestamps
+      const isGist1Synced = Math.abs(manualGist.contentTs - latestDataTs) < 120000 || manualGist.contentTs >= latestDataTs;
+      const isGist2Synced = autoGist && (Math.abs(autoGist.contentTs - latestDataTs) < 120000 || autoGist.contentTs >= latestDataTs);
+
+      const gist1Class = isGist1Synced ? 'txt-emerald' : 'txt-amber';
+      const gist2Class = isGist2Synced ? 'txt-emerald' : 'txt-slate';
+
+      // Prepare UI details array with dynamic timestamp styling
       const details = [
-        ['Gist 1 (Manual) Updated', manualGist.updatedAtStr],
+        ['Gist 1 (Manual) Updated', `<span class="${gist1Class}">${manualGist.updatedAtStr}</span>`],
         ['Gist 1 Size', `${manualGist.sizeKB} KB`],
       ];
 
       if (autoGist) {
-        details.push(['Gist 2 (Auto) Updated', autoGist.updatedAtStr]);
+        details.push(['Gist 2 (Auto) Updated', `<span class="${gist2Class}">${autoGist.updatedAtStr}</span>`]);
         details.push(['Gist 2 Size', `${autoGist.sizeKB} KB`]);
       }
 
-      details.push(['Local Data Time', latestDataTs ? new Date(latestDataTs).toLocaleString() : 'None']);
-      details.push(['Local Last Sync', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None']);
+      details.push(['Local Data Time', `<span class="txt-slate">${latestDataTs ? new Date(latestDataTs).toLocaleString() : 'None'}</span>`]);
+      details.push(['Local Last Sync', `<span class="txt-emerald">${localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'}</span>`]);
 
-      // Highest baseline timestamp between local memory log and cloud Gist content
-      const effectiveGistTs = Math.max(manualGist.contentTs, localSyncTs);
+      // 1. Remote Gist holds newer measurements -> User should pull
+      const isRemoteNewer = manualGist.contentTs > (localSyncTs + 5000);
 
-      // 1. Remote Gist holds significantly newer measurements -> Import
-      const isRemoteNewer = manualGist.contentTs > (localSyncTs + 10000);
-
-      // 2. Local device has fresh measurements exceeding 2 minutes (120.000 ms) buffer -> Export
-      const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (effectiveGistTs + 120000));
+      // 2. Master device generated fresh measurements after Gist 1 content -> User can push to Gist 1
+      const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 5000));
 
       if (isRemoteNewer) {
         setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
