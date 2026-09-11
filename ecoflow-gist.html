@@ -487,7 +487,23 @@
 
       const [datePart, hourPart] = latestKey.split(' ');
       const [year, month, day] = datePart.split('-').map(Number);
-      return new Date(year, month - 1, day, parseInt(hourPart, 10), 59, 59).getTime();
+      const targetHour = parseInt(hourPart, 10);
+      
+      const now = new Date();
+      const isCurrentHour = (
+        now.getFullYear() === year &&
+        now.getMonth() === (month - 1) &&
+        now.getDate() === day &&
+        now.getHours() === targetHour
+      );
+
+      // If current hour, then is now
+      if (isCurrentHour) {
+        return now.getTime();
+      }
+
+      // For past hours time is end of hour
+      return new Date(year, month - 1, day, targetHour, 59, 59).getTime();
     } catch (e) {
       return null;
     }
@@ -515,9 +531,10 @@
     }
   }
 
-  // Primary state engine: evaluates remote Gist vs local measurements
+  // Primary state engine: compares local readings against Gist 1 & Gist 2
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
+    const autoGistId = document.getElementById('autoGistId').value.trim();
     const hasToken = !!document.getElementById('githubToken').value.trim();
 
     if (!gistId) {
@@ -527,98 +544,53 @@
     }
 
     try {
-      const response = await fetch(`https://api.github.com/gists/${gistId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}: Invalid Gist ID`);
+      const [manualGist, autoGist] = await Promise.all([
+        fetchGistMetaData(gistId),
+        fetchGistMetaData(autoGistId)
+      ]);
 
-      const data = await response.json();
-      const gistUpdatedAt = new Date(data.updated_at).getTime();
+      if (!manualGist) throw new Error('Invalid Manual Gist ID');
+
       const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
-
-      const backupFile = data.files['ecoflow_backup.json'];
-      const sizeInBytes = backupFile ? backupFile.size : 0;
-      const sizeInKB = (sizeInBytes / 1024).toFixed(2);
-
-      let backupContentTs = 0;
-      let backupContentStr = 'N/A';
-      let remoteTotalWh = 0;
-
-      // Extract internal backup timestamp & total remote Wh sum
-      if (backupFile && backupFile.content) {
-        try {
-          const parsed = JSON.parse(backupFile.content);
-          if (parsed.timestamp) {
-            backupContentTs = new Date(parsed.timestamp).getTime();
-            backupContentStr = new Date(parsed.timestamp).toLocaleString();
-          }
-
-          if (parsed.keys && parsed.keys.ecoflow_wh_hourly) {
-            Object.values(parsed.keys.ecoflow_wh_hourly).forEach(deviceHours => {
-              if (typeof deviceHours === 'object' && deviceHours !== null) {
-                Object.values(deviceHours).forEach(wh => {
-                  remoteTotalWh += (Number(wh) || 0);
-                });
-              }
-            });
-          }
-        } catch (e) {}
-      }
-
       const latestDataTs = getLatestDataTimestamp();
-      const formattedLatestData = latestDataTs ? new Date(latestDataTs).toLocaleString() : 'N/A';
-      const localTotalWh = getLocalDataHashSum();
-
-      // Detect manual edits via GitHub Web UI vs automated app updates
-      const isManualGistEdit = (gistUpdatedAt - backupContentTs) > 30000;
-      const modifiedLabel = isManualGistEdit 
-        ? `${new Date(gistUpdatedAt).toLocaleString()} (Manual Edit)`
-        : new Date(gistUpdatedAt).toLocaleString();
 
       adjustUIForRole();
 
-      // Core State Decision Rules
-      const isRemoteContentNewer = backupContentTs > (localSyncTs + 20000);
-      const hasNewLocalData = hasToken && (localTotalWh > remoteTotalWh || (latestDataTs && latestDataTs > (backupContentTs + 20000)));
+      // Prepare UI tables for both Gists
+      const details = [
+        ['Gist 1 (Manual) Updated', manualGist.updatedAtStr],
+        ['Gist 1 Size', `${manualGist.sizeKB} KB`],
+      ];
 
-      if (isRemoteContentNewer) {
-        // STATE 1: Remote cloud backup contains newer data -> Trigger Import
+      if (autoGist) {
+        details.push(['Gist 2 (Auto) Updated', autoGist.updatedAtStr]);
+        details.push(['Gist 2 Size', `${autoGist.sizeKB} KB`]);
+      }
+
+      details.push(['Local Data Time', latestDataTs ? new Date(latestDataTs).toLocaleString() : 'None']);
+      details.push(['Local Last Sync', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None']);
+
+      // 1. Remote Gist holds newer measurements -> User should pull
+      const isRemoteNewer = manualGist.contentTs > (localSyncTs + 5000);
+
+      // 2. Master device generated fresh measurements after last sync -> User can push
+      const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 5000));
+
+      if (isRemoteNewer) {
         setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
-
-        renderSummary('badge badge-update', 'UPDATE AVAILABLE', 'Remote backup contains newer measurements.', [
-          ['Gist File Modified', modifiedLabel],
-          ['Backup Content Date', backupContentStr],
-          ['Gist Size', `${sizeInKB} KB`],
-          ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
-          ['Latest Data Point', formattedLatestData],
-          ['Status', '<span class="txt-sky">Import Available</span>']
-        ]);
+        details.push(['Status', '<span class="txt-sky">Import Available</span>']);
+        renderSummary('badge badge-update', 'UPDATE AVAILABLE', 'Remote backup contains newer measurements.', details);
 
       } else if (hasNewLocalData) {
-        // STATE 2: Local data is newer than Gist -> Trigger Export (Master Mode only)
-        setButtonState('btn-export', 'Update Gist', false, () => triggerExport(gistId));
-
-        const highlightedLocalData = `<span class="txt-amber">${formattedLatestData}</span>`;
-
-        renderSummary('badge badge-master', 'NEW DATA READY', 'New local readings available for upload.', [
-          ['Gist File Modified', modifiedLabel],
-          ['Backup Content Date', backupContentStr],
-          ['Gist Size', `${sizeInKB} KB`],
-          ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
-          ['Latest Data Point', highlightedLocalData],
-          ['Status', '<span class="txt-amber">Ready for Export</span>']
-        ]);
+        setButtonState('btn-export', 'Update Gist 1', false, () => triggerExport(gistId));
+        details.push(['Status', '<span class="txt-amber">Ready for Export</span>']);
+        renderSummary('badge badge-master', 'NEW DATA READY', 'New local yield readings ready for Cloud Patch.', details);
 
       } else {
-        // STATE 3: Local storage and Gist are in full sync
+        // 3. Fully in sync
         setButtonState('btn-disabled', 'Local Data Synced', true, null);
-
-        renderSummary('badge badge-synced', 'SYNCED', 'Local data is up-to-date with Gist cloud.', [
-          ['Gist File Modified', modifiedLabel],
-          ['Backup Content Date', backupContentStr],
-          ['Gist Size', `${sizeInKB} KB`],
-          ['Local Sync State', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'],
-          ['Latest Data Point', formattedLatestData],
-          ['Status', '<span class="txt-emerald">Fully Synced</span>']
-        ]);
+        details.push(['Status', '<span class="txt-emerald">Fully Synced</span>']);
+        renderSummary('badge badge-synced', 'SYNCED', 'Local storage is aligned with Gist Cloud.', details);
       }
 
     } catch (err) {
