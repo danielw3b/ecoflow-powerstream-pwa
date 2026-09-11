@@ -36,6 +36,7 @@ No server required — runs entirely in your browser. (Requirements: EcoFlow Dev
 - **Editable device names** — stored in localStorage
 - **No server** — pure browser app, all data stays on your device
 - **Dark theme** — high contrast, readable in direct sunlight
+- **Dual-Gist Multi-Device Sync** — Anonymized background cloud sync via GitHub Gists (Auto-Gist for daily yield baselines & Manual-Gist for adjustment) with Gzip compression support.
 
 ## Requirements
 
@@ -78,24 +79,35 @@ All settings are stored in `localStorage` — nothing leaves your device.
 ### Architecture
 ```
 EcoFlow STREAM Inverters
-    ↓ MQTT (protobuf)
-EcoFlow Cloud Broker  (mqtt-e.ecoflow.com)
+    ↓ MQTT (protobuf / JSON)
+EcoFlow Cloud Broker (mqtt-e.ecoflow.com)
     ↓ MQTT over WebSocket (wss port 8084)
-index.html (browser)
+index.html (PWA Instance / Writer Node)
     ├── HMAC-SHA256 signing (Web Crypto API)
-    ├── REST API calls (device list, MQTT credentials)
-    ├── Canvas charts (power + energy history)
-    └── localStorage (Wh history, device names, config)
+    ├── REST API calls & Canvas charts
+    ├── LocalStorage (Wh history, device configs)
+    └── Background Sync Engine (Dual-Gist)
+            ├── Auto-Gist (Sunset-driven baseline patches & threshold checks)
+            └── Manual Backup Gist (Manual sync, state overrides & adjustments)
+                    ↓ HTTPS (GitHub Gist API + Gzip)
+              GitHub Gist (Anonymized Cloud Buffer)
+                    ↓ HTTPS Auto-Import
+              Other Reader / Writer Devices (Tablets, Browsers)
 ```
 
 ![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture.svg)
+<br><sub><b>1st PWA Architecture</sub
+
+![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture_gist.svg)
+<br><sub><b>2nd PWA Architecture</sub
 
 ### API Used
 - `GET /iot-open/sign/device/list` — fetch devices + online status
 - `GET /iot-open/sign/certification` — get MQTT broker credentials
 - MQTT topic `subscribe`: `/open/${certificateAccount}/${sn}/quota` — live telemetry (JSON)
 - MQTT topic `subscribe`: `/open/${certificateAccount}/${sn}/status` — online/offline events
-- [Open-Meteo](https://open-meteo.com) — weather (no key required)
+- **GitHub Gist API** (`PATCH /gists/{gist_id}`, `GET /gists/{gist_id}`) — automated background yield patches & state updates
+- [Open-Meteo](https://open-meteo.com) — weather forecast and daily sunset times (no key required)
 
 ### Real Device Field Names
 The STREAM inverter sends different field names than the official documentation:
@@ -131,15 +143,37 @@ Wh values are accumulated locally using the trapezoid method:
 
 ## AI Assistant Reference
 
-This project was built collaboratively with **Claude** (Anthropic) over an extended conversation including:
+This project was built on may collaboratively with **Claude** (Anthropic) and later with **Gemini** over an extended conversation including:
 - Reverse engineering the EcoFlow STREAM MQTT protocol and real device field names
 - Debugging MQTT broker authentication (open API vs consumer API)
 - Designing the single-file PWA architecture with no server dependency
 - Iterative UI development based on real-world mobile testing
 
 Claude's assistance was instrumental in navigating undocumented API behaviour and building a production-quality app from scratch. Model used: Claude Sonnet (claude.ai).
+Since then also **Gemini**, Google’s primary conversational and agentic AI assistant was involved for future modifications and improvements.
 
-At the end also **Gemini**, Google’s primary conversational and agentic AI assistant was involved.
+Since then, **Gemini** (Google’s multimodal AI model) was extensively involved in expanding the project's capabilities, focusing on:
+- Architecting the **Dual-Gist background synchronization engine** for multi-device harmony (Phone Writer vs. Tablet Reader nodes)
+- Designing smart differential sync triggers (`isNewDay` daily resets, sunset-driven baselines, and `EXPORT_THRESHOLD_WH` throttling)
+- Implementing local data anonymization (`ecoflow_analyzer_[4-digit-SN]`) and Gzip stream compression optimizations
+- Refining multi-node deep merging logic (`mergeDeep()`) to prevent race conditions and payload loss across devices
+
+## Development History & Milestones
+
+1. **Performance & Energy Efficiency Optimization**
+   Decoupled live telemetry processing from storage and rendering tasks. Introduced dedicated UI timers: `saveWh()` throttled to 30-second intervals to minimize LocalStorage I/O, and `renderChart()` running on a 10-second cycle. This significantly reduced CPU usage and battery consumption on mobile devices.
+
+2. **Single-File PWA Foundation (`index.html`)**
+   Iterative enhancement of the core PWA architecture, incorporating lightweight, highly optimized features such as standalone PWA support, Canvas-based rendering, and client-side HMAC Web Crypto API signing.
+
+3. **Manual Syncing & Merging Utilities**
+   Built initial multi-device support tools (`sync-tool.html` and `sync-merge.html`) for manual data exports and basic merging across devices without complex dependency overhead.
+
+4. **Anomaly & Multi-Device Analyzer**
+   Developed analytics tools to inspect daily yield anomalies and enable cross-device telemetry comparisons for multi-inverter setups.
+
+5. **Automated Dual-Gist Cloud Sync & Deep Merge Engine**
+   Evolved the ecosystem into an automated distributed network using GitHub Gist API. Introduced background cloud sync with Gzip compression, local key anonymization (`ecoflow_analyzer_[4-digit-SN]`), intelligent differential triggers (`isNewDay`, sunset baselines, dynamic Wh thresholds), and robust multi-node conflict resolution via `mergeDeep()`.
 
 ## License
 
