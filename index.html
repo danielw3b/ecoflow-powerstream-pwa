@@ -1676,7 +1676,7 @@ init();
 (function initGistBackgroundSync() {
   const SYNC_INTERVAL_MS = 15 * 60 * 1000;
   const EXPORT_THRESHOLD_WH = 100;
-  const MAX_LOG_ENTRIES = 200;
+  const MAX_LOG_ENTRIES = 40;
 
   const SYNC_KEYS = [
     'ecoflow_wh',
@@ -1726,7 +1726,7 @@ init();
     }
 
     const fallback = new Date();
-    fallback.setHours(20, 0, 0, 0);
+    fallback.setHours(21, 0, 0, 0);
     return fallback;
   }
 
