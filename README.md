@@ -96,10 +96,10 @@ index.html (PWA Instance / Writer Node)
 ```
 
 ![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture.svg)
-<br><sub><b>1st PWA Architecture</sub
+<br><sub><b>1st PWA Architecture without Gist</sub>
 
 ![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture_gist.svg)
-<br><sub><b>2nd PWA Architecture</sub
+<br><sub><b>2nd PWA Architecture with Gist</sub>
 
 ### API Used
 - `GET /iot-open/sign/device/list` — fetch devices + online status
