@@ -509,6 +509,39 @@
     }
   }
 
+  // Fetch metadata helper for single Gist
+  async function fetchGistMetaData(id) {
+    if (!id) return null;
+    try {
+      const res = await fetch(`https://api.github.com/gists/${id}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      
+      const backupFile = data.files['ecoflow_backup.json'];
+      let contentTs = 0;
+
+      if (backupFile && backupFile.content) {
+        try {
+          const parsed = JSON.parse(backupFile.content);
+          if (parsed.timestamp) {
+            contentTs = new Date(parsed.timestamp).getTime();
+          }
+        } catch (e) {}
+      }
+
+      return {
+        id: id,
+        updatedAt: new Date(data.updated_at).getTime(),
+        updatedAtStr: new Date(data.updated_at).toLocaleString(),
+        sizeKB: backupFile ? (backupFile.size / 1024).toFixed(2) : '0',
+        contentTs: contentTs,
+        contentTsStr: contentTs ? new Date(contentTs).toLocaleString() : 'N/A'
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+  
   // Calculate total local Wh count to detect new data even within the same hour bucket
   function getLocalDataHashSum() {
     const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
