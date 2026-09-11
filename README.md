@@ -48,10 +48,7 @@ No server required — runs entirely in your browser. (Requirements: EcoFlow Dev
 ## Quick Start
 
 ### Option A — Open directly (simplest)
-
-[▶ Try directly live](https://danielw3b.github.io/ecoflow-powerstream-pwa/)
-
-Or:
+[▶ Try directly live](https://danielw3b.github.io/ecoflow-powerstream-pwa/) Or:
 
 1. Download `index.html`
 2. Open it in Chrome on Android using a local HTTP server app (e.g. *HTTP Server* by paw.app)
