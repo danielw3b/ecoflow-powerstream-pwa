@@ -517,7 +517,10 @@
       if (!res.ok) return null;
       const data = await res.json();
       
-      const backupFile = data.files['ecoflow_backup.json'];
+      // Target specific backup files for Gist 1 & Gist 2, or fallback to first available file
+      const files = Object.values(data.files || {});
+      const backupFile = data.files['ecoflow_backup.json'] || data.files['ecoflow_auto_backup.json'] || files[0];
+      
       let contentTs = 0;
 
       if (backupFile && backupFile.content) {
