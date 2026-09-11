@@ -141,30 +141,15 @@ Wh values are accumulated locally using the trapezoid method:
 - Month/Year: aggregated from daily data
 - Persisted in `localStorage` — survives page reloads and app restarts
 
-## AI Assistant Reference
+----------------------------------------------------------------------------------------------
 
-This project was built on may collaboratively with **Claude** (Anthropic) and later with **Gemini** over an extended conversation including:
-- Reverse engineering the EcoFlow STREAM MQTT protocol and real device field names
-- Debugging MQTT broker authentication (open API vs consumer API)
-- Designing the single-file PWA architecture with no server dependency
-- Iterative UI development based on real-world mobile testing
+### Development History & Milestones
 
-Claude's assistance was instrumental in navigating undocumented API behaviour and building a production-quality app from scratch. Model used: Claude Sonnet (claude.ai).
-Since then also **Gemini**, Google’s primary conversational and agentic AI assistant was involved for future modifications and improvements.
-
-Since then, **Gemini** (Google’s multimodal AI model) was extensively involved in expanding the project's capabilities, focusing on:
-- Architecting the **Dual-Gist background synchronization engine** for multi-device harmony (Phone Writer vs. Tablet Reader nodes)
-- Designing smart differential sync triggers (`isNewDay` daily resets, sunset-driven baselines, and `EXPORT_THRESHOLD_WH` throttling)
-- Implementing local data anonymization (`ecoflow_analyzer_[4-digit-SN]`) and Gzip stream compression optimizations
-- Refining multi-node deep merging logic (`mergeDeep()`) to prevent race conditions and payload loss across devices
-
-## Development History & Milestones
-
-1. **Performance & Energy Efficiency Optimization**
-   Decoupled live telemetry processing from storage and rendering tasks. Introduced dedicated UI timers: `saveWh()` throttled to 30-second intervals to minimize LocalStorage I/O, and `renderChart()` running on a 10-second cycle. This significantly reduced CPU usage and battery consumption on mobile devices.
-
-2. **Single-File PWA Foundation (`index.html`)**
+1. **Single-File PWA Foundation (`index.html`)**
    Iterative enhancement of the core PWA architecture, incorporating lightweight, highly optimized features such as standalone PWA support, Canvas-based rendering, and client-side HMAC Web Crypto API signing.
+
+2. **Performance & Energy Efficiency Optimization**
+   Decoupled live telemetry processing from storage and rendering tasks. Introduced dedicated UI timers: `saveWh()` throttled to 30-second intervals to minimize LocalStorage I/O, and `renderChart()` running on a 10-second cycle. This significantly reduced CPU usage and battery consumption on mobile devices.
 
 3. **Manual Syncing & Merging Utilities**
    Built initial multi-device support tools (`sync-tool.html` and `sync-merge.html`) for manual data exports and basic merging across devices without complex dependency overhead.
@@ -174,6 +159,23 @@ Since then, **Gemini** (Google’s multimodal AI model) was extensively involved
 
 5. **Automated Dual-Gist Cloud Sync & Deep Merge Engine**
    Evolved the ecosystem into an automated distributed network using GitHub Gist API. Introduced background cloud sync with Gzip compression, local key anonymization (`ecoflow_analyzer_[4-digit-SN]`), intelligent differential triggers (`isNewDay`, sunset baselines, dynamic Wh thresholds), and robust multi-node conflict resolution via `mergeDeep()`.
+
+## AI Assistant Reference
+
+This project was built in may 2026 collaboratively with **Claude** (Anthropic) and later with **Gemini** over an extended conversation including:
+- Reverse engineering the EcoFlow STREAM MQTT protocol and real device field names
+- Debugging MQTT broker authentication (open API vs consumer API)
+- Designing the single-file PWA architecture with no server dependency
+- Iterative UI development based on real-world mobile testing
+
+Claude's assistance was instrumental in navigating undocumented API behaviour and building a production-quality app from scratch. Model used: Claude Sonnet (claude.ai).
+
+**Gemini** (Google’s multimodal AI model) was extensively involved in expanding the project's capabilities, focusing on:
+- Decoupled live telemetry processing from storage and rendering tasks.
+- Architecting the **Dual-Gist background synchronization engine** for multi-device harmony (Phone Writer vs. Tablet Reader nodes)
+- Designing smart differential sync triggers (`isNewDay` daily resets, sunset-driven baselines, and `EXPORT_THRESHOLD_WH` throttling)
+- Implementing local data anonymization (`ecoflow_analyzer_[4-digit-SN]`) and Gzip stream compression optimizations
+- Refining multi-node deep merging logic (`mergeDeep()`) to prevent race conditions and payload loss across devices
 
 ## License
 
