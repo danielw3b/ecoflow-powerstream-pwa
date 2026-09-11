@@ -98,11 +98,9 @@ index.html (PWA Instance / Writer Node)
               Other Reader / Writer Devices (Tablets, Browsers)
 ```
 
-**PWA Architecture without Gist-ID**
+**PWA Architecture with Gist-ID**
 ![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture.svg)
-
-**PWA Architecture without Gist-ID**
-![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture_gist.svg)
+<sub>PWA works also without synchronisation to Gist.</sub>
 
 ### API Used
 - `GET /iot-open/sign/device/list` — fetch devices + online status
