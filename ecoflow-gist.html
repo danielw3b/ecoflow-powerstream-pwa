@@ -508,16 +508,38 @@
       return null;
     }
   }
+  
+  // Calculate total local Wh count to detect new data even within the same hour bucket
+  function getLocalDataHashSum() {
+    const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
+    if (!hourlyRaw) return 0;
+    
+    try {
+      const hourlyData = JSON.parse(hourlyRaw);
+      let totalWh = 0;
+      
+      Object.values(hourlyData).forEach(deviceHours => {
+        if (typeof deviceHours === 'object' && deviceHours !== null) {
+          Object.values(deviceHours).forEach(wh => {
+            totalWh += (Number(wh) || 0);
+          });
+        }
+      });
+      return totalWh;
+    } catch (e) {
+      return 0;
+    }
+  }
 
-  // Fetch metadata helper for single Gist
+  // Fetch metadata helper for single Gist with Cache-Busting
   async function fetchGistMetaData(id) {
     if (!id) return null;
     try {
-      const res = await fetch(`https://api.github.com/gists/${id}`);
+      // Added cache-buster (?_t=...) to bypass GitHub API CDN delay
+      const res = await fetch(`https://api.github.com/gists/${id}?_t=${Date.now()}`);
       if (!res.ok) return null;
       const data = await res.json();
       
-      // Target specific backup files for Gist 1 & Gist 2, or fallback to first available file
       const files = Object.values(data.files || {});
       const backupFile = data.files['ecoflow_backup.json'] || data.files['ecoflow_auto_backup.json'] || files[0];
       
@@ -542,28 +564,6 @@
       };
     } catch (e) {
       return null;
-    }
-  }
-  
-  // Calculate total local Wh count to detect new data even within the same hour bucket
-  function getLocalDataHashSum() {
-    const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
-    if (!hourlyRaw) return 0;
-    
-    try {
-      const hourlyData = JSON.parse(hourlyRaw);
-      let totalWh = 0;
-      
-      Object.values(hourlyData).forEach(deviceHours => {
-        if (typeof deviceHours === 'object' && deviceHours !== null) {
-          Object.values(deviceHours).forEach(wh => {
-            totalWh += (Number(wh) || 0);
-          });
-        }
-      });
-      return totalWh;
-    } catch (e) {
-      return 0;
     }
   }
 
@@ -606,11 +606,14 @@
       details.push(['Local Data Time', latestDataTs ? new Date(latestDataTs).toLocaleString() : 'None']);
       details.push(['Local Last Sync', localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None']);
 
-      // 1. Remote Gist holds newer measurements -> User should pull
-      const isRemoteNewer = manualGist.contentTs > (localSyncTs + 5000);
+      // Highest baseline timestamp between local memory log and cloud Gist content
+      const effectiveGistTs = Math.max(manualGist.contentTs, localSyncTs);
 
-      // 2. Master device generated fresh measurements after last sync -> User can push
-      const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 5000));
+      // 1. Remote Gist holds significantly newer measurements -> Import
+      const isRemoteNewer = manualGist.contentTs > (localSyncTs + 10000);
+
+      // 2. Local device has fresh measurements exceeding 2 minutes (120.000 ms) buffer -> Export
+      const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (effectiveGistTs + 120000));
 
       if (isRemoteNewer) {
         setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
