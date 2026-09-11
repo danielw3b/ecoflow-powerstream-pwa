@@ -45,11 +45,14 @@ No server required — runs entirely in your browser. (Requirements: EcoFlow Dev
 - EcoFlow PowerStream MicroInverter (STREAM series, 600W or 800W)
 - Modern browser (Chrome 84+, Edge, Brave)
 
-[▶ Try directly live](https://danielw3b.github.io/ecoflow-powerstream-pwa/)
-
 ## Quick Start
 
 ### Option A — Open directly (simplest)
+
+[▶ Try directly live](https://danielw3b.github.io/ecoflow-powerstream-pwa/)
+
+Or:
+
 1. Download `index.html`
 2. Open it in Chrome on Android using a local HTTP server app (e.g. *HTTP Server* by paw.app)
 3. Tap **⚙** → enter your Access Key and Secret Key → **Connect**
@@ -95,11 +98,11 @@ index.html (PWA Instance / Writer Node)
               Other Reader / Writer Devices (Tablets, Browsers)
 ```
 
+**PWA Architecture without Gist-ID**
 ![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture.svg)
-<br><sub>1st PWA Architecture without Gist</sub>
 
+**PWA Architecture without Gist-ID**
 ![EcoFlow Monitor Screenshot](ecoflow_pwa_architecture_gist.svg)
-<br><sub>2nd PWA Architecture with Gist</sub>
 
 ### API Used
 - `GET /iot-open/sign/device/list` — fetch devices + online status
@@ -140,6 +143,7 @@ Wh values are accumulated locally using the trapezoid method:
 - Day view: last 30 days
 - Month/Year: aggregated from daily data
 - Persisted in `localStorage` — survives page reloads and app restarts
+- Synchronisation/Patch with Gist-ID and Github Token in LocalStorage
 
 ----------------------------------------------------------------------------------------------
 
@@ -155,10 +159,11 @@ Wh values are accumulated locally using the trapezoid method:
    Built initial multi-device support tools (`sync-tool.html` and `sync-merge.html`) for manual data exports and basic merging across devices without complex dependency overhead.
 
 4. **Anomaly & Multi-Device Analyzer**
-   Developed analytics tools to inspect daily yield anomalies and enable cross-device telemetry comparisons for multi-inverter setups.
+   Developed analytics tools (ecoflow-analyzer.html, ecoflow-multi-analyzer.html) to inspect daily yield anomalies and enable cross-device telemetry comparisons for multi-inverter setups.
 
 5. **Automated Dual-Gist Cloud Sync & Deep Merge Engine**
-   Evolved the ecosystem into an automated distributed network using GitHub Gist API. Introduced background cloud sync with Gzip compression, local key anonymization (`ecoflow_analyzer_[4-digit-SN]`), intelligent differential triggers (`isNewDay`, sunset baselines, dynamic Wh thresholds), and robust multi-node conflict resolution via `mergeDeep()`.
+   Evolved the ecosystem into an automated distributed network using GitHub Gist API.
+   Introduced background cloud sync with Gzip compression, intelligent differential triggers (`isNewDay`, sunset baselines, dynamic Wh thresholds), and robust multi-node conflict resolution via `mergeDeep()`.
 
 ## AI Assistant Reference
 
