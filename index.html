@@ -215,6 +215,7 @@ canvas{width:100%;display:block;}
   <!-- Devices grid -->
   <div class="section-title">
     <span>DEVICES</span>
+    <span id="syncTimestamp" class="sync-time-label"></span>
   </div>
   <div class="devices-grid" id="devicesGrid">
     <div data-placeholder style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);
@@ -1681,7 +1682,6 @@ renderWhChart();
 fetchWeather();
 setInterval(fetchWeather, 600000);
 init();
-
  
 // ── Autonomous Background Gist Synchronization Engine (15-Minute Interval)
 (function initGistBackgroundSync() {
@@ -1799,6 +1799,13 @@ init();
             loadWh();
             console.log('[AutoSync] Smart-Node: Remote data imported & loadWh() executed.');
           }
+
+          // Dynamic UI Update: Update Timestamp label after successful Import
+          const syncLabel = document.getElementById("syncTimestamp");
+          if (syncLabel && typeof fmtTime === "function") {
+            const importTs = new Date(remotePayload.timestamp || data.updated_at).getTime();
+            syncLabel.textContent = `· ${fmtTime(importTs)} synced`;
+          }
         }
 
         if (remoteTotalWh >= localTotalWh) return;
@@ -1906,6 +1913,12 @@ init();
         totalWh: currentWh, 
         diffWh: whDiff 
       });
+
+      // Dynamic UI Update: Safe local time calculation after successful Export
+      const syncLabel = document.getElementById("syncTimestamp");
+      if (syncLabel && typeof fmtTime === "function") {
+        syncLabel.textContent = `· ${fmtTime(new Date(nowIso).getTime())} synced`;
+      }
     }
   }
 
