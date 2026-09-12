@@ -1706,7 +1706,7 @@ init();
       const timeStr = date.toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: !USE_24H
+        hourCycle: USE_24H ? 'h23' : 'h12'
       });
       syncLabel.textContent = `⇄ ${timeStr}`;
     }
