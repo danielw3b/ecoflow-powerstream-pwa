@@ -1538,21 +1538,6 @@ function downloadHistory(snFilter) {
   });
   a.click(); URL.revokeObjectURL(a.href);
 }
-// ── Time formatting — follows browser/OS locale (12h or 24h automatically) ───
-/*const USE_24H = (() => {
-  const test = new Intl.DateTimeFormat(navigator.language, { hour: "numeric" })
-    .format(new Date(2000, 0, 1, 13, 0, 0));
-  return !test.includes("1") || test.includes("13"); 
-})();
-
-function fmtTime(date) {
-  return date.toLocaleTimeString(navigator.language, {
-    hour:   "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: !USE_24H ? false : undefined
-  });
-}*/
 
 // ── Time formatting — follows system/OS preferences (12h or 24h automatically) ───
 const USE_24H = (() => {
@@ -1713,7 +1698,7 @@ init();
     'ecoflow_analyzer_5929'
   ];
 
-  // Helper function to update the UI sync timestamp label (without seconds)
+  // Helper function to update the UI sync timestamp
   function updateSyncLabel(isoString) {
     const syncLabel = document.getElementById("syncTimestamp");
     if (!syncLabel || !isoString) return;
@@ -1726,6 +1711,9 @@ init();
         hour12: !USE_24H
       });
       syncLabel.textContent = `⇄ ${timeStr}`;
+      // Direct call to fmtTime ensures identical formatting (including seconds)
+      //syncLabel.textContent = `⇄ ${fmtTime(date)}`;
+      syncLabel.title =  `Synced ⇄: ${fmtTime(date)}`;
     }
   }
 
