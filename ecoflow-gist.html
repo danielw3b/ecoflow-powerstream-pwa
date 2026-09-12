@@ -433,6 +433,7 @@
 
     document.getElementById('autoGistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_auto_gist_id', e.target.value.trim());
+      checkGistStatus();
     });
 
     document.getElementById('gzipCompress').addEventListener('change', (e) => {
@@ -710,7 +711,7 @@
   function renderSummary(badgeClass, badgeText, message, details) {
     const badgeContainer = document.getElementById('statusBadgeContainer');
     const content = document.getElementById('summaryContent');
-    const autoGistId = document.getElementById('autoGistId').value.trim();
+    const autoGistId = document.getElementById('autoGistId')?.value.trim();
 
     badgeContainer.innerHTML = `<span class="${badgeClass}">${badgeText}</span>`;
 
@@ -721,7 +722,7 @@
       </tr>
     `).join('');
 
-    // Optional Auto-Engine tag if autoGistId is configured
+    // green if autoGistId
     const autoEngineNotice = autoGistId 
       ? `<div style="margin-top: 4px; font-size: 0.75rem; color: var(--emerald-light); font-weight: 600;">✓ Auto-Sync Engine (Gist 2) Active</div>` 
       : '';
