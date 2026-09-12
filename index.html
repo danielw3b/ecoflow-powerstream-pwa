@@ -1539,7 +1539,7 @@ function downloadHistory(snFilter) {
   a.click(); URL.revokeObjectURL(a.href);
 }
 // ── Time formatting — follows browser/OS locale (12h or 24h automatically) ───
-const USE_24H = (() => {
+/*const USE_24H = (() => {
   const test = new Intl.DateTimeFormat(navigator.language, { hour: "numeric" })
     .format(new Date(2000, 0, 1, 13, 0, 0));
   return !test.includes("1") || test.includes("13"); 
@@ -1551,6 +1551,22 @@ function fmtTime(date) {
     minute: "2-digit",
     second: "2-digit",
     hour12: !USE_24H ? false : undefined
+  });
+}*/
+
+// ── Time formatting — follows browser/OS locale (12h or 24h automatically) ───
+const USE_24H = (() => {
+  const test = new Intl.DateTimeFormat(navigator.language, { hour: "numeric" })
+    .format(new Date(2000, 0, 1, 13, 0, 0));
+  return !test.includes("1") || test.includes("13"); 
+})();
+
+function fmtTime(date) {
+  return date.toLocaleTimeString(navigator.language, {
+    hour:   "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: USE_24H ? "h23" : "h12"
   });
 }
 
@@ -1696,17 +1712,17 @@ init();
     'ecoflow_analyzer_5929'
   ];
 
-  // Helper function to update the UI sync timestamp label without seconds
+  // Helper function to update the UI sync timestamp label (without seconds)
   function updateSyncLabel(isoString) {
     const syncLabel = document.getElementById("syncTimestamp");
     if (!syncLabel || !isoString) return;
 
     const date = new Date(isoString);
     if (!isNaN(date.getTime())) {
-      const timeStr = date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: USE_24H ? 'h23' : 'h12'
+      const timeStr = date.toLocaleTimeString(navigator.language, {
+        hour:   "2-digit",
+        minute: "2-digit",
+        hourCycle: USE_24H ? "h23" : "h12"
       });
       syncLabel.textContent = `⇄ ${timeStr}`;
     }
