@@ -1540,7 +1540,7 @@ function downloadHistory(snFilter) {
 }
 
 // ── Time formatting — follows system/OS preferences (12h or 24h automatically) ───
-const USE_24H = (() => {
+/*const USE_24H = (() => {
   // Pass [] to test against user's actual OS/Browser locale preference instead of fixed en-US rules
   const test = new Intl.DateTimeFormat([], { hour: "numeric" })
     .format(new Date(2000, 0, 1, 13, 0, 0));
@@ -1553,6 +1553,22 @@ function fmtTime(date) {
     minute: "2-digit",
     second: "2-digit",
     hour12: !USE_24H
+  });
+}*/
+
+// ── Time formatting — checks system preferences globally ───────────────────
+const USE_24H = (() => {
+  const test = new Intl.DateTimeFormat([], { hour: "numeric" })
+    .format(new Date(2000, 0, 1, 13, 0, 0));
+  return !test.includes("1") || test.includes("13"); 
+})();
+
+function fmtTime(date) {
+  return date.toLocaleTimeString(navigator.language, {
+    hour:   "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: USE_24H ? "h23" : "h12"
   });
 }
 
@@ -1698,8 +1714,28 @@ init();
     'ecoflow_analyzer_5929'
   ];
 
-  // Helper function to update the UI sync timestamp
+  // Helper function to update the UI sync timestamp label
   function updateSyncLabel(isoString) {
+    const syncLabel = document.getElementById("syncTimestamp");
+    if (!syncLabel || !isoString) return;
+
+    const date = new Date(isoString);
+    if (!isNaN(date.getTime())) {
+      // 1. Text im Header: Ohne Sekunden (nutzt h23, falls System 24h fordert)
+      const timeStr = date.toLocaleTimeString(navigator.language, {
+        hour:   "2-digit",
+        minute: "2-digit",
+        hourCycle: USE_24H ? "h23" : "h12"
+      });
+      syncLabel.textContent = `⇄ ${timeStr}`;
+      // Direct call to fmtTime ensures identical formatting (including seconds)
+      //syncLabel.textContent = `⇄ ${fmtTime(date)}`;
+      syncLabel.title =  `Synced: ${fmtTime(date)}`;
+    }
+  }
+  
+  // Helper function to update the UI sync timestamp
+  /*function updateSyncLabel(isoString) {
     const syncLabel = document.getElementById("syncTimestamp");
     if (!syncLabel || !isoString) return;
 
@@ -1715,7 +1751,7 @@ init();
       //syncLabel.textContent = `⇄ ${fmtTime(date)}`;
       syncLabel.title =  `Synced ⇄: ${fmtTime(date)}`;
     }
-  }
+  }*/
 
   // Fetches today's sunset using local GPS config with fallback
   async function getOrFetchSunset() {
