@@ -533,7 +533,21 @@
     }
   }
 
-  // Fetch metadata helper for single Gist with Cache-Busting
+  // Universal 24-hour formatter for all platforms (forces 24h on Android/Chromium)
+  function format24h(ts) {
+    if (!ts) return 'None';
+    return new Date(ts).toLocaleString([], {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    });
+  }
+
+  // Fetch metadata helper with raw content fallback for truncated Gist files
   async function fetchGistMetaData(id) {
     if (!id) return null;
     try {
@@ -546,17 +560,26 @@
       
       let contentTs = 0;
 
-      // Extract internal timestamp from backup JSON payload
-      if (backupFile && backupFile.content) {
-        try {
-          const parsed = JSON.parse(backupFile.content);
-          if (parsed.timestamp) {
-            contentTs = new Date(parsed.timestamp).getTime();
-          }
-        } catch (e) {}
+      if (backupFile) {
+        let rawContent = backupFile.content;
+
+        // If GitHub truncated the content, fetch the raw JSON directly
+        if (!rawContent && backupFile.raw_url) {
+          const rawRes = await fetch(`${backupFile.raw_url}?_t=${Date.now()}`);
+          if (rawRes.ok) rawContent = await rawRes.text();
+        }
+
+        if (rawContent) {
+          try {
+            const parsed = JSON.parse(rawContent);
+            if (parsed.timestamp) {
+              contentTs = new Date(parsed.timestamp).getTime();
+            }
+          } catch (e) {}
+        }
       }
 
-      // Fallback to GitHub API updated_at if internal timestamp missing
+      // Fallback to GitHub API updated_at if internal payload timestamp is missing
       if (!contentTs) {
         contentTs = new Date(data.updated_at).getTime();
       }
@@ -564,17 +587,17 @@
       return {
         id: id,
         updatedAt: new Date(data.updated_at).getTime(),
-        updatedAtStr: new Date(data.updated_at).toLocaleString(),
+        updatedAtStr: format24h(data.updated_at),
         sizeKB: backupFile ? (backupFile.size / 1024).toFixed(2) : '0',
         contentTs: contentTs,
-        contentTsStr: contentTs ? new Date(contentTs).toLocaleString() : 'N/A'
+        contentTsStr: format24h(contentTs)
       };
     } catch (e) {
       return null;
     }
   }
-
-  // Primary state engine: compares local readings against Gist 1 & Gist 2
+  
+  // Primary state engine: compares local readings against Gist 1 & Gist 2 with role isolation
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
     const autoGistId = document.getElementById('autoGistId').value.trim();
@@ -607,41 +630,45 @@
       const gist2Class = isGist2Synced ? 'txt-emerald' : 'txt-slate';
 
       const details = [
-        ['Gist 1 (Manual) Updated', `<span class="${gist1Class}">${manualGist.updatedAtStr}</span>`],
+        ['Gist 1 (Manual) Updated', `<span class="${gist1Class}">${format24h(manualGist.contentTs)}</span>`],
         ['Gist 1 Size', `${manualGist.sizeKB} KB`],
       ];
 
       if (autoGist) {
-        details.push(['Gist 2 (Auto) Updated', `<span class="${gist2Class}">${autoGist.updatedAtStr}</span>`]);
+        details.push(['Gist 2 (Auto) Updated', `<span class="${gist2Class}">${format24h(autoGist.contentTs)}</span>`]);
         details.push(['Gist 2 Size', `${autoGist.sizeKB} KB`]);
       }
 
-      details.push(['Local Data Time', `<span class="txt-slate">${latestDataTs ? new Date(latestDataTs).toLocaleString() : 'None'}</span>`]);
-      details.push(['Local Last Sync', `<span class="txt-emerald">${localSyncTs ? new Date(localSyncTs).toLocaleString() : 'None'}</span>`]);
+      details.push(['Local Data Time', `<span class="txt-slate">${format24h(latestDataTs)}</span>`]);
+      details.push(['Local Last Sync', `<span class="txt-emerald">${format24h(localSyncTs)}</span>`]);
 
-      // State flags
+      // State flags (with 5-second buffer against millisecond clock drift)
       const isRemoteNewer = manualGist.contentTs > (localSyncTs + 5000);
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 5000));
       const hasAutoEngine = !!autoGistId;
 
-      if (isRemoteNewer) {
-        // Priority 1: Gist 1 holds a newer manual backup -> Pull available
+      // 1. WRITER LOGIC: Writer device fully aligned after export (prevents self-triggering import)
+      if (hasToken && !hasNewLocalData && !isRemoteNewer) {
+        const btnText = hasAutoEngine ? 'Synced via Auto Engine (Gist 2)' : 'Local Data Synced';
+        setButtonState('btn-disabled', btnText, true, null);
+        details.push(['Status', '<span class="txt-emerald">Fully Synced</span>']);
+        renderSummary('badge badge-synced', 'SYNCED', 'Local storage is aligned with Gist Cloud.', details);
+
+      // 2. READER / IMPORT LOGIC: Remote Gist 1 holds newer manual backup -> Pull available
+      } else if (isRemoteNewer) {
         setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
         details.push(['Status', '<span class="txt-sky">Import Available</span>']);
         renderSummary('badge badge-update', 'UPDATE AVAILABLE', 'Remote backup contains newer measurements.', details);
 
+      // 3. WRITER EXPORT LOGIC: Fresh local measurements ready to be pushed to Gist 1
       } else if (hasNewLocalData) {
-        // Priority 2: Writer has new local data -> Push to Gist 1 available
         setButtonState('btn-export', 'Update Gist 1', false, () => triggerExport(gistId));
         details.push(['Status', '<span class="txt-amber">Ready for Export</span>']);
         renderSummary('badge badge-master', 'NEW DATA READY', 'New local yield readings ready for Cloud Patch.', details);
 
+      // 4. FALLBACK / READERS FULLY SYNCED
       } else {
-        // Priority 3: Fully synced -> Display contextual info on disabled button
-        const btnText = hasAutoEngine 
-          ? 'Synced via Auto Engine (Gist 2)' 
-          : 'Local Data Synced';
-
+        const btnText = hasAutoEngine ? 'Synced via Auto Engine (Gist 2)' : 'Local Data Synced';
         setButtonState('btn-disabled', btnText, true, null);
         details.push(['Status', '<span class="txt-emerald">Fully Synced</span>']);
         renderSummary('badge badge-synced', 'SYNCED', 'Local storage is aligned with Gist Cloud.', details);
