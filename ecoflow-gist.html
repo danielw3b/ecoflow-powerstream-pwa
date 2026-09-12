@@ -651,7 +651,8 @@
       ];
 
       if (autoGist) {
-        details.push(['Gist 2 (Auto Engine)', `<span class="${gist2Class}">Active (${format24h(autoGist.contentTs)})</span>`]);
+        // Just render the timestamp cleanly without extra "Active (...)" text
+        details.push(['Gist 2 (Auto Engine)', `<span class="${gist2Class}">${format24h(autoGist.contentTs)}</span>`]);
         details.push(['Gist 2 Size', `${autoGist.sizeKB} KB`]);
       }
 
@@ -705,10 +706,11 @@
     }
   }
 
-  // Render metadata status card content
+  // Render metadata status card content with decoupled Auto-Sync indicator
   function renderSummary(badgeClass, badgeText, message, details) {
     const badgeContainer = document.getElementById('statusBadgeContainer');
     const content = document.getElementById('summaryContent');
+    const autoGistId = document.getElementById('autoGistId').value.trim();
 
     badgeContainer.innerHTML = `<span class="${badgeClass}">${badgeText}</span>`;
 
@@ -719,8 +721,16 @@
       </tr>
     `).join('');
 
+    // Optional Auto-Engine tag if autoGistId is configured
+    const autoEngineNotice = autoGistId 
+      ? `<div style="margin-top: 4px; font-size: 0.75rem; color: var(--emerald-light); font-weight: 600;">✓ Auto-Sync Engine (Gist 2) Active</div>` 
+      : '';
+
     content.innerHTML = `
-      <div class="summary-msg">${message}</div>
+      <div class="summary-msg">
+        ${message}
+        ${autoEngineNotice}
+      </div>
       ${details.length > 0 ? `<table class="summary-table">${tableRows}</table>` : ''}
     `;
   }
