@@ -1565,32 +1565,31 @@ function fmtTime(date) {
 
 // ── Time formatting — checks system preferences globally ───────────────────
 const USE_24H = (() => {
-  // 1. Der Standard-Test (funktioniert direkt bei en-GB, en-CA, de-DE)
   const timeTest = new Intl.DateTimeFormat([], { hour: "numeric" })
     .format(new Date(2000, 0, 1, 13, 0, 0));
   const detected24h = !timeTest.includes("1") || timeTest.includes("13");
 
   if (detected24h) return true;
 
-  // 2. Kultureller Umkehrschluss via Android 14 Regional Preferences (Celsius-Test)
+  // Android 14 Regional Preferences (Celsius-Test)
   try {
-    // Wir lassen das System die Zahl 0 als Temperatur-Einheit formatieren
+    // We have the system format, number 0 as a temperature unit
     const tempTest = new Intl.NumberFormat(undefined, {
       style: "unit",
       unit: "celsius"
     }).format(0);
-
-    // Wenn der Browser im en-US Modus trotzdem "°C" ausgibt,
-    // wissen wir, dass der User Celsius erzwungen hat.
+    
+    // If the browser still outputs "°C" in en-US mode,
+    // we know that the user has forced Celsius.
     const prefersCelsius = tempTest.includes("C");
 
     if (prefersCelsius && navigator.language.startsWith("en-")) {
-      return true; // Schlussfolgerung: Wer Celsius will, will auch 24h!
+      return true; // Celsius -> 24h!
     }
   } catch (e) {
-    /* Fallback für Browser, die Temperatur-Einheiten nicht unterstützen */
+    // fallback
+    return detected24h;
   }
-
   return false;
 })();
 
