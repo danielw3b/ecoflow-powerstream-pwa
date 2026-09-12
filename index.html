@@ -69,8 +69,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .btn-primary:hover{background:rgba(245,166,35,.25);}
 
 main{padding:12px;max-width:1400px;margin:0 auto;}
-#weatherInline{display:none;font-family:var(--sans);font-size: 0.9rem;color:#8fb0cc;
-  justify-content:center;gap:8px;overflow:hidden;padding: 5px;margin-bottom:5px;}
+#weatherInline{display:none;font-family:var(--sans);font-size: 0.85rem;color:#8fb0cc;
+  justify-content:center;gap:8px;overflow:hidden;/*padding: 5px;margin-bottom:5px;*/}
 
 .section-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--muted);
   text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
@@ -1539,30 +1539,6 @@ function downloadHistory(snFilter) {
   a.click(); URL.revokeObjectURL(a.href);
 }
 
-// ── Time formatting — follows system/OS preferences (12h or 24h automatically) ───
-/*const USE_24H = (() => {
-  // Pass [] to test against user's actual OS/Browser locale preference instead of fixed en-US rules
-  const test = new Intl.DateTimeFormat([], { hour: "numeric" })
-    .format(new Date(2000, 0, 1, 13, 0, 0));
-  return !test.includes("1") || test.includes("13"); 
-})();
-
-function fmtTime(date) {
-  return date.toLocaleTimeString([], {
-    hour:   "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: !USE_24H
-  });
-}*/
-
-// ── Time formatting — checks system preferences globally ───────────────────
-/*const USE_24H = (() => {
-  const test = new Intl.DateTimeFormat([], { hour: "numeric" })
-    .format(new Date(2000, 0, 1, 13, 0, 0));
-  return !test.includes("1") || test.includes("13"); 
-})();*/
-
 // ── Time formatting — checks system preferences globally ───────────────────
 const USE_24H = (() => {
   const timeTest = new Intl.DateTimeFormat([], { hour: "numeric" })
@@ -1751,7 +1727,7 @@ init();
 
     const date = new Date(isoString);
     if (!isNaN(date.getTime())) {
-      // 1. Text im Header: Ohne Sekunden (nutzt h23, falls System 24h fordert)
+      // Witout seconds (use h23, if system 24h required)
       const timeStr = date.toLocaleTimeString(navigator.language, {
         hour:   "2-digit",
         minute: "2-digit",
@@ -1763,25 +1739,6 @@ init();
       syncLabel.title =  `Synced: ${fmtTime(date)}`;
     }
   }
-  
-  // Helper function to update the UI sync timestamp
-  /*function updateSyncLabel(isoString) {
-    const syncLabel = document.getElementById("syncTimestamp");
-    if (!syncLabel || !isoString) return;
-
-    const date = new Date(isoString);
-    if (!isNaN(date.getTime())) {
-      const timeStr = date.toLocaleTimeString([], {
-        hour:   "2-digit",
-        minute: "2-digit",
-        hour12: !USE_24H
-      });
-      syncLabel.textContent = `⇄ ${timeStr}`;
-      // Direct call to fmtTime ensures identical formatting (including seconds)
-      //syncLabel.textContent = `⇄ ${fmtTime(date)}`;
-      syncLabel.title =  `Synced ⇄: ${fmtTime(date)}`;
-    }
-  }*/
 
   // Fetches today's sunset using local GPS config with fallback
   async function getOrFetchSunset() {
@@ -2059,7 +2016,7 @@ init();
   const initialAutoGistId = localStorage.getItem('ecoflow_auto_gist_id');
   if (!initialAutoGistId) return;
 
-  setTimeout(runAutoSync, 3000);
+  setTimeout(runAutoSync, 2000);
   setInterval(runAutoSync, SYNC_INTERVAL_MS);
 })();
   
