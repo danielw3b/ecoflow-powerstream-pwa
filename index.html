@@ -1804,7 +1804,7 @@ init();
           const syncLabel = document.getElementById("syncTimestamp");
           if (syncLabel && typeof fmtTime === "function") {
             const importDate = new Date(remotePayload.timestamp || data.updated_at);
-            syncLabel.textContent = `· ${fmtTime(importDate)} synced`;
+            syncLabel.textContent = `⇄ ${fmtTime(importDate)}`;
           }
         }
 
@@ -1917,7 +1917,7 @@ init();
       // Dynamic UI Update: Safe local time calculation after successful Export
       const syncLabel = document.getElementById("syncTimestamp");
       if (syncLabel && typeof fmtTime === "function") {
-        syncLabel.textContent = `· ${fmtTime(new Date(nowIso))} synced`;
+        syncLabel.textContent = `⇄ ${fmtTime(importDate)}`;
       }
     }
   }
