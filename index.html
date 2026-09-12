@@ -1554,19 +1554,20 @@ function fmtTime(date) {
   });
 }*/
 
-// ── Time formatting — follows browser/OS locale (12h or 24h automatically) ───
+// ── Time formatting — follows system/OS preferences (12h or 24h automatically) ───
 const USE_24H = (() => {
-  const test = new Intl.DateTimeFormat(navigator.language, { hour: "numeric" })
+  // Pass [] to test against user's actual OS/Browser locale preference instead of fixed en-US rules
+  const test = new Intl.DateTimeFormat([], { hour: "numeric" })
     .format(new Date(2000, 0, 1, 13, 0, 0));
   return !test.includes("1") || test.includes("13"); 
 })();
 
 function fmtTime(date) {
-  return date.toLocaleTimeString(navigator.language, {
+  return date.toLocaleTimeString([], {
     hour:   "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hourCycle: USE_24H ? "h23" : "h12"
+    hour12: !USE_24H
   });
 }
 
@@ -1719,10 +1720,10 @@ init();
 
     const date = new Date(isoString);
     if (!isNaN(date.getTime())) {
-      const timeStr = date.toLocaleTimeString(navigator.language, {
+      const timeStr = date.toLocaleTimeString([], {
         hour:   "2-digit",
         minute: "2-digit",
-        hourCycle: USE_24H ? "h23" : "h12"
+        hour12: !USE_24H
       });
       syncLabel.textContent = `⇄ ${timeStr}`;
     }
