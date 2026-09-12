@@ -645,8 +645,8 @@
       // State flags (with 5-second buffer against millisecond clock drift)
       // A Writer (hasToken) only considers Remote newer if Gist 1 is ahead of its own latest local measurements
       const isRemoteNewer = hasToken 
-        ? manualGist.contentTs > (latestDataTs + 5000)
-        : manualGist.contentTs > (localSyncTs + 5000);
+        ? manualGist.contentTs > (latestDataTs + 20000)
+        : manualGist.contentTs > (localSyncTs + 20000);
 
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 5000));
       const hasAutoEngine = !!autoGistId;
