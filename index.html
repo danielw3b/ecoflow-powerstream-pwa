@@ -1696,6 +1696,18 @@ init();
     'ecoflow_analyzer_5929'
   ];
 
+  // Helper function to safely update the UI sync timestamp label
+  function updateSyncLabel(isoString) {
+    const syncLabel = document.getElementById("syncTimestamp");
+    if (!syncLabel || !isoString) return;
+
+    const date = new Date(isoString);
+    if (!isNaN(date.getTime())) {
+      const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      syncLabel.textContent = `⇄ ${timeStr}`;
+    }
+  }
+
   // Fetches today's sunset using local GPS config with fallback
   async function getOrFetchSunset() {
     const today = new Date().toISOString().split('T')[0];
@@ -1763,6 +1775,13 @@ init();
         remotePayload = {};
       }
 
+      // Always reflect the latest known sync timestamp in UI during check
+      const lastKnownTs = localStorage.getItem('ecoflow_gist_last_sync') || 
+                          localStorage.getItem('ecoflow_gist_last_export_ts') || 
+                          remotePayload.timestamp || 
+                          data.updated_at;
+      updateSyncLabel(lastKnownTs);
+
       const remoteTotalWh = getRemoteWhSum(remotePayload);
       const localTotalWh = getLocalWhSum();
       const remoteTs = new Date(remotePayload.timestamp || data.updated_at).getTime();
@@ -1800,13 +1819,8 @@ init();
             console.log('[AutoSync] Smart-Node: Remote data imported & loadWh() executed.');
           }
 
-          // Dynamic UI Update: Option B (Nur Stunden & Minuten anzeigen)
-          const syncLabel = document.getElementById("syncTimestamp");
-          if (syncLabel) {
-            const importDate = new Date(remotePayload.timestamp || data.updated_at);
-            const timeStr = importDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            syncLabel.textContent = `⇄ ${timeStr}`;
-          }
+          // Dynamic UI Update: Update timestamp label after successful import
+          updateSyncLabel(remotePayload.timestamp || data.updated_at);
         }
 
         if (remoteTotalWh >= localTotalWh) return;
@@ -1915,13 +1929,8 @@ init();
         diffWh: whDiff 
       });
 
-      // Dynamic UI Update: Option B (Nur Stunden & Minuten anzeigen)
-      const syncLabel = document.getElementById("syncTimestamp");
-      if (syncLabel) {
-        const exportDate = new Date(nowIso);
-        const timeStr = exportDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        syncLabel.textContent = `⇄ ${timeStr}`;
-      }
+      // Dynamic UI Update: Refresh timestamp label after successful export
+      updateSyncLabel(nowIso);
     }
   }
 
