@@ -1800,11 +1800,12 @@ init();
             console.log('[AutoSync] Smart-Node: Remote data imported & loadWh() executed.');
           }
 
-          // Dynamic UI Update: Update Timestamp label after successful Import
+          // Dynamic UI Update: Option B (Nur Stunden & Minuten anzeigen)
           const syncLabel = document.getElementById("syncTimestamp");
-          if (syncLabel && typeof fmtTime === "function") {
+          if (syncLabel) {
             const importDate = new Date(remotePayload.timestamp || data.updated_at);
-            syncLabel.textContent = `⇄ ${fmtTime(importDate)}`;
+            const timeStr = importDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            syncLabel.textContent = `⇄ ${timeStr}`;
           }
         }
 
@@ -1914,10 +1915,12 @@ init();
         diffWh: whDiff 
       });
 
-      // Dynamic UI Update: Safe local time calculation after successful Export
+      // Dynamic UI Update: Option B (Nur Stunden & Minuten anzeigen)
       const syncLabel = document.getElementById("syncTimestamp");
-      if (syncLabel && typeof fmtTime === "function") {
-        syncLabel.textContent = `⇄ ${fmtTime(importDate)}`;
+      if (syncLabel) {
+        const exportDate = new Date(nowIso);
+        const timeStr = exportDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        syncLabel.textContent = `⇄ ${timeStr}`;
       }
     }
   }
