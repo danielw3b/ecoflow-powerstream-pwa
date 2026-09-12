@@ -547,12 +547,28 @@
     });
   }
 
-  // Fetch metadata helper with raw content fallback for truncated Gist files
+  // Fetch metadata helper with authorization fallback and raw content support
   async function fetchGistMetaData(id) {
     if (!id) return null;
     try {
-      const res = await fetch(`https://api.github.com/gists/${id}?_t=${Date.now()}`);
-      if (!res.ok) return null;
+      const token = document.getElementById('githubToken')?.value.trim();
+      const headers = {
+        'Accept': 'application/vnd.github.v3+json'
+      };
+      
+      // Use token if available to raise Rate Limit from 60 to 5000 req/h
+      if (token) {
+        headers['Authorization'] = `token ${token}`;
+      }
+
+      const res = await fetch(`https://api.github.com/gists/${id}?_t=${Date.now()}`, { headers });
+      
+      // Handle Rate Limit or Not Found gracefully
+      if (!res.ok) {
+        console.warn(`Gist Fetch Failed (${res.status}) for ID: ${id}`);
+        return null;
+      }
+      
       const data = await res.json();
       
       const files = Object.values(data.files || {});
@@ -563,7 +579,7 @@
       if (backupFile) {
         let rawContent = backupFile.content;
 
-        // If GitHub truncated the content, fetch the raw JSON directly
+        // Fetch raw JSON if GitHub truncated the payload
         if (!rawContent && backupFile.raw_url) {
           const rawRes = await fetch(`${backupFile.raw_url}?_t=${Date.now()}`);
           if (rawRes.ok) rawContent = await rawRes.text();
@@ -579,7 +595,6 @@
         }
       }
 
-      // Fallback to GitHub API updated_at if internal payload timestamp is missing
       if (!contentTs) {
         contentTs = new Date(data.updated_at).getTime();
       }
@@ -593,6 +608,7 @@
         contentTsStr: format24h(contentTs)
       };
     } catch (e) {
+      console.error('Fetch Gist Metadata Error:', e);
       return null;
     }
   }
