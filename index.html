@@ -414,7 +414,18 @@ function connectMqtt(creds, devices) {
   const clientId = `${accountId}_${platform}${geometricHash}`;
 
   setStatus("conn", "Connecting MQTT…");
-  if (mqttWs) { try { mqttWs.close(); } catch {} mqttWs = null; }
+  //if (mqttWs) { try { mqttWs.close(); } catch {} mqttWs = null; }
+  // Clean cleanup: Only close if the socket is actually OPEN or CONNECTING
+  if (mqttWs) {
+    try {
+      mqttWs.onclose = null; // Prevent race-condition disconnect callbacks
+      mqttWs.onerror = null;
+      if (mqttWs.readyState < 2) { // 0=CONNECTING, 1=OPEN
+        mqttWs.close();
+      }
+    } catch (e) {}
+    mqttWs = null;
+  }
   mqttWs = new WebSocket(wsUrl, ["mqtt"]);
   mqttWs.binaryType = "arraybuffer";
 
