@@ -617,28 +617,25 @@
       // State flags
       const isRemoteNewer = manualGist.contentTs > (localSyncTs + 5000);
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 5000));
-      
       const hasAutoEngine = !!autoGistId;
-      const isAutoEngineSynced = autoGist && (latestDataTs >= autoGist.contentTs || Math.abs(autoGist.contentTs - latestDataTs) < 120000);
 
       if (isRemoteNewer) {
+        // Priority 1: Gist 1 holds a newer manual backup -> Pull available
         setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
         details.push(['Status', '<span class="txt-sky">Import Available</span>']);
         renderSummary('badge badge-update', 'UPDATE AVAILABLE', 'Remote backup contains newer measurements.', details);
 
       } else if (hasNewLocalData) {
-        // Writer priority: Always enable export when local measurements exceed Gist 1
+        // Priority 2: Writer has new local data -> Push to Gist 1 available
         setButtonState('btn-export', 'Update Gist 1', false, () => triggerExport(gistId));
         details.push(['Status', '<span class="txt-amber">Ready for Export</span>']);
         renderSummary('badge badge-master', 'NEW DATA READY', 'New local yield readings ready for Cloud Patch.', details);
 
       } else {
-        // Fully aligned: Differentiate label if background auto engine is running
-        let btnText = 'Local Data Synced';
-
-        if (hasAutoEngine && isAutoEngineSynced) {
-          btnText = 'Synced via Auto Engine (Gist 2)';
-        }
+        // Priority 3: Fully synced -> Display contextual info on disabled button
+        const btnText = hasAutoEngine 
+          ? 'Synced via Auto Engine (Gist 2)' 
+          : 'Local Data Synced';
 
         setButtonState('btn-disabled', btnText, true, null);
         details.push(['Status', '<span class="txt-emerald">Fully Synced</span>']);
