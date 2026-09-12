@@ -643,7 +643,11 @@
       details.push(['Local Last Sync', `<span class="txt-emerald">${format24h(localSyncTs)}</span>`]);
 
       // State flags (with 5-second buffer against millisecond clock drift)
-      const isRemoteNewer = manualGist.contentTs > (localSyncTs + 5000);
+      // A Writer (hasToken) only considers Remote newer if Gist 1 is ahead of its own latest local measurements
+      const isRemoteNewer = hasToken 
+        ? manualGist.contentTs > (latestDataTs + 5000)
+        : manualGist.contentTs > (localSyncTs + 5000);
+
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 5000));
       const hasAutoEngine = !!autoGistId;
 
@@ -845,11 +849,10 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}: Export failed`);
 
       const resData = await response.json();
-      localStorage.setItem(LOCAL_SYNC_KEY, resData.updated_at);
-      
-      setTimeout(async () => {
-        await checkGistStatus();
-      }, 500);
+      // Inside triggerExport(gistId) after fetch is successful:
+      localStorage.setItem(LOCAL_SYNC_KEY, isoNow);
+      // Re-check status immediately
+      await checkGistStatus();
     } catch (err) {
       alert(`Export failed: ${err.message}`);
       checkGistStatus();
