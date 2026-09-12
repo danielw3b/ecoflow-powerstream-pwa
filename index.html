@@ -1803,8 +1803,8 @@ init();
           // Dynamic UI Update: Update Timestamp label after successful Import
           const syncLabel = document.getElementById("syncTimestamp");
           if (syncLabel && typeof fmtTime === "function") {
-            const importTs = new Date(remotePayload.timestamp || data.updated_at).getTime();
-            syncLabel.textContent = `· ${fmtTime(importTs)} synced`;
+            const importDate = new Date(remotePayload.timestamp || data.updated_at);
+            syncLabel.textContent = `· ${fmtTime(importDate)} synced`;
           }
         }
 
@@ -1917,7 +1917,7 @@ init();
       // Dynamic UI Update: Safe local time calculation after successful Export
       const syncLabel = document.getElementById("syncTimestamp");
       if (syncLabel && typeof fmtTime === "function") {
-        syncLabel.textContent = `· ${fmtTime(new Date(nowIso).getTime())} synced`;
+        syncLabel.textContent = `· ${fmtTime(new Date(nowIso))} synced`;
       }
     }
   }
