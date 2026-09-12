@@ -1696,15 +1696,15 @@ init();
     'ecoflow_analyzer_5929'
   ];
 
-  // Helper function to safely update the UI sync timestamp label
+  // Helper function to update the UI sync timestamp label using the PWA's standard fmtTime helper
   function updateSyncLabel(isoString) {
     const syncLabel = document.getElementById("syncTimestamp");
     if (!syncLabel || !isoString) return;
 
     const date = new Date(isoString);
     if (!isNaN(date.getTime())) {
-      const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      syncLabel.textContent = `⇄ ${timeStr}`;
+      // Direct call to global fmtTime function without duplicating locale detection code
+      syncLabel.textContent = `⇄ ${fmtTime(date)}`;
     }
   }
 
