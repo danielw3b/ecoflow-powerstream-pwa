@@ -537,7 +537,6 @@
   async function fetchGistMetaData(id) {
     if (!id) return null;
     try {
-      // Added cache-buster (?_t=...) to bypass GitHub API CDN delay
       const res = await fetch(`https://api.github.com/gists/${id}?_t=${Date.now()}`);
       if (!res.ok) return null;
       const data = await res.json();
@@ -547,6 +546,7 @@
       
       let contentTs = 0;
 
+      // Extract internal timestamp from backup JSON payload
       if (backupFile && backupFile.content) {
         try {
           const parsed = JSON.parse(backupFile.content);
@@ -554,6 +554,11 @@
             contentTs = new Date(parsed.timestamp).getTime();
           }
         } catch (e) {}
+      }
+
+      // Fallback to GitHub API updated_at if internal timestamp missing
+      if (!contentTs) {
+        contentTs = new Date(data.updated_at).getTime();
       }
 
       return {
