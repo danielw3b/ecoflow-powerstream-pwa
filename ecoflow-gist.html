@@ -23,16 +23,11 @@
       --text: #f8fafc;
       --text-muted: #94a3b8;
       
-      /* Contextual Accent Colors */
       --sky: #38bdf8;
       --emerald: #10b981;
       --emerald-light: #34d399;
       --amber: #f59e0b;
       --amber-light: #fbbf24;
-      
-      --btn-bg: #1e293b;
-      --btn-hover: #334155;
-      --btn-disabled: #0f172a;
     }
 
     body {
@@ -104,9 +99,10 @@
       align-items: center;
       gap: 8px;
       color: var(--text);
+      cursor: pointer;
     }
 
-    /* Status Badges */
+    /* Interactive Status Badges */
     .badge {
       font-size: 0.7rem;
       padding: 4px 8px;
@@ -117,6 +113,12 @@
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text-muted);
+      user-select: none;
+    }
+
+    .badge-btn {
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
 
     .badge-synced {
@@ -126,9 +128,21 @@
     }
 
     .badge-update {
-      background: rgba(56, 189, 248, 0.1);
+      background: rgba(56, 189, 248, 0.15);
       color: var(--sky);
-      border-color: rgba(56, 189, 248, 0.3);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .badge-update:hover {
+      background: rgba(56, 189, 248, 0.3);
+    }
+
+    .badge-export {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber-light);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .badge-export:hover {
+      background: rgba(245, 158, 11, 0.3);
     }
 
     .badge-master {
@@ -138,7 +152,7 @@
       font-weight: 600;
     }
 
-    /* Metadata Table Styles - responsive fit for mobile screens */
+    /* Metadata Table Styles */
     .summary-table {
       width: 100%;
       border-collapse: collapse;
@@ -166,7 +180,17 @@
       color: var(--text-muted);
     }
 
-    /* Input Fields & Master Mode Forms */
+    /* Card Footer Layout */
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* Form Inputs */
     .form-group {
       display: flex;
       flex-direction: column;
@@ -196,85 +220,12 @@
       border-color: var(--sky);
     }
 
-    /* Action Buttons */
-    .btn {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      margin-top: 14px;
-      text-decoration: none;
-      box-sizing: border-box;
-      background-color: var(--btn-bg);
-      color: var(--text);
-    }
-
-    .btn-import {
-      background-color: #0284c7;
-      border-color: #38bdf8;
-      color: #ffffff;
-    }
-    .btn-import:hover { background-color: #0369a1; }
-
-    .btn-export {
-      background-color: #d97706;
-      border-color: var(--amber-light);
-      color: #ffffff;
-    }
-    .btn-export:hover { background-color: #b45309; }
-
-    .btn-disabled {
-      background-color: var(--btn-disabled);
-      color: var(--text-muted);
-      border-color: var(--border);
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-
-    /* Quick Navigation Area */
-    .nav-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px dashed var(--border);
-    }
-
-    .btn-secondary {
-      background-color: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      padding: 10px;
-      margin-top: 0;
-      text-align: center;
-    }
-
-    .btn-secondary:hover {
-      color: var(--text);
-      border-color: var(--sky);
-    }
-
-    .highlight-nav {
-      border-color: var(--sky) !important;
-      color: var(--text) !important;
-    }
-
-    /* Checkbox Option Container */
     .checkbox-group {
       display: flex;
       align-items: center;
       gap: 8px;
       margin-top: 4px;
+      margin-bottom: 12px;
       font-size: 0.85rem;
       color: var(--text-muted);
     }
@@ -284,7 +235,7 @@
       cursor: pointer;
     }
 
-    /* Text & Highlight Helpers */
+    /* Text Helpers */
     .txt-sky { color: var(--sky); font-weight: 600; }
     .txt-emerald { color: var(--emerald-light); font-weight: 600; }
     .txt-amber { color: var(--amber-light); font-weight: 600; }
@@ -292,10 +243,9 @@
 
     .hidden { display: none !important; }
 
-    /* min 600px */
     @media (min-width: 600px) {
         body { padding: 20px; }
-        .container {gap: 16px;}
+        .container { gap: 16px; }
     }
   </style>
 </head>
@@ -312,83 +262,61 @@
     </div>
   </div>
 
-  <!-- Status Summary Card -->
+  <!-- Main Status & Action Card -->
   <div class="card" id="summaryCard">
     <div class="card-header">
+      <!-- Secret 7-click trigger for Master Mode credentials -->
       <div class="card-title" id="syncActionHeader">Status</div>
       <div id="statusBadgeContainer">
         <span class="badge">CHECKING...</span>
       </div>
     </div>
-    <div id="summaryContent">
-      <div class="txt-center-muted">
-        Fetching cloud and local metadata...
-      </div>
-    </div>
-  </div>
-
-  <!-- Primary Sync Action Card -->
-  <div class="card">
-    <div class="card-header">
-      <!-- Secret 7-click trigger for Master Mode credentials -->
-      <div class="card-title">
-        Sync Action
-      </div>
-      <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
-    </div>
 
     <!-- Master Mode Configuration (Hidden by default) -->
     <div id="credentialsArea" class="hidden">
-      <!-- 1. Manual Backup Gist ID -->
       <div class="form-group">
         <label for="gistId">Gist ID (Manual Backup)</label>
         <input type="text" id="gistId" placeholder="Enter GitHub Gist ID">
       </div>
 
-      <!-- 2. GitHub Access Token -->
       <div class="form-group">
         <label for="githubToken">GitHub Access Token (Master Only)</label>
         <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
       </div>
 
-      <!-- 3. Auto-Sync Gist ID (Background Engine) -->
       <div class="form-group">
         <label for="autoGistId">Auto-Sync Gist ID (Background Engine)</label>
         <input type="text" id="autoGistId" placeholder="Enter Auto-Sync Gist ID">
       </div>
       
-      <!-- Compression Option directly under Master Settings -->
       <div class="checkbox-group">
         <input type="checkbox" id="gzipCompress">
         <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
       </div>
     </div>
 
-    <!-- Contextual Main Action Button -->
-    <button id="mainActionBtn" class="btn btn-disabled" disabled>
-      Checking Status...
-    </button>
-
-    <!-- Post-Import Quick Navigation (Revealed after successful sync) -->
-    <div class="nav-grid hidden" id="quickNavArea">
-      <a href="index.html" class="btn btn-secondary nav-link highlight-nav">
-        EcoFlow Monitor
-      </a>
-      <a href="ecoflow-analyzer.html" class="btn btn-secondary nav-link highlight-nav">
-        EcoFlow Analyzer
-      </a>
+    <!-- Status Metadata Table -->
+    <div id="summaryContent">
+      <div class="txt-center-muted">
+        Fetching cloud and local metadata...
+      </div>
     </div>
 
+    <!-- Card Footer: Symmetrical Badges -->
+    <div class="card-footer">
+      <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
+      <div style="flex-grow: 1;"></div>
+      <div id="footerActionBadgeContainer"></div>
+    </div>
   </div>
 
 </div>
 
 <script>
-  // Storage keys for sync metadata
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
   const GZIP_SETTING_KEY = 'ecoflow_gist_gzip_enabled';
+  const EXPORT_THRESHOLD_WH = 100;
 
-  // Hardcoded storage keys to always synchronize
   const EXPORT_KEYS = [
     'ecoflow_wh',
     'ecoflow_wh_hourly',
@@ -396,7 +324,6 @@
     'ecoflow_analyzer_3738'
   ];
   
-  // Master Mode
   let clickCounter = 0;
   let clickTimer = null;
 
@@ -406,7 +333,7 @@
     checkGistStatus();
   });
 
-  // Restore credentials and compression setting from LocalStorage
+  // Load configuration from LocalStorage
   function loadSavedSettings() {
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
@@ -418,7 +345,7 @@
     }
   }
 
-  // Setup UI event handlers & Master Mode secret unlock
+  // Setup input listeners and 7-click Master unlock
   function setupEventListeners() {
     document.getElementById('gistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_gist_id', e.target.value.trim());
@@ -433,6 +360,7 @@
 
     document.getElementById('autoGistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_auto_gist_id', e.target.value.trim());
+      adjustUIForRole();
       checkGistStatus();
     });
 
@@ -440,7 +368,7 @@
       localStorage.setItem(GZIP_SETTING_KEY, e.target.checked);
     });
 
-    // Secret 7-click unlock for Master Mode form
+    // 7-click handler on title
     document.getElementById('syncActionHeader').addEventListener('click', () => {
       clickCounter++;
       clearTimeout(clickTimer);
@@ -455,7 +383,7 @@
     });
   }
 
-  // Toggle Master Mode badge based on GitHub Token presence
+  // Toggle Master Mode badge
   function adjustUIForRole() {
     const token = document.getElementById('githubToken').value.trim();
     const masterBadge = document.getElementById('masterBadge');
@@ -467,7 +395,7 @@
     }
   }
 
-  // Find the most recent timestamp key across all hourly inverter records
+  // Extract latest measurement timestamp
   function getLatestDataTimestamp() {
     const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
     if (!hourlyRaw) return null;
@@ -500,41 +428,52 @@
         now.getHours() === targetHour
       );
 
-      // If current hour, then is now
       if (isCurrentHour) {
         return now.getTime();
       }
 
-      // For past hours time is end of hour
       return new Date(year, month - 1, day, targetHour, 59, 59).getTime();
     } catch (e) {
       return null;
     }
   }
   
-  // Calculate total local Wh count to detect new data even within the same hour bucket
-  function getLocalDataHashSum() {
-    const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
-    if (!hourlyRaw) return 0;
-    
+  // Calculate total local Wh yield
+  function getLocalWhSum() {
     try {
-      const hourlyData = JSON.parse(hourlyRaw);
-      let totalWh = 0;
-      
-      Object.values(hourlyData).forEach(deviceHours => {
-        if (typeof deviceHours === 'object' && deviceHours !== null) {
-          Object.values(deviceHours).forEach(wh => {
-            totalWh += (Number(wh) || 0);
-          });
-        }
-      });
-      return totalWh;
-    } catch (e) {
-      return 0;
-    }
+      const raw = localStorage.getItem('ecoflow_wh');
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw);
+      let sum = 0;
+      if (typeof parsed === 'object' && parsed !== null) {
+        Object.values(parsed).forEach(deviceData => {
+          if (typeof deviceData === 'object' && deviceData !== null) {
+            Object.values(deviceData).forEach(dayWh => { sum += (Number(dayWh) || 0); });
+          } else { sum += (Number(deviceData) || 0); }
+        });
+      } else { sum = Number(parsed) || 0; }
+      return sum;
+    } catch (e) { return 0; }
   }
 
-  // Universal 24-hour formatter for all platforms (forces 24h on Android/Chromium)
+  // Calculate remote Wh sum
+  function getRemoteWhSum(payload) {
+    try {
+      if (!payload || !payload.keys || !payload.keys.ecoflow_wh) return 0;
+      const targetData = payload.keys.ecoflow_wh;
+      let sum = 0;
+      if (typeof targetData === 'object' && targetData !== null) {
+        Object.values(targetData).forEach(deviceData => {
+          if (typeof deviceData === 'object' && deviceData !== null) {
+            Object.values(deviceData).forEach(dayWh => { sum += (Number(dayWh) || 0); });
+          } else { sum += (Number(deviceData) || 0); }
+        });
+      } else { sum = Number(targetData) || 0; }
+      return sum;
+    } catch (e) { return 0; }
+  }
+
+  // Format 24h timestamp
   function format24h(ts) {
     if (!ts) return 'None';
     return new Date(ts).toLocaleString([], {
@@ -548,39 +487,26 @@
     });
   }
 
-  // Fetch metadata helper with authorization fallback and raw content support
+  // Fetch metadata helper
   async function fetchGistMetaData(id) {
     if (!id) return null;
     try {
       const token = document.getElementById('githubToken')?.value.trim();
-      const headers = {
-        'Accept': 'application/vnd.github.v3+json'
-      };
-      
-      // Use token if available to raise Rate Limit from 60 to 5000 req/h
-      if (token) {
-        headers['Authorization'] = `token ${token}`;
-      }
+      const headers = { 'Accept': 'application/vnd.github.v3+json' };
+      if (token) headers['Authorization'] = `token ${token}`;
 
       const res = await fetch(`https://api.github.com/gists/${id}?_t=${Date.now()}`, { headers });
-      
-      // Handle Rate Limit or Not Found gracefully
-      if (!res.ok) {
-        console.warn(`Gist Fetch Failed (${res.status}) for ID: ${id}`);
-        return null;
-      }
+      if (!res.ok) return null;
       
       const data = await res.json();
-      
       const files = Object.values(data.files || {});
       const backupFile = data.files['ecoflow_backup.json'] || data.files['ecoflow_auto_backup.json'] || files[0];
       
       let contentTs = 0;
+      let parsedPayload = null;
 
       if (backupFile) {
         let rawContent = backupFile.content;
-
-        // Fetch raw JSON if GitHub truncated the payload
         if (!rawContent && backupFile.raw_url) {
           const rawRes = await fetch(`${backupFile.raw_url}?_t=${Date.now()}`);
           if (rawRes.ok) rawContent = await rawRes.text();
@@ -588,9 +514,9 @@
 
         if (rawContent) {
           try {
-            const parsed = JSON.parse(rawContent);
-            if (parsed.timestamp) {
-              contentTs = new Date(parsed.timestamp).getTime();
+            parsedPayload = JSON.parse(rawContent);
+            if (parsedPayload.timestamp) {
+              contentTs = new Date(parsedPayload.timestamp).getTime();
             }
           } catch (e) {}
         }
@@ -603,26 +529,24 @@
       return {
         id: id,
         updatedAt: new Date(data.updated_at).getTime(),
-        updatedAtStr: format24h(data.updated_at),
         sizeKB: backupFile ? (backupFile.size / 1024).toFixed(2) : '0',
         contentTs: contentTs,
-        contentTsStr: format24h(contentTs)
+        payload: parsedPayload
       };
     } catch (e) {
-      console.error('Fetch Gist Metadata Error:', e);
       return null;
     }
   }
   
-  // Simple & Decoupled State Engine
+  // Status check & interactive badge engine
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
     const autoGistId = document.getElementById('autoGistId').value.trim();
     const hasToken = !!document.getElementById('githubToken').value.trim();
 
     if (!gistId) {
-      renderSummary('badge', 'Gist ID Missing', 'Please enter a Gist ID in settings.', []);
-      setButtonState('btn-disabled', 'Gist ID Missing', true, null);
+      renderSummary('badge', 'GIST ID MISSING', 'Please enter a Gist ID in settings.', []);
+      renderFooterBadge('badge', 'ID MISSING', null);
       return;
     }
 
@@ -639,7 +563,6 @@
 
       adjustUIForRole();
 
-      // Timestamp color coding
       const isGist1Synced = Math.abs(manualGist.contentTs - latestDataTs) < 120000 || manualGist.contentTs >= latestDataTs;
       const isGist2Synced = autoGist && (Math.abs(autoGist.contentTs - latestDataTs) < 120000 || autoGist.contentTs >= latestDataTs);
 
@@ -652,68 +575,51 @@
       ];
 
       if (autoGist) {
-        // Just render the timestamp cleanly without extra "Active (...)" text
         details.push(['Gist 2 (Auto Engine)', `<span class="${gist2Class}">${format24h(autoGist.contentTs)}</span>`]);
         details.push(['Gist 2 Size', `${autoGist.sizeKB} KB`]);
       }
 
-      details.push(['Local Data Time', `<span class="txt-slate">${format24h(latestDataTs)}</span>`]);
       details.push(['Local Last Sync', `<span class="txt-emerald">${format24h(localSyncTs)}</span>`]);
+      details.push(['Local Data Endpoint', `<span class="txt-slate">${format24h(latestDataTs)}</span>`]);
 
-      // Simple Flag logic:
-      // Writer only exports if local measurements are strictly ahead of Gist 1 (+20s buffer)
-      const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 20000));
-      
-      // Reader only imports if Gist 1 is strictly ahead of Local Sync (+20s buffer)
+      const localWh = getLocalWhSum();
+      const remoteWh = manualGist.payload ? getRemoteWhSum(manualGist.payload) : 0;
+      const whDiff = localWh - remoteWh;
+
+      // Condition logic
+      const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 20000)) && (whDiff >= EXPORT_THRESHOLD_WH);
       const isRemoteNewer = !hasToken && (manualGist.contentTs > (localSyncTs + 20000));
 
-      // 1. IMPORT (Reader mode: Newer manual backup available in Gist 1)
       if (isRemoteNewer) {
-        setButtonState('btn-import', 'Update LocalStorage', false, () => triggerImport(gistId));
-        details.push(['Status', '<span class="txt-sky">Import Available</span>']);
-        renderSummary('badge badge-update', 'UPDATE AVAILABLE', 'Remote manual backup contains newer measurements.', details);
+        renderSummary('badge badge-update badge-btn', 'UPDATE AVAILABLE', 'Remote manual backup contains newer measurements.', details, () => triggerImport(gistId));
+        renderFooterBadge('badge badge-update badge-btn', 'IMPORT DATA', () => triggerImport(gistId));
 
-      // 2. EXPORT (Writer mode: Fresh local readings ready for Gist 1)
       } else if (hasNewLocalData) {
-        setButtonState('btn-export', 'Update Gist 1', false, () => triggerExport(gistId));
-        details.push(['Status', '<span class="txt-amber">Ready for Export</span>']);
-        renderSummary('badge badge-master', 'NEW DATA READY', 'New local yield readings ready for Cloud Patch.', details);
+        renderSummary('badge badge-export badge-btn', 'EXPORT READY', `New local yield measurements (+${whDiff.toFixed(0)} Wh) ready for Cloud Patch.`, details, () => triggerExport(gistId));
+        renderFooterBadge('badge badge-export badge-btn', 'EXPORT TO GIST 1', () => triggerExport(gistId));
 
-      // 3. FULLY SYNCED (Both Writer and Reader)
       } else {
-        setButtonState('btn-disabled', 'Local Data Synced', true, null);
-        details.push(['Status', '<span class="txt-emerald">Fully Synced</span>']);
-        renderSummary('badge badge-synced', 'SYNCED', 'Local storage is aligned with Gist Cloud.', details);
+        renderSummary('badge badge-synced', 'SYNCED', 'Local storage is aligned with Gist Cloud.', details, null);
+        renderFooterBadge('badge badge-synced', 'SYNCED', null);
       }
 
     } catch (err) {
-      setButtonState('btn-disabled', 'Connection Error', true, null);
       renderSummary('badge', 'ERROR', err.message, []);
+      renderFooterBadge('badge', 'ERROR', null);
     }
   }
 
-  // Update button state and clear stale click listeners
-  function setButtonState(className, text, disabled, onClickHandler) {
-    const btn = document.getElementById('mainActionBtn');
-    btn.className = `btn ${className}`;
-    btn.textContent = text;
-    btn.disabled = disabled;
-    
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    if (onClickHandler && !disabled) {
-      newBtn.addEventListener('click', onClickHandler);
-    }
-  }
-
-  // Render metadata status card content with decoupled Auto-Sync indicator
-  function renderSummary(badgeClass, badgeText, message, details) {
+  // Render header badge & metadata table
+  function renderSummary(badgeClass, badgeText, message, details, actionHandler) {
     const badgeContainer = document.getElementById('statusBadgeContainer');
     const content = document.getElementById('summaryContent');
     const autoGistId = document.getElementById('autoGistId')?.value.trim();
 
-    badgeContainer.innerHTML = `<span class="${badgeClass}">${badgeText}</span>`;
+    badgeContainer.innerHTML = `<span class="${badgeClass}" id="headerActionBadge">${badgeText}</span>`;
+    
+    if (actionHandler) {
+      document.getElementById('headerActionBadge').addEventListener('click', actionHandler);
+    }
 
     let tableRows = details.map(([label, val]) => `
       <tr>
@@ -722,7 +628,6 @@
       </tr>
     `).join('');
 
-    // green if autoGistId
     const autoEngineNotice = autoGistId 
       ? `<div style="margin-top: 4px; font-size: 0.75rem; color: var(--emerald-light); font-weight: 600;">✓ Auto-Sync Engine (Gist 2) Active</div>` 
       : '';
@@ -736,11 +641,20 @@
     `;
   }
 
-  // Import flow: Pull Gist contents and DEEP MERGE with local storage keys
+  // Render footer action badge aligned with Master Mode badge
+  function renderFooterBadge(badgeClass, badgeText, actionHandler) {
+    const footerContainer = document.getElementById('footerActionBadgeContainer');
+    footerContainer.innerHTML = `<span class="${badgeClass}" id="footerActionBadge">${badgeText}</span>`;
+
+    if (actionHandler) {
+      document.getElementById('footerActionBadge').addEventListener('click', actionHandler);
+    }
+  }
+
+  // Import flow
   async function triggerImport(gistId) {
-    const btn = document.getElementById('mainActionBtn');
-    btn.textContent = 'Importing...';
-    btn.disabled = true;
+    const headerBadge = document.getElementById('headerActionBadge');
+    if (headerBadge) headerBadge.textContent = 'IMPORTING...';
 
     try {
       const response = await fetch(`https://api.github.com/gists/${gistId}`);
@@ -758,30 +672,22 @@
           const remoteVal = payload.keys[key];
           const localRaw = localStorage.getItem(key);
 
-          // Perform Deep Merge for nested objects (e.g. ecoflow_wh_hourly / ecoflow_wh)
           if (typeof remoteVal === 'object' && remoteVal !== null && localRaw) {
             try {
               const localVal = JSON.parse(localRaw);
               const merged = mergeDeep(localVal, remoteVal);
               localStorage.setItem(key, JSON.stringify(merged));
               return;
-            } catch (e) {
-              // Fallback to direct overwrite on parse error
-            }
+            } catch (e) {}
           }
 
-          // Standard storage setter for scalar values or new keys
           const val = typeof remoteVal === 'object' ? JSON.stringify(remoteVal) : remoteVal;
           localStorage.setItem(key, val);
         });
       }
 
       localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
-      
       await checkGistStatus();
-      
-      // Reveal navigation buttons upon successful import
-      document.getElementById('quickNavArea').classList.remove('hidden');
 
     } catch (err) {
       alert(`Import failed: ${err.message}`);
@@ -789,7 +695,7 @@
     }
   }
 
-  // Recursive Deep Merge helper ensuring highest numerical yield values win
+  // Deep merge helper
   function mergeDeep(target, source) {
     const output = Object.assign({}, target);
     if (isObject(target) && isObject(source)) {
@@ -798,7 +704,6 @@
           if (!(key in target)) Object.assign(output, { [key]: source[key] });
           else output[key] = mergeDeep(target[key], source[key]);
         } else {
-          // Compare numbers to preserve highest yield value
           const targetNum = Number(target[key]);
           const sourceNum = Number(source[key]);
 
@@ -817,7 +722,7 @@
     return (item && typeof item === 'object' && !Array.isArray(item));
   }
 
-  // Export flow: Collect hardcoded LocalStorage keys and PATCH to GitHub Gist
+  // Export flow
   async function triggerExport(gistId) {
     const token = document.getElementById('githubToken').value.trim();
     if (!token) {
@@ -826,9 +731,8 @@
     }
 
     const isGzipChecked = document.getElementById('gzipCompress').checked;
-    const btn = document.getElementById('mainActionBtn');
-    btn.textContent = 'Uploading...';
-    btn.disabled = true;
+    const headerBadge = document.getElementById('headerActionBadge');
+    if (headerBadge) headerBadge.textContent = 'UPLOADING...';
 
     try {
       const exportData = {};
@@ -840,7 +744,6 @@
         }
       });
 
-      // 1. isoNow sauber deklarieren
       const isoNow = new Date().toISOString();
 
       const payload = {
@@ -867,11 +770,6 @@
 
       if (!response.ok) throw new Error(`HTTP ${response.status}: Export failed`);
 
-      // 2. response.json() optional auslesen (z.B. für Logs)
-      const resData = await response.json();
-      console.log('Export successful:', resData.id);
-
-      // 3. LocalSync-Key setzen und Status neu berechnen
       localStorage.setItem(LOCAL_SYNC_KEY, isoNow);
       await checkGistStatus();
 
