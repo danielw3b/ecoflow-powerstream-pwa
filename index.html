@@ -1541,7 +1541,7 @@ function downloadHistory(snFilter) {
 }
 
 // ── Time formatting — checks system preferences globally ───────────────────
-const USE_24H = (() => {
+/*const USE_24H = (() => {
   const d24 = !new Intl.DateTimeFormat([], { hour: "numeric" }).format(new Date(2000, 0, 1, 13)).includes("1");
   if (d24) return true;
   try {
@@ -1550,6 +1550,35 @@ const USE_24H = (() => {
   } catch (e) { 
     return d24; // Fallback auf das ursprüngliche Ergebnis (false)
   }
+})();*/
+
+const USE_24H = (() => {
+  const timeTest = new Intl.DateTimeFormat([], { hour: "numeric" })
+    .format(new Date(2000, 0, 1, 13, 0, 0));
+  const detected24h = !timeTest.includes("1") || timeTest.includes("13");
+
+  if (detected24h) return true;
+
+  // Android 14 Regional Preferences (Celsius-Test)
+  try {
+    // We have the system format, number 0 as a temperature unit
+    const tempTest = new Intl.NumberFormat(undefined, {
+      style: "unit",
+      unit: "celsius"
+    }).format(0);
+    
+    // If the browser still outputs "°C" in en-US mode,
+    // we know that the user has forced Celsius.
+    const prefersCelsius = tempTest.includes("C");
+
+    if (prefersCelsius && navigator.language.startsWith("en-")) {
+      return true; // Celsius -> 24h!
+    }
+  } catch (e) {
+    // fallback
+    return detected24h;
+  }
+  return false;
 })();
 
 function fmtTime(date) {
