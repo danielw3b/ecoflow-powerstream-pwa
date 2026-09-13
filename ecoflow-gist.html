@@ -15,7 +15,6 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2I4MmY2IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE4IDEwYTUgNSAwIDAgMC05LjktMUE1IDUgMCAwIDAgMyAxNGE1IDUgMCAwIDAgNSA1aDEyYTQgNCAwIDAgMCAwLTh6Ii8+PHBhdGggZD0iTTE2IDEydjYiLz48cGF0aCBkPSJtOSA4IDMgLTMgMyAzIi8+PC9zdmc+" />
 
   <style>
-    /* CSS Variables & Palette Definition */
     :root {
       --bg: #0f172a;
       --card-bg: #1e293b;
@@ -48,7 +47,6 @@
       gap: 8px;
     }
 
-    /* Header Layout */
     .app-header {
       display: flex;
       align-items: center;
@@ -76,7 +74,6 @@
       margin: 2px 0 0 0;
     }
 
-    /* Cards & Containers */
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
@@ -99,9 +96,11 @@
       align-items: center;
       gap: 8px;
       color: var(--text);
+      cursor: pointer;
+      user-select: none;
     }
 
-    /* Interactive Status Badges */
+    /* Status Badges */
     .badge {
       font-size: 0.7rem;
       padding: 4px 8px;
@@ -151,7 +150,35 @@
       font-weight: 600;
     }
 
-    /* Metadata Table Styles */
+    /* Visual Section Groups */
+    .status-group {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+
+    .status-group-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-group-title .tag-manual {
+      color: var(--sky);
+    }
+
+    .status-group-title .tag-local {
+      color: var(--emerald-light);
+    }
+
     .summary-table {
       width: 100%;
       border-collapse: collapse;
@@ -159,10 +186,14 @@
     }
 
     .summary-table td {
-      padding: 6px 0;
-      border-bottom: 1px dotted var(--border);
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
       vertical-align: middle;
       color: var(--text-muted);
+    }
+
+    .summary-table tr:last-child td {
+      border-bottom: none;
     }
 
     .summary-table td:last-child {
@@ -174,12 +205,11 @@
     }
 
     .summary-msg {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       font-size: 0.85rem;
       color: var(--text-muted);
     }
 
-    /* Card Footer Layout */
     .card-footer {
       display: flex;
       justify-content: flex-end;
@@ -189,7 +219,6 @@
       border-top: 1px dashed var(--border);
     }
 
-    /* Form Inputs */
     .form-group {
       display: flex;
       flex-direction: column;
@@ -234,17 +263,17 @@
       cursor: pointer;
     }
 
-    /* Text Helpers */
     .txt-sky { color: var(--sky); font-weight: 600; }
     .txt-emerald { color: var(--emerald-light); font-weight: 600; }
     .txt-amber { color: var(--amber-light); font-weight: 600; }
+    .txt-slate { color: var(--text-muted); }
     .txt-center-muted { color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 12px 0; }
 
     .hidden { display: none !important; }
 
     @media (min-width: 600px) {
-        body { padding: 20px; }
-        .container { gap: 16px; }
+      body { padding: 20px; }
+      .container { gap: 16px; }
     }
   </style>
 </head>
@@ -270,7 +299,7 @@
       </div>
     </div>
 
-    <!-- Master Mode Configuration (Hidden by default) -->
+    <!-- Configuration Area (Unlocked via 7 clicks) -->
     <div id="credentialsArea" class="hidden">
       <div class="form-group">
         <label for="gistId">Gist ID (Manual Backup)</label>
@@ -293,14 +322,14 @@
       </div>
     </div>
 
-    <!-- Status Metadata Table -->
+    <!-- Status Content -->
     <div id="summaryContent">
       <div class="txt-center-muted">
         Fetching cloud and local metadata...
       </div>
     </div>
 
-    <!-- Card Footer: Master Mode Badge on bottom right -->
+    <!-- Card Footer -->
     <div class="card-footer" id="cardFooter">
       <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
     </div>
@@ -309,6 +338,7 @@
 </div>
 
 <script>
+  // Storage keys and thresholds
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
   const GZIP_SETTING_KEY = 'ecoflow_gist_gzip_enabled';
   const EXPORT_THRESHOLD_WH = 100;
@@ -341,7 +371,7 @@
     }
   }
 
-  // Setup input listeners and 7-click Master unlock
+  // Event listeners setup
   function setupEventListeners() {
     document.getElementById('gistId').addEventListener('change', (e) => {
       localStorage.setItem('ecoflow_gist_id', e.target.value.trim());
@@ -364,14 +394,13 @@
       localStorage.setItem(GZIP_SETTING_KEY, e.target.checked);
     });
 
-    // 7-click handler on title
+    // Secret 7-click unlock handler
     document.getElementById('syncActionHeader').addEventListener('click', () => {
       clickCounter++;
       clearTimeout(clickTimer);
       
       if (clickCounter === 7) {
-        const credsArea = document.getElementById('credentialsArea');
-        credsArea.classList.toggle('hidden');
+        document.getElementById('credentialsArea').classList.toggle('hidden');
         clickCounter = 0;
       } else {
         clickTimer = setTimeout(() => { clickCounter = 0; }, 2000);
@@ -391,7 +420,7 @@
     }
   }
 
-  // Extract latest measurement timestamp
+  // Get latest timestamp from local measurements
   function getLatestDataTimestamp() {
     const hourlyRaw = localStorage.getItem('ecoflow_wh_hourly');
     if (!hourlyRaw) return null;
@@ -434,7 +463,7 @@
     }
   }
   
-  // Calculate total local Wh yield
+  // Calculate local total Wh yield
   function getLocalWhSum() {
     try {
       const raw = localStorage.getItem('ecoflow_wh');
@@ -452,7 +481,7 @@
     } catch (e) { return 0; }
   }
 
-  // Calculate remote Wh sum
+  // Calculate remote total Wh yield
   function getRemoteWhSum(payload) {
     try {
       if (!payload || !payload.keys || !payload.keys.ecoflow_wh) return 0;
@@ -469,7 +498,7 @@
     } catch (e) { return 0; }
   }
 
-  // Format 24h timestamp
+  // 24h timestamp formatter
   function format24h(ts) {
     if (!ts) return 'None';
     return new Date(ts).toLocaleString([], {
@@ -483,7 +512,7 @@
     });
   }
 
-  // Fetch metadata helper
+  // Fetch Gist metadata helper
   async function fetchGistMetaData(id) {
     if (!id) return null;
     try {
@@ -534,14 +563,14 @@
     }
   }
   
-  // Status check & interactive badge engine
+  // Status evaluation engine
   async function checkGistStatus() {
     const gistId = document.getElementById('gistId').value.trim();
     const autoGistId = document.getElementById('autoGistId').value.trim();
     const hasToken = !!document.getElementById('githubToken').value.trim();
 
     if (!gistId) {
-      renderSummary('badge', 'GIST ID MISSING', 'Please enter a Gist ID in settings.', []);
+      renderSummary('badge', 'GIST ID MISSING', 'Please enter a Gist ID in settings.', null, null, null);
       return;
     }
 
@@ -558,53 +587,78 @@
 
       adjustUIForRole();
 
-      const isGist1Synced = Math.abs(manualGist.contentTs - latestDataTs) < 120000 || manualGist.contentTs >= latestDataTs;
-      const isGist2Synced = autoGist && (Math.abs(autoGist.contentTs - latestDataTs) < 120000 || autoGist.contentTs >= latestDataTs);
-
-      const gist1Class = isGist1Synced ? 'txt-emerald' : 'txt-amber';
-      const gist2Class = isGist2Synced ? 'txt-emerald' : 'txt-slate';
-
-      const details = [
-        ['Gist 1 (Manual) Updated', `<span class="${gist1Class}">${format24h(manualGist.contentTs)}</span>`],
-        ['Gist 1 Size', `${manualGist.sizeKB} KB`],
-      ];
-
-      if (autoGist) {
-        details.push(['Gist 2 (Auto Engine)', `<span class="${gist2Class}">${format24h(autoGist.contentTs)}</span>`]);
-        details.push(['Gist 2 Size', `${autoGist.sizeKB} KB`]);
-      }
-
-      details.push(['Local Last Sync', `<span class="txt-emerald">${format24h(localSyncTs)}</span>`]);
-      details.push(['Local Data Endpoint', `<span class="txt-slate">${format24h(latestDataTs)}</span>`]);
-
+      // Check if remote manual backup contains newer measurements (Works for both Reader and Writer)
+      const isRemoteNewer = manualGist.contentTs > (Math.max(localSyncTs, latestDataTs || 0) + 20000);
+      
       const localWh = getLocalWhSum();
       const remoteWh = manualGist.payload ? getRemoteWhSum(manualGist.payload) : 0;
       const whDiff = localWh - remoteWh;
 
-      // Condition logic
+      // Check if local device has new measurements ready for Cloud Patch (Master only)
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 20000)) && (whDiff >= EXPORT_THRESHOLD_WH);
-      const isRemoteNewer = !hasToken && (manualGist.contentTs > (localSyncTs + 20000));
+
+      // Format Gist 1 & Gist 2 status blocks
+      const gist1Synced = Math.abs(manualGist.contentTs - latestDataTs) < 120000 || manualGist.contentTs >= latestDataTs;
+      const gist1Class = gist1Synced ? 'txt-emerald' : 'txt-amber';
+
+      const cloudBlock = {
+        manual: {
+          updated: format24h(manualGist.contentTs),
+          size: `${manualGist.sizeKB} KB`,
+          cssClass: gist1Class
+        },
+        auto: autoGist ? {
+          updated: format24h(autoGist.contentTs),
+          size: `${autoGist.sizeKB} KB`,
+          cssClass: (autoGist.contentTs >= (latestDataTs - 120000)) ? 'txt-emerald' : 'txt-slate'
+        } : null
+      };
+
+      const localBlock = {
+        lastSync: format24h(localSyncTs),
+        endpoint: format24h(latestDataTs)
+      };
 
       if (isRemoteNewer) {
-        renderSummary('badge badge-update badge-btn', 'UPDATE AVAILABLE', 'Remote manual backup contains newer measurements.', details, () => triggerImport(gistId));
+        renderSummary(
+          'badge badge-update badge-btn',
+          'UPDATE AVAILABLE',
+          'Remote manual backup contains newer measurements.',
+          cloudBlock,
+          localBlock,
+          () => triggerImport(gistId)
+        );
 
       } else if (hasNewLocalData) {
-        renderSummary('badge badge-export badge-btn', 'EXPORT READY', `New local yield measurements (+${whDiff.toFixed(0)} Wh) ready for Cloud Patch.`, details, () => triggerExport(gistId));
+        renderSummary(
+          'badge badge-export badge-btn',
+          'EXPORT READY',
+          `New local yield measurements (+${whDiff.toFixed(0)} Wh) ready for Cloud Patch.`,
+          cloudBlock,
+          localBlock,
+          () => triggerExport(gistId)
+        );
 
       } else {
-        renderSummary('badge badge-synced', 'SYNCED', 'Local storage is aligned with Gist Cloud.', details, null);
+        renderSummary(
+          'badge badge-synced',
+          'SYNCED',
+          'Local storage is aligned with Gist Cloud.',
+          cloudBlock,
+          localBlock,
+          null
+        );
       }
 
     } catch (err) {
-      renderSummary('badge', 'ERROR', err.message, []);
+      renderSummary('badge', 'ERROR', err.message, null, null, null);
     }
   }
 
-  // Render header badge & metadata table
-  function renderSummary(badgeClass, badgeText, message, details, actionHandler) {
+  // Render structured visual UI groups
+  function renderSummary(badgeClass, badgeText, message, cloudBlock, localBlock, actionHandler) {
     const badgeContainer = document.getElementById('statusBadgeContainer');
     const content = document.getElementById('summaryContent');
-    const autoGistId = document.getElementById('autoGistId')?.value.trim();
 
     badgeContainer.innerHTML = `<span class="${badgeClass}" id="headerActionBadge">${badgeText}</span>`;
     
@@ -612,27 +666,74 @@
       document.getElementById('headerActionBadge').addEventListener('click', actionHandler);
     }
 
-    let tableRows = details.map(([label, val]) => `
-      <tr>
-        <td>${label}</td>
-        <td>${val}</td>
-      </tr>
-    `).join('');
+    if (!cloudBlock || !localBlock) {
+      content.innerHTML = `<div class="summary-msg">${message}</div>`;
+      return;
+    }
 
-    const autoEngineNotice = autoGistId 
-      ? `<div style="margin-top: 4px; font-size: 0.75rem; color: var(--emerald-light); font-weight: 600;">✓ Auto-Sync Engine (Gist 2) Active</div>` 
-      : '';
+    // Gist Cloud Status Group
+    let cloudHtml = `
+      <div class="status-group">
+        <div class="status-group-title">
+          <span>Gist Cloud Backups</span>
+          <span class="tag-manual">Gist 1 (Manual)</span>
+        </div>
+        <table class="summary-table">
+          <tr>
+            <td>Gist 1 Updated</td>
+            <td><span class="${cloudBlock.manual.cssClass}">${cloudBlock.manual.updated}</span></td>
+          </tr>
+          <tr>
+            <td>Gist 1 Size</td>
+            <td>${cloudBlock.manual.size}</td>
+          </tr>
+    `;
+
+    if (cloudBlock.auto) {
+      cloudHtml += `
+          <tr>
+            <td>Gist 2 (Auto Engine)</td>
+            <td><span class="${cloudBlock.auto.cssClass}">${cloudBlock.auto.updated}</span></td>
+          </tr>
+          <tr>
+            <td>Gist 2 Size</td>
+            <td>${cloudBlock.auto.size}</td>
+          </tr>
+      `;
+    }
+
+    cloudHtml += `</table></div>`;
+
+    // Local Storage Status Group
+    const localHtml = `
+      <div class="status-group">
+        <div class="status-group-title">
+          <span>Local Device Storage</span>
+          <span class="tag-local">PWA Client</span>
+        </div>
+        <table class="summary-table">
+          <tr>
+            <td>Local Last Sync</td>
+            <td><span class="txt-emerald">${localBlock.lastSync}</span></td>
+          </tr>
+          <tr>
+            <td>Local Data Endpoint</td>
+            <td><span class="txt-slate">${localBlock.endpoint}</span></td>
+          </tr>
+        </table>
+      </div>
+    `;
 
     content.innerHTML = `
       <div class="summary-msg">
         ${message}
-        ${autoEngineNotice}
       </div>
-      ${details.length > 0 ? `<table class="summary-table">${tableRows}</table>` : ''}
+      ${cloudHtml}
+      ${localHtml}
     `;
   }
 
-  // Import flow
+  // Import workflow (Gist 1 to LocalStorage merge)
   async function triggerImport(gistId) {
     const headerBadge = document.getElementById('headerActionBadge');
     if (headerBadge) headerBadge.textContent = 'IMPORTING...';
@@ -676,7 +777,7 @@
     }
   }
 
-  // Deep merge helper
+  // Deep merge utility taking highest numerical values
   function mergeDeep(target, source) {
     const output = Object.assign({}, target);
     if (isObject(target) && isObject(source)) {
@@ -703,7 +804,7 @@
     return (item && typeof item === 'object' && !Array.isArray(item));
   }
 
-  // Export flow
+  // Export workflow (LocalStorage to Gist 1 Patch)
   async function triggerExport(gistId) {
     const token = document.getElementById('githubToken').value.trim();
     if (!token) {
