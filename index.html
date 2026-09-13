@@ -1699,9 +1699,6 @@ init();
   const EXPORT_THRESHOLD_WH = 100;
   const MAX_LOG_ENTRIES = 30;
 
-  // display master-mode+gist_token
-  document.getElementById('wm').textContent = localStorage.getItem('ecoflow_github_token') ? '[x]' : '';
-
   const SYNC_KEYS = [
     'ecoflow_wh',
     'ecoflow_wh_hourly',
@@ -1709,23 +1706,25 @@ init();
     'ecoflow_analyzer_5929'
   ];
 
+  // writer mode
+  const WRITER_PREFIX = localStorage.getItem('ecoflow_github_token') ? '[🗝] ' : '';
+  
   // Helper function to update the UI sync timestamp label
   function updateSyncLabel(isoString) {
     const syncLabel = document.getElementById("syncTimestamp");
     if (!syncLabel || !isoString) return;
-
+  
     const date = new Date(isoString);
     if (!isNaN(date.getTime())) {
-      // Witout seconds (use h23, if system 24h required)
       const timeStr = date.toLocaleTimeString(navigator.language, {
         hour:   "2-digit",
         minute: "2-digit",
         hourCycle: USE_24H ? "h23" : "h12"
       });
-      syncLabel.textContent = `⇄ ${timeStr}`;
-      // Direct call to fmtTime ensures identical formatting (including seconds)
-      //syncLabel.textContent = `⇄ ${fmtTime(date)}`;
-      syncLabel.title =  `Synced: ${fmtTime(date)}`;
+  
+      // reader or writer prefix
+      syncLabel.textContent = `${WRITER_PREFIX}⇄ ${timeStr}`;
+      syncLabel.title = `Synced: ${fmtTime(date)}`;
     }
   }
 
