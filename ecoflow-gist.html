@@ -183,7 +183,7 @@
     /* Card Footer Layout */
     .card-footer {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       margin-top: 12px;
       padding-top: 10px;
@@ -302,11 +302,9 @@
       </div>
     </div>
 
-    <!-- Card Footer: Symmetrical Badges -->
-    <div class="card-footer">
+    <!-- Card Footer: Master Mode Badge on bottom right -->
+    <div class="card-footer" id="cardFooter">
       <span id="masterBadge" class="badge badge-master hidden">MASTER MODE</span>
-      <div style="flex-grow: 1;"></div>
-      <div id="footerActionBadgeContainer"></div>
     </div>
   </div>
 
@@ -546,7 +544,6 @@
 
     if (!gistId) {
       renderSummary('badge', 'GIST ID MISSING', 'Please enter a Gist ID in settings.', []);
-      renderFooterBadge('badge', 'ID MISSING', null);
       return;
     }
 
@@ -592,20 +589,16 @@
 
       if (isRemoteNewer) {
         renderSummary('badge badge-update badge-btn', 'UPDATE AVAILABLE', 'Remote manual backup contains newer measurements.', details, () => triggerImport(gistId));
-        renderFooterBadge('badge badge-update badge-btn', 'IMPORT DATA', () => triggerImport(gistId));
 
       } else if (hasNewLocalData) {
         renderSummary('badge badge-export badge-btn', 'EXPORT READY', `New local yield measurements (+${whDiff.toFixed(0)} Wh) ready for Cloud Patch.`, details, () => triggerExport(gistId));
-        renderFooterBadge('badge badge-export badge-btn', 'EXPORT TO GIST 1', () => triggerExport(gistId));
 
       } else {
         renderSummary('badge badge-synced', 'SYNCED', 'Local storage is aligned with Gist Cloud.', details, null);
-        renderFooterBadge('badge badge-synced', 'SYNCED', null);
       }
 
     } catch (err) {
       renderSummary('badge', 'ERROR', err.message, []);
-      renderFooterBadge('badge', 'ERROR', null);
     }
   }
 
@@ -639,16 +632,6 @@
       </div>
       ${details.length > 0 ? `<table class="summary-table">${tableRows}</table>` : ''}
     `;
-  }
-
-  // Render footer action badge aligned with Master Mode badge
-  function renderFooterBadge(badgeClass, badgeText, actionHandler) {
-    const footerContainer = document.getElementById('footerActionBadgeContainer');
-    footerContainer.innerHTML = `<span class="${badgeClass}" id="footerActionBadge">${badgeText}</span>`;
-
-    if (actionHandler) {
-      document.getElementById('footerActionBadge').addEventListener('click', actionHandler);
-    }
   }
 
   // Import flow
