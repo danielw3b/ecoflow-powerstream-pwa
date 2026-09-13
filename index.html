@@ -69,8 +69,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .btn-primary:hover{background:rgba(245,166,35,.25);}
 
 main{padding:12px;max-width:1400px;margin:0 auto;}
-#weatherInline{display:none;font-family:var(--sans);font-size: 0.85rem;color:#8fb0cc;
-  justify-content:center;gap:8px;overflow:hidden;/*padding: 5px;margin-bottom:5px;*/}
+#weatherInline{display:none;font-family:var(--sans);font-size: 0.8rem;color:#8fb0cc;
+  justify-content:center;gap:8px;overflow:hidden;padding: 5px;/*margin-bottom:5px;*/}
 
 .section-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--muted);
   text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
@@ -215,6 +215,7 @@ canvas{width:100%;display:block;}
   <!-- Devices grid -->
   <div class="section-title">
     <span>DEVICES</span>
+    <span id="wm" title="Master Mode"></span>
     <span id="syncTimestamp" class="sync-time-label"></span>
   </div>
   <div class="devices-grid" id="devicesGrid">
@@ -1711,7 +1712,10 @@ init();
 (function initGistBackgroundSync() {
   const SYNC_INTERVAL_MS = 15 * 60 * 1000;
   const EXPORT_THRESHOLD_WH = 100;
-  const MAX_LOG_ENTRIES = 40;
+  const MAX_LOG_ENTRIES = 30;
+
+  // display master-mode+gist_token
+  document.getElementById('wm').textContent = localStorage.getItem('ecoflow_github_token') ? '[x]' : '';
 
   const SYNC_KEYS = [
     'ecoflow_wh',
