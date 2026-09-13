@@ -26,7 +26,7 @@
         --border: rgba(107, 138, 170, 0.2);
     }
 
-    /* 1. BASE STYLES (Mobile First) */
+    /* Base Styles */
     body {
         font-family: system-ui, -apple-system, sans-serif;
         background-color: var(--bg);
@@ -172,7 +172,7 @@
     tr:hover { background: rgba(255,255,255,0.02); }
     table td:last-child, table th:last-child { text-align: center; }
 
-    /* --- SUMMARY CARD STYLES --- */
+    /* Summary Card Styles */
     .summary-card {
         background: var(--panel);
         border: 1px solid var(--border);
@@ -212,7 +212,7 @@
     .summary-card th:nth-child(2), .summary-card td:nth-child(2) { width: 25%; text-align: right; }
     .summary-card th:nth-child(3), .summary-card td:nth-child(3) { width: 41%; text-align: left; }
 
-    /* --- TABLE 1 & 2 STYLES (DAILY TRACKER & ANOMALY) --- */
+    /* Tracker & Anomaly Cards */
     .card.table-card {
         padding: 10px 8px;
         margin-bottom: 20px;
@@ -239,7 +239,7 @@
 
     .card.table-card th {
         position: sticky;
-        top: 34px; /* Fixed offset matching single-line H3 across all viewports */
+        top: 34px;
         z-index: 15;
         background-color: var(--panel);
         box-shadow: inset 0 -1px 0 var(--border);
@@ -255,7 +255,7 @@
     .sum-warn { border: 1px solid var(--warning); }
     .sum-bad { border: 1px solid var(--danger); }
     
-    /* --- OPTIMIZED LEGEND BOX --- */
+    /* Legend Box */
     .legend-box {
         margin-top: 20px;
         padding: 14px 16px;
@@ -283,7 +283,6 @@
         letter-spacing: 0.03em;
     }
 
-    /* Wrap items nicely like inline tags/pill labels */
     .legend-items {
         display: flex;
         flex-wrap: wrap;
@@ -344,7 +343,7 @@
     .table-title-warn { color: var(--warning); }
     .title-badge { font-size: 0.8rem; color: var(--text-dim); font-weight: normal; }
 
-    /* Helper Classes */
+    /* Helpers */
     .subtitle { color: var(--text-dim); }
     .span-2 { grid-column: span 2; }
     .location-group { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
@@ -404,7 +403,7 @@
         stroke-linejoin: round; 
     }
 
-    /* 2. TABLET BREAKPOINT (min 600px) */
+    /* Tablet Breakpoint */
     @media (min-width: 600px) {
         body { padding: 20px; }
         .card { padding: 20px; }
@@ -420,7 +419,7 @@
         }
     }
 
-    /* 3. DESKTOP BREAKPOINT (min 850px) */
+    /* Desktop Breakpoint */
     @media (min-width: 850px) {
         h1 { font-size: 2rem; }
         h2 { font-size: 1.5rem; }
@@ -506,7 +505,6 @@
                         <input type="number" step="0.0001" id="cfg_energyPrice" required placeholder="e.g. 29.89">
                     </div>
                     <div class="form-group">
-                        <!-- Reserve space for optional base fee input -->
                     </div>
                 </div>
             </div>
@@ -550,7 +548,6 @@
     <div id="results"></div>
 </div>
 
-<!-- Floating Scroll-to-Top Button -->
 <button id="scrollToTopBtn" onclick="scrollToTop()" aria-label="Scroll to top">
     <svg viewBox="0 0 12 12" aria-hidden="true">
         <polyline points="2 7.5 6 3.5 10 7.5"></polyline>
@@ -561,14 +558,13 @@
     let globalCsvRows = [];
     let globalConfig = {};
 
-function getStorageKey() {
-    const sn = document.getElementById('cfg_inverter')?.value;
-    if (!sn) return null;
-    // only last 4 suffix
-    const suffix = sn.length > 4 ? sn.slice(-4) : sn;
-    return `ecoflow_analyzer_${suffix}`;
-}
-        
+    function getStorageKey() {
+        const sn = document.getElementById('cfg_inverter')?.value;
+        if (!sn) return null;
+        const suffix = sn.length > 4 ? sn.slice(-4) : sn;
+        return `ecoflow_analyzer_${suffix}`;
+    }
+            
     function initInverters() {
         const select = document.getElementById('cfg_inverter');
         if (!select) return;
@@ -681,7 +677,6 @@ function getStorageKey() {
         try {
             globalConfig = getUserConfig();
     
-            // Robust local YYYY-MM-DD generation for "yesterday" (DST & Timezone safe)
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
     
@@ -695,12 +690,11 @@ function getStorageKey() {
     
             const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&daily=shortwave_radiation_sum,temperature_2m_max&timezone=auto`;
     
-            const dailyResponse = await fetch(dailyUrl);
-            if (!dailyResponse.ok) throw new Error(`Open-Meteo API Error: ${dailyResponse.status}`);
+            // Direkter Ur-Fetch ohne Retry
+            const res = await fetch(dailyUrl);
+            const dailyData = res.ok ? await res.json() : null;
             
-            const dailyData = await dailyResponse.json();
-    
-            if (!dailyData.daily || !dailyData.daily.shortwave_radiation_sum || !dailyData.daily.temperature_2m_max) {
+            if (!dailyData || !dailyData.daily || !dailyData.daily.shortwave_radiation_sum || !dailyData.daily.temperature_2m_max) {
                 throw new Error("Missing required weather parameters in API response.");
             }
     
@@ -708,7 +702,6 @@ function getStorageKey() {
             const radSumRaw = dailyData.daily.shortwave_radiation_sum || [];
             const maxTempRaw = dailyData.daily.temperature_2m_max || [];
     
-            // Defensively trim ALL trailing null entries (e.g., if API hasn't populated yesterday's metrics yet)
             while (dates.length > 0 && radSumRaw[radSumRaw.length - 1] === null) {
                 dates.pop();
                 radSumRaw.pop();
@@ -722,84 +715,17 @@ function getStorageKey() {
             console.error('Analysis Execution Failed:', error);
             resultsDiv.innerHTML = `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
         } finally {
-            // Guaranteed UI state cleanup regardless of success or caught errors
             loadingEl.style.display = 'none';
             runBtn.disabled = false;
         }
     }
 
-    /**
-     * Sanitizes strings to prevent Stored XSS attacks in DOM rendering.
-     * @param {string|number} str - Value to escape.
-     * @returns {string} HTML-safe string representation.
-     */
-    function esc(str) {
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-    
-    /**
-     * Validates strictly formatted YYYY-MM-DD date strings.
-     * @param {string} dateStr - Date key candidate.
-     * @returns {boolean} True if string is a valid ISO date.
-     */
     function isValidDateKey(dateStr) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
       const date = new Date(dateStr);
       return !isNaN(date.getTime());
     }
-    
-    /**
-     * Executes fetch requests with exponential backoff for Open-Meteo API.
-     * 
-     * @param {string} url - Request endpoint.
-     * @param {number} maxRetries - Max retry iterations.
-     * @param {number} initialDelay - Base delay in milliseconds.
-     * @returns {Promise<Object|null>} Parsed response data or null on complete failure.
-     */
-    async function fetchWithRetry(url, maxRetries = 3, initialDelay = 300) {
-      let attempt = 0;
-      let delay = initialDelay;
-    
-      while (attempt < maxRetries) {
-        try {
-          const response = await fetch(url);
-          if (response.ok) {
-            return await response.json();
-          }
-          if (response.status === 429 || response.status >= 500) {
-            attempt++;
-            if (attempt >= maxRetries) break;
-            await new Promise((resolve) => setTimeout(resolve, delay));
-            delay *= 2;
-          } else {
-            break; // Non-retryable HTTP errors (e.g. 400)
-          }
-        } catch (err) {
-          attempt++;
-          if (attempt >= maxRetries) break;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          delay *= 2;
-        }
-      }
-      return null;
-    }
 
-    /**
-     * Process daily solar data using scientific Liu-Jordan model estimations,
-     * panel profiles, temperature corrections, and resilient weather context.
-     * 
-     * @param {string} sn - Inverter Serial Number.
-     * @param {Array<string>} dates - Array of target dates.
-     * @param {Array<number>} radSumRaw - Raw shortwave radiation values.
-     * @param {Array<number>} maxTempRaw - Raw daily max ambient temperatures.
-     * @param {Object} deviceDaily - Historical daily yield dictionary.
-     */
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
       let totalDaysAnalyzed = 0;
       let criticalCount = 0;
@@ -808,24 +734,20 @@ function getStorageKey() {
       let subTableRowsHtml = "";
       const resultsDiv = document.getElementById('results');
     
-      // Counters for individual system indicators
       let optimalCount = 0;
       let normalCount = 0;
       let lossCount = 0;
       let hardwareFailCount = 0;
       let preInstallCount = 0;
     
-      // CSV Blocks for structured export
       const csvHeader = [];
       const csvSummary = [];
       const csvFinancial = [];
       const csvDaily = [];
       const csvAnomalies = [];
     
-      // Resolve custom device name securely from storage
       const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
-      const rawFriendlyName = customNames[sn] || sn;
-      const safeFriendlyName = esc(rawFriendlyName);
+      const friendlyName = customNames[sn] || sn;
     
       const totalWp = globalConfig.totalWp || 900;
       const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
@@ -834,21 +756,17 @@ function getStorageKey() {
       let tableRowsHtml = "";
       const INITIAL_VISIBLE_COUNT = 30;
     
-      // Populate Header Block
-      csvHeader.push([`DEVICE: ${sn} / ${rawFriendlyName}`]);
+      csvHeader.push([`DEVICE: ${sn} / ${friendlyName}`]);
       csvHeader.push([]);
     
-      // Populate Daily Block Header
       csvDaily.push(["DAILY EFFICIENCY TRACKER"]);
       csvDaily.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
     
-      // Validate date keys to prevent sorting crashes or invalid comparisons
       const validDates = Object.keys(deviceDaily)
         .filter((d) => deviceDaily[d] !== undefined && isValidDateKey(d))
         .sort();
       const firstActiveDate = validDates.length > 0 ? validDates[0] : null;
-    
-      // 1. Process daily historical records in REVERSE order (Newest first)
+
       for (let i = dates.length - 1; i >= 0; i--) {
         const dateStr = dates[i];
         if (radSumRaw[i] === null) continue;
@@ -923,16 +841,15 @@ function getStorageKey() {
           });
         }
     
-        // Truncate initial rows using hidden-row CSS class
         const isHiddenClass = (totalDaysAnalyzed - 1) >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
     
         tableRowsHtml += `<tr${isHiddenClass}>
-                            <td>${esc(dateStr)}</td>
+                            <td>${dateStr}</td>
                             <td>${dayTemp.toFixed(1)}</td>
                             <td class="${radCssClass}">${totalRadKwhM2.toFixed(2)}</td>
                             <td>${(expectedSollWh / 1000).toFixed(2)} | ${(realYieldWh / 1000).toFixed(2)}</td>
-                            <td class="${esc(cssClass)}">${efficiency.toFixed(1)}</td>
-                            <td class="${esc(cssClass)} help-cursor" title="${esc(fullTextExplanation)}">${esc(diagnosis)}</td>
+                            <td class="${cssClass}">${efficiency.toFixed(1)}</td>
+                            <td class="${cssClass} help-cursor" title="${fullTextExplanation}">${diagnosis}</td>
                         </tr>`;
     
         csvDaily.push([
@@ -946,7 +863,7 @@ function getStorageKey() {
         ]);
       }
     
-      // 2. Process anomaly sub-rows asynchronously with resilient retries
+      // Ur-Anfragen ohne Retry-Schleife (Batch-Größe = 4)
       let anomalyRowIndex = 0;
     
       if (anomalies.length > 0) {
@@ -964,17 +881,17 @@ function getStorageKey() {
           const chunkPromises = chunk.map(async (target) => {
             const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration,diffuse_radiation&timezone=auto`;
             
-            // Fetch with resilient retry logic
-            const hData = await fetchWithRetry(hUrl);
-            return { target, hData };
+            try {
+              const res = await fetch(hUrl);
+              const hData = res.ok ? await res.json() : null;
+              return { target, hData };
+            } catch (e) {
+              return { target, hData: null };
+            }
           });
     
           const chunkResults = await Promise.all(chunkPromises);
           resolvedAnomalies.push(...chunkResults);
-    
-          if (i + batchSize < anomalies.length) {
-            await new Promise((resolve) => setTimeout(resolve, 120));
-          }
         }
     
         for (const item of resolvedAnomalies) {
@@ -1024,9 +941,8 @@ function getStorageKey() {
           let isCritical = false;
     
           if (!hasWeatherData) {
-            // Fallback context if Open-Meteo API failed completely
             explanation = "⚠️ N/A";
-            weatherTooltip = "Weather data unavailable due to API rate-limit or network timeout.";
+            weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
             cssClass = "warn";
           } else if (target.realYieldWh === 0 || (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3))) {
             explanation = "❌ 🔌";
@@ -1076,9 +992,7 @@ function getStorageKey() {
             weatherCount++;
           }
     
-          if (isCritical) {
-            criticalCount++;
-          }
+          if (isCritical) criticalCount++;
     
           const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
           const realKwh = (target.realYieldWh / 1000).toFixed(2);
@@ -1087,13 +1001,13 @@ function getStorageKey() {
           anomalyRowIndex++;
     
           subTableRowsHtml += `<tr${isSubHiddenClass}>
-                                <td>${esc(target.date)}</td>
-                                <td class="nowrap">${esc(sollKwh)} | <b>${esc(realKwh)}</b></td>
+                                <td>${target.date}</td>
+                                <td class="nowrap">${sollKwh} | <b>${realKwh}</b></td>
                                 <td class="warn">${target.efficiency.toFixed(1)}</td>
-                                <td>${esc(avgClouds)}</td>
-                                <td>${esc(sunHours)}</td>
-                                <td>${esc(maxPeak)}</td>
-                                <td class="${esc(cssClass)} context-cell" title="${esc(weatherTooltip)}">${esc(explanation)}</td>
+                                <td>${avgClouds}</td>
+                                <td>${sunHours}</td>
+                                <td>${maxPeak}</td>
+                                <td class="${cssClass} context-cell" title="${weatherTooltip}">${explanation}</td>
                             </tr>`;
     
           csvAnomalies.push([
@@ -1113,14 +1027,12 @@ function getStorageKey() {
       }
     
       const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-    
       const sumOptNorm = totalDaysAnalyzed > 0 ? (((optimalCount + normalCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
       const sumLossFail = totalDaysAnalyzed > 0 ? (((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
     
       const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
       const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
     
-      // Populate Summary Block for CSV
       csvSummary.push(["OVERALL ANALYSIS SUMMARY"]);
       csvSummary.push([`Anomaly Ratio: ${anomalies.length}/${totalDaysAnalyzed} Days (${anomalyPercentage}%)`]);
       csvSummary.push([`Issues: ${criticalCount}`]);
@@ -1128,16 +1040,14 @@ function getStorageKey() {
       csvSummary.push([`Hardw. Efficiency: ${hwEfficiency}%`]);
       csvSummary.push([]);
     
-      // Table 1 & Table 2 pagination logic
       const hasMoreTable1 = totalDaysAnalyzed > INITIAL_VISIBLE_COUNT;
       const remainingTable1 = totalDaysAnalyzed - INITIAL_VISIBLE_COUNT;
     
       const hasMoreTable2 = anomalyRowIndex > INITIAL_VISIBLE_COUNT;
       const remainingTable2 = anomalyRowIndex - INITIAL_VISIBLE_COUNT;
     
-      // Build HTML Layout (Report & Summary positioned at the top)
       let html = `<div class="card">
-                    <h2>📡 Inverter: ${safeFriendlyName}</h2>
+                    <h2>📡 Inverter: ${friendlyName}</h2>
                     
                     <div class="summary-card sum-${efficiencyClass}">
                         <h3 class="${efficiencyClass}">📊 Status</h3>
@@ -1164,11 +1074,10 @@ function getStorageKey() {
                         </div>
                     </div>`;
     
-      // Financial & ROI Report Integration
       if (typeof renderFinancialReportHtml === 'function') {
         html += renderFinancialReportHtml(deviceDaily, csvFinancial);
       }
-      // Table 1: Daily Efficiency Tracker
+
       html += `
       <div class="card table-card">
           <h3 class="table-title-warn">✅️ Efficiency Tracker</h3>
@@ -1183,7 +1092,6 @@ function getStorageKey() {
           ${hasMoreTable1 ? `<button class="show-more-btn" onclick="showNextRows(this, 30)">Show More (${remainingTable1} remaining)</button>` : ''}
       </div>`;
       
-      // Table 2: Anomaly & Weather Context
       if (anomalyRowIndex > 0) {
           html += `
       <div class="card table-card">
@@ -1238,7 +1146,6 @@ function getStorageKey() {
           </div>
       </div></div>`;    
         
-      // Final Assembly of global CSV export structure
       globalCsvRows = [
             ...csvHeader,
             ...csvSummary,
@@ -1251,49 +1158,24 @@ function getStorageKey() {
       resultsDiv.innerHTML = html;
     }
 
-    // Relative Seasonal Load Profile (Normalized around 1.00 base average per day)
-    // Based on typical household electricity load profiles (SLP H0 / DIN standards)
     const RELATIVE_SEASONAL_PROFILE = {
-        0:  1.20, // January   (Winter peak)
-        1:  1.15, // February
-        2:  1.05, // March
-        3:  0.95, // April
-        4:  0.88, // May
-        5:  0.82, // June      (Summer low)
-        6:  0.80, // July
-        7:  0.85, // August
-        8:  0.92, // September
-        9:  1.02, // October
-        10: 1.12, // November
-        11: 1.24  // December
+        0: 1.20, 1: 1.15, 2: 1.05, 3: 0.95, 4: 0.88, 5: 0.82,
+        6: 0.80, 7: 0.85, 8: 0.92, 9: 1.02, 10: 1.12, 11: 1.24
     };
     
-    /**
-     * Calculates cumulative seasonal weight points for a date range.
-     * @param {Date} startDate 
-     * @param {Date} endDate 
-     * @returns {number} Cumulative seasonal factor weight.
-     */
     function getPeriodSeasonalWeight(startDate, endDate) {
         let cumulativeWeight = 0;
         let currentDate = new Date(startDate);
     
         while (currentDate <= endDate) {
-            const monthIndex = currentDate.getMonth();
-            cumulativeWeight += (RELATIVE_SEASONAL_PROFILE[monthIndex] || 1.0);
+            cumulativeWeight += (RELATIVE_SEASONAL_PROFILE[currentDate.getMonth()] || 1.0);
             currentDate.setDate(currentDate.getDate() + 1);
         }
     
         return cumulativeWeight;
     }
 
-    /**
-     * Reveals the next batch of hidden rows for a specific table container.
-     * @param {HTMLElement} btn - The clicked button element instance.
-     * @param {number} step - Number of hidden rows to reveal per click (default: 30).
-     */
     function showNextRows(btn, step = 30) {
-        // Isolated lookup: search only in the preceding table scroll frame
         const frame = btn.previousElementSibling;
         if (!frame) return;
     
@@ -1310,24 +1192,18 @@ function getStorageKey() {
         }
     }
     
-    // Generate dynamic ROI, financial summary HTML string, and fill the CSV Block
     function renderFinancialReportHtml(deviceDaily = {}, csvFinancialBlock = []) {
         let totalGeneratedWh = 0;
         const tariffStartDate = new Date(globalConfig.tariffStart);
-        
-        // Normalize tariff start date to local midnight for precise day calculation
         tariffStartDate.setHours(0, 0, 0, 0);
     
-        // Calculate 'yesterday' midnight to prevent partial-day skewing
         const endDateObj = new Date();
         endDateObj.setDate(endDateObj.getDate() - 1);
         endDateObj.setHours(0, 0, 0, 0);
     
-        // Compute total elapsed full calendar days up to yesterday
         const diffTime = endDateObj.getTime() - tariffStartDate.getTime();
         const tariffDaysCounter = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
     
-        // Sum total generated energy within active tariff window
         for (const [dateStr, wh] of Object.entries(deviceDaily)) {
             const entryDate = new Date(dateStr);
             entryDate.setHours(0, 0, 0, 0);
@@ -1348,17 +1224,10 @@ function getStorageKey() {
         const meterCurrent = globalConfig.meterCurrent || 0;
         const meterDelta = Math.max(0, meterCurrent - meterStart);
     
-        // --- MEASURED GROUND TRUTH CALCULATIONS ---
-        // Total measured demand so far (Grid import + Direct solar usage)
         const theoryDemand = meterDelta + savedKwh;
-        
-        // Net daily grid import with active solar generation
         const dailyGridOnlyDemand = meterDelta / tariffDaysCounter;
-        
-        // Estimated total daily household demand if no solar generation existed
         const dailyTotalDemand = theoryDemand / tariffDaysCounter;
     
-        // --- SEASONAL MODEL ESTIMATES (SLP H0) ---
         const totalSeasonalWeight = getPeriodSeasonalWeight(tariffStartDate, endDateObj);
         const baseDailyDemand = totalSeasonalWeight > 0 ? (theoryDemand / totalSeasonalWeight) : dailyTotalDemand;
         const estimatedAnnualDemand = baseDailyDemand * 365;
@@ -1368,7 +1237,6 @@ function getStorageKey() {
         const autarkyRate = theoryDemand > 0 ? (savedKwh / theoryDemand) * 100 : 0;
         const roiPercent = investment > 0 ? (savingsNet / investment) * 100 : 0;
     
-        // --- CSV BLOCK EXPORT (Synchronized with HTML) ---
         csvFinancialBlock.push(["=== FINANCIAL REPORT: MEASURED DATA ==="]);
         csvFinancialBlock.push(["Tariff Start", globalConfig.tariffStart, "Tariff Days Tracked", tariffDaysCounter]);
         csvFinancialBlock.push(["Meter Start (kWh)", meterStart.toFixed(1).replace('.', ',')]);
@@ -1388,7 +1256,6 @@ function getStorageKey() {
         csvFinancialBlock.push(["Est. Annual Household Demand (kWh)", estimatedAnnualDemand.toFixed(0)]);
         csvFinancialBlock.push([]);
     
-        // --- HTML RENDER ---
         return `<div class="summary-card mt-15">
             <h3>💰 Financial & ROI Report</h3>
             <table>
@@ -1402,11 +1269,8 @@ function getStorageKey() {
                     <tr><td>Total Generated (PV)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td class="text-left">Inverter production since tariff start</td></tr>
                     <tr><td>Direct Solar Usage</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td class="text-left">${selfConsumptionRate}% direct self-consumption rate</td></tr>
                     <tr><td>Total Household Demand</td><td><b>${theoryDemand.toFixed(1)} kWh</b></td><td class="text-left">Real total demand (Grid import + Solar used)</td></tr>
-                    
-                    <!-- Daily Averages with corrected physical naming -->
                     <tr><td>Avg. Daily Import <b class="good">(w/ PV)</b></td><td class="good">${dailyGridOnlyDemand.toFixed(2)} kWh</td><td class="text-left">Daily net grid import w/ solar</td></tr>
                     <tr><td>Avg. Daily elec. Need <b class="warn">(w/out PV)</b></td><td class="warn">${dailyTotalDemand.toFixed(2)} kWh</td><td class="text-left">Daily grid need w/out solar</td></tr>
-                    
                     <tr><td>Realized Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td class="text-left">Solar share of ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
                     <tr><td>Total Net Savings</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td class="text-left">Direct electricity bill reduction</td></tr>
                     <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td class="text-left">Of ${cur}${investment} total investment</td></tr>
@@ -1422,48 +1286,20 @@ function getStorageKey() {
         </div>`;
     }
 
-    /**
-     * Sanitizes a single cell value to prevent CSV Formula Injection (CWE-1236).
-     * Prepends an apostrophe if the string starts with formula-triggering characters (=, +, -, @).
-     *
-     * @param {*} value - The input cell content
-     * @returns {string} - The sanitized string compliant with RFC 4180
-     */
     function sanitizeCsvCell(value) {
         if (value === null || value === undefined) return "";
         let str = String(value);
-    
-        // Escape double quotes by doubling them
-        if (str.includes('"')) {
-            str = str.replace(/"/g, '""');
-        }
-    
-        // Neutralize formula triggers for spreadsheet applications (Excel, Calc)
-        if (/^[=+\-@\t\r]/.test(str)) {
-            str = "'" + str;
-        }
-    
-        // Wrap in double quotes if the cell contains delimiters, line breaks, or quotes
-        if (/[;\n\r"]/.test(str)) {
-            str = `"${str}"`;
-        }
-    
+        if (str.includes('"')) str = str.replace(/"/g, '""');
+        if (/[;\n\r"]/.test(str)) str = `"${str}"`;
         return str;
     }
     
-    /**
-     * Downloads the accumulated globalCsvRows dataset as a UTF-8 encoded CSV file.
-     * Uses a Byte Order Mark (BOM) to ensure correct character encoding in Microsoft Excel.
-     */
     function downloadCSV() {
-        // 1. Verify that the global row buffer contains data
         if (!Array.isArray(globalCsvRows) || globalCsvRows.length === 0) {
-            console.warn("CSV export aborted: 'globalCsvRows' array is empty.");
             alert("No analysis data available for export! Please run the analysis first.");
             return;
         }
     
-        // 2. Build CSV string with UTF-8 BOM (\uFEFF) for proper emoji and accent rendering
         const csvContent = "\uFEFF" + globalCsvRows
             .map(row => row.map(sanitizeCsvCell).join(";"))
             .join("\n");
@@ -1472,7 +1308,6 @@ function getStorageKey() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         
-        // Extract inverter identifier and start date for dynamic filename generation
         const inverterSelect = document.getElementById('cfg_inverter');
         const inverterName = (inverterSelect && inverterSelect.value) ? inverterSelect.value : "Unknown_Device";
         const startDateStr = (typeof globalConfig !== "undefined" && globalConfig?.startDate) ? globalConfig.startDate : "All_Time";
@@ -1480,26 +1315,18 @@ function getStorageKey() {
         link.href = url;
         link.download = `Solar_Analysis_${inverterName}_${startDateStr}.csv`;
         
-        // 3. Append to DOM temporarily to ensure cross-browser trigger (Firefox/Safari support)
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     
-        // 4. Deallocate object URL asynchronously after click event completion
-        setTimeout(() => {
-            URL.revokeObjectURL(url);
-        }, 100);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
     }
-    // Cache DOM element once to prevent repeated queries during scroll events
+
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
     
-    // Toggle scroll-to-top button visibility based on dynamic threshold
     const handleScroll = () => {
         if (!scrollToTopBtn) return;
-    
-        // Dynamic threshold clamped between 400px (mobile/landscape) and 600px (desktop)
         const threshold = Math.min(Math.max(window.innerHeight, 400), 600);
-    
         if (window.scrollY > threshold) {
             scrollToTopBtn.classList.add('show');
         } else {
@@ -1507,15 +1334,10 @@ function getStorageKey() {
         }
     };
     
-    // Passive scroll listener for maximum scrolling performance
     window.addEventListener('scroll', handleScroll, { passive: true });
     
-    // Smooth scroll back to top
     function scrollToTop() {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }    
     window.addEventListener('DOMContentLoaded', initInverters);
 </script>
