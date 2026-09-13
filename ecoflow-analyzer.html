@@ -945,49 +945,62 @@
             explanation = "⚠️ N/A";
             weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
             cssClass = "warn";
-          } else if (target.realYieldWh === 0 || (target.realYieldWh <= 50 && !(avgClouds > 95 && sunHours < 3))) {
+          } 
+          // 1. Total data loss (system off or zero generation)
+          else if (target.realYieldWh === 0) {
             explanation = "❌ 🔌";
-            weatherTooltip = "Hardware Drop: System turned off, missing local data or completely disconnected.";
+            weatherTooltip = "Hardware Drop: System turned off or completely disconnected (0 Wh yield).";
             cssClass = "bad";
             isCritical = true;
-          } else if (target.efficiency < 4 && maxPeak > 400 && avgClouds < 85 && sunHours < 10) {
+          } 
+          // 2. Heavy cloud / rain / low light context (prioritized before low-yield hardware checks)
+          else if ((avgClouds >= 80 && sunHours <= 3.5 && maxPeak <= 300) || (avgClouds > 90 && sunHours < 4)) {
+            explanation = "🌧️ ☁️";
+            weatherTooltip = `Heavy Cloud / Rain: Extremely low radiation (Peak ${maxPeak} W/m², ${sunHours}h sun). Expected low yield.`;
+            weatherCount++;
+          }
+          // 3. Genuine hardware drop (low yield despite viable solar radiation)
+          else if (target.realYieldWh <= 50 && maxPeak > 300) {
+            explanation = "❌ 🔌";
+            weatherTooltip = `Hardware Drop: Critical yield failure (${target.realYieldWh} Wh) despite viable peak radiation (${maxPeak} W/m²).`;
+            cssClass = "bad";
+            isCritical = true;
+          } 
+          else if (target.efficiency < 4 && maxPeak > 400 && avgClouds < 85 && sunHours < 10) {
             explanation = "❌ 🔌";
             weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and yield failure despite viable solar radiation.`;
             cssClass = "bad";
             isCritical = true;
-          } else if (avgClouds <= 35 && maxPeak > 600) {
+          } 
+          else if (avgClouds <= 35 && maxPeak > 600) {
             explanation = "📶 ⚠️";
             weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired.`;
             cssClass = "bad";
             isCritical = true;
-          } else if (maxTemp >= 33 && avgClouds <= 35) {
+          } 
+          else if (maxTemp >= 33 && avgClouds <= 35) {
             explanation = "🌡️ 🥵";
             weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
             cssClass = "warn";
             weatherCount++;
-          } else if (avgClouds > 90 && sunHours < 4) {
-            explanation = "🌧️ ☁️";
-            weatherTooltip = "Heavy cloud cover / Rain: Very dense cloud cover with minimal sunshine duration.";
-            weatherCount++;
-          } else if (target.efficiency < 4 && avgClouds < 80 && sunHours >= 4 && maxPeak >= 500) {
-            explanation = "❌ 🔌";
-            weatherTooltip = `Hardware Drop: Critically low efficiency (${target.efficiency}%) and yield below 50% of expected.`;
-            cssClass = "bad";
-            isCritical = true;
-          } else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500 && sunHours > 4) {
+          } 
+          else if (realDiffuseShare >= 0.65 && avgClouds >= 40 && maxPeak < 500 && sunHours > 4) {
             explanation = "☁️ 🌫️";
             weatherTooltip = `High Diffuse Light: ${(realDiffuseShare * 100).toFixed(0)}% diffuse radiation with restricted peak (${maxPeak} W/m²) over ${sunHours}h sun duration.`;
             cssClass = "text-dim";
             weatherCount++;
-          } else if (avgClouds >= 80 && maxPeak >= 600) {
+          } 
+          else if (avgClouds >= 80 && maxPeak >= 600) {
             explanation = "☁️ ⛅";
             weatherTooltip = "Mostly Overcast with Sun Breaks: Dense clouds overall, but intense short solar peaks.";
             weatherCount++;
-          } else if (avgClouds >= 70 || (avgClouds >= 60 && maxPeak < 600)) {
+          } 
+          else if (avgClouds >= 70 || (avgClouds >= 60 && maxPeak < 600)) {
             explanation = "☁️ ☁️";
             weatherTooltip = "Overcast / Diffuse light: High cloudiness with restricted direct radiation.";
             weatherCount++;
-          } else {
+          } 
+          else {
             explanation = "⛅ ☀️";
             weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
             weatherCount++;
