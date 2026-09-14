@@ -597,12 +597,12 @@
       // Check if local device has new measurements ready for Cloud Patch (Master only)
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 20000)) && (whDiff >= EXPORT_THRESHOLD_WH);
 
-      // --- Timestamp & Color Alignment Logic ---
+      // --- Timestamp Alignment Logic ---
 
-      // Alignment check between Gist 2 (Auto-Engine) and Local Sync (within 20 sec tolerance)
+      // Alignment check between Gist 2 (Auto-Engine) and Local Sync (20 sec tolerance)
       const isGist2SyncedWithLocal = autoGist && localSyncTs && Math.abs(autoGist.contentTs - localSyncTs) <= 20000;
 
-      // Alignment check between Gist 1 (Manual) and Local Sync (within 20 sec tolerance)
+      // Alignment check between Gist 1 (Manual) and Local Sync (20 sec tolerance)
       const isGist1SyncedWithLocal = localSyncTs && manualGist.contentTs && Math.abs(manualGist.contentTs - localSyncTs) <= 20000;
 
       let gist1Class = 'txt-emerald';
@@ -610,22 +610,22 @@
       let localSyncClass = 'txt-amber';
 
       if (isRemoteNewer) {
-        // CASE 1: IMPORT PENDING (Gist 1 is the leading authority)
-        // Gist 1 is Green. Gist 2 & Local Sync lag behind -> Both Amber.
+        // CASE 1: EVENING MASTER SYNC (Gist 1 is King)
+        // Gist 1 is Emerald. Gist 2 and Local Sync lag behind Gist 1 -> BOTH ARE AMBER.
         gist1Class = 'txt-emerald';
-        gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
+        gist2Class = autoGist ? 'txt-amber' : 'txt-slate';
         localSyncClass = 'txt-amber';
 
       } else if (hasNewLocalData) {
-        // CASE 2: EXPORT PENDING (Master local device is leading)
-        // Gist 1 is Amber. Local Sync and Gist 2 run aligned during the day -> Green.
+        // CASE 2: DAYTIME AUTO-DYNAMICS (New Local/Auto-Engine Data vs Old Gist 1)
+        // Gist 1 is Amber (yesterday's stand). Gist 2 is Emerald. Local Sync toggles Green/Amber based on patch status.
         gist1Class = 'txt-amber';
-        gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
-        localSyncClass = 'txt-emerald';
+        gist2Class = autoGist ? 'txt-emerald' : 'txt-slate';
+        localSyncClass = isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
 
       } else {
-        // CASE 3: SYNCED
-        // Colors reflect strict 1:1 alignment between Gist 2 and Local Sync
+        // CASE 3: FULLY SYNCED
+        // Colors reflect strict 1:1 alignment between endpoints
         gist1Class = isGist1SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
         gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
         localSyncClass = (isGist1SyncedWithLocal || isGist2SyncedWithLocal) ? 'txt-emerald' : 'txt-amber';
