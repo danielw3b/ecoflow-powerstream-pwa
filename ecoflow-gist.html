@@ -601,6 +601,9 @@
       const gist1Synced = Math.abs(manualGist.contentTs - latestDataTs) < 120000 || manualGist.contentTs >= latestDataTs;
       const gist1Class = gist1Synced ? 'txt-emerald' : 'txt-amber';
 
+      // If Gist 2 synched with localSynTs?
+      const isGist2SyncedWithLocal = autoGist && (Math.abs(autoGist.contentTs - localSyncTs) < 120000 || localSyncTs >= autoGist.contentTs);
+      
       const cloudBlock = {
         manual: {
           updated: format24h(manualGist.contentTs),
@@ -610,7 +613,8 @@
         auto: autoGist ? {
           updated: format24h(autoGist.contentTs),
           size: `${autoGist.sizeKB} KB`,
-          cssClass: (autoGist.contentTs >= (latestDataTs - 120000)) ? 'txt-emerald' : 'txt-slate'
+          // Gist 2 synched with Local Last Sync
+          cssClass: isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-slate'
         } : null
       };
 
@@ -633,7 +637,7 @@
         renderSummary(
           'badge badge-export badge-btn',
           'EXPORT READY',
-          `New local yield measurements (+${whDiff.toFixed(0)} Wh) ready for Cloud Patch.`,
+          `New local (+${whDiff.toFixed(0)} Wh) ready for Cloud Patch.`,
           cloudBlock,
           localBlock,
           () => triggerExport(gistId)
@@ -685,7 +689,7 @@
         </div>
         <table class="summary-table">
           <tr>
-            <td>Gist 1 Updated</td>
+            <td>Gist 1 Manually Updated</td>
             <td><span class="${cloudBlock.manual.cssClass}">${cloudBlock.manual.updated}</span></td>
           </tr>
           <tr>
