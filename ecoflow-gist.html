@@ -672,16 +672,16 @@
     }
 
     // Gist Cloud Status Group
-    const hasAutoEngine = !!autoGistId;
+    /*const hasAutoEngine = !!autoGistId;
     const autoEngineTag = hasAutoEngine 
       ? `<span style="color: var(--emerald-light); font-weight: 600;">✓ Auto-Engine</span>` 
-      : '';
+      : '';*/
 
     let cloudHtml = `
       <div class="status-group">
         <div class="status-group-title">
-          <span>Gist Cloud Backups ${autoEngineTag}</span>
-          <span class="tag-manual">Gist 1 (Manual)</span>
+          <span>Gist Cloud Backups</span>
+          <!--<span class="tag-manual">Gist 1 (Manual)</span>-->
         </div>
         <table class="summary-table">
           <tr>
@@ -696,7 +696,7 @@
     if (cloudBlock.auto) {
       cloudHtml += `
           <tr>
-            <td>Gist 2 (Auto Engine)</td>
+            <td>Gist 2 Auto-Engine <span style="color: var(--emerald-light); font-weight: 600;">✓</span></td>
             <td><span class="${cloudBlock.auto.cssClass}">${cloudBlock.auto.updated}</span></td>
           </tr>
           <tr>
