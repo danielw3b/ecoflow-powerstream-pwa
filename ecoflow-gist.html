@@ -587,7 +587,7 @@
 
       adjustUIForRole();
 
-      // Check if remote manual backup contains newer measurements
+      // Check if remote manual backup contains newer measurements (20 sec tolerance)
       const isRemoteNewer = manualGist.contentTs > (Math.max(localSyncTs, latestDataTs || 0) + 20000);
       
       const localWh = getLocalWhSum();
@@ -597,22 +597,42 @@
       // Check if local device has new measurements ready for Cloud Patch (Master only)
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 20000)) && (whDiff >= EXPORT_THRESHOLD_WH);
 
-      // --- Timestamp Color Logic (Exact Matching) ---
+      // --- Timestamp & Color Alignment Logic ---
 
-      // 1. Gist 1 (Manual) Status: Aligned with latest data or remote is updated
-      const gist1Synced = latestDataTs ? (Math.abs(manualGist.contentTs - latestDataTs) < 20000 || manualGist.contentTs >= latestDataTs) : true;
-      const gist1Class = gist1Synced ? 'txt-emerald' : 'txt-amber';
+      // Alignment check between Gist 2 (Auto-Engine) and Local Sync (within 20 sec tolerance)
+      const isGist2SyncedWithLocal = autoGist && localSyncTs && Math.abs(autoGist.contentTs - localSyncTs) <= 20000;
 
-      // 2. Gist 2 (Auto-Engine) Status: MUST match local sync exact timestamp (< 1 sec difference)
-      const isGist2ExactMatch = autoGist && localSyncTs && (Math.abs(autoGist.contentTs - localSyncTs) < 1000);
-      const gist2Class = autoGist ? (isGist2ExactMatch ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
+      // Alignment check between Gist 1 (Manual) and Local Sync (within 20 sec tolerance)
+      const isGist1SyncedWithLocal = localSyncTs && manualGist.contentTs && Math.abs(manualGist.contentTs - localSyncTs) <= 20000;
 
-      // 3. Local Last Sync Status: MUST match Gist 1 exact timestamp (< 1 sec difference)
-      const isLocalSynced = localSyncTs && manualGist.contentTs && (Math.abs(localSyncTs - manualGist.contentTs) < 20000);
-      const localSyncClass = isLocalSynced ? 'txt-emerald' : 'txt-amber';
+      let gist1Class = 'txt-emerald';
+      let gist2Class = 'txt-slate';
+      let localSyncClass = 'txt-amber';
 
-      // 4. Local Data Endpoint Status: Unverändert nach deiner bestehenden Logik
-      const endpointClass = (latestDataTs && manualGist.contentTs && Math.abs(latestDataTs - manualGist.contentTs) < 120000) ? 'txt-emerald' : 'txt-slate';
+      if (isRemoteNewer) {
+        // CASE 1: IMPORT PENDING (Gist 1 is the leading authority)
+        // Gist 1 is Green. Gist 2 & Local Sync lag behind -> Both Amber.
+        gist1Class = 'txt-emerald';
+        gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
+        localSyncClass = 'txt-amber';
+
+      } else if (hasNewLocalData) {
+        // CASE 2: EXPORT PENDING (Master local device is leading)
+        // Gist 1 is Amber. Local Sync and Gist 2 run aligned during the day -> Green.
+        gist1Class = 'txt-amber';
+        gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
+        localSyncClass = 'txt-emerald';
+
+      } else {
+        // CASE 3: SYNCED
+        // Colors reflect strict 1:1 alignment between Gist 2 and Local Sync
+        gist1Class = isGist1SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
+        gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
+        localSyncClass = (isGist1SyncedWithLocal || isGist2SyncedWithLocal) ? 'txt-emerald' : 'txt-amber';
+      }
+
+      // Local Data Endpoint remains neutral informational indicator
+      const endpointClass = 'txt-slate';
 
       const cloudBlock = {
         manual: {
