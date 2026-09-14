@@ -55,6 +55,44 @@
     }
 
     .container { max-width: 600px; margin: 0 auto; }
+
+    /* Header Container Layout */
+    .app-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .app-icon {
+        font-size: 2.2rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .app-title {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .app-title h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0;
+        color: var(--text);
+    }
+
+    .app-title p {
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        margin: 2px 0 0 0;
+        line-height: 1.3;
+    }
+    
     
     .card { 
         background-color: var(--card-bg); 
@@ -452,8 +490,18 @@
 <body>
 
 <div class="container">
-    <h1>🌤️ Solar & Weather Analyzer</h1>
-    <p class="subtitle">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>
+    <!--<h1>🌤️ Solar & Weather Analyzer</h1>
+    <p class="subtitle">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>-->
+
+    <!-- Application Header -->
+    <div class="app-header">
+        <span class="app-icon" role="img" aria-label="Solar & Weather Icon">🌤️</span>
+        <div class="app-title">
+            <h1>Solar & Weather Analyzer</h1>
+            <p>Locally analyzes your EcoFlow PWA energy history with Open-Meteo weather data.</p>
+        </div>
+    </div>
+    
     <div class="card">
         <h2>⚙️ Configuration</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
