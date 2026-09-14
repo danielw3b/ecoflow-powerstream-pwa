@@ -568,41 +568,46 @@
     const gistId = document.getElementById('gistId').value.trim();
     const autoGistId = document.getElementById('autoGistId').value.trim();
     const hasToken = !!document.getElementById('githubToken').value.trim();
-
+  
     if (!gistId) {
       renderSummary('badge', 'GIST ID MISSING', 'Please enter a Gist ID in settings.', null, null, null);
       return;
     }
-
+  
     try {
       const [manualGist, autoGist] = await Promise.all([
         fetchGistMetaData(gistId),
         fetchGistMetaData(autoGistId)
       ]);
-
+  
       if (!manualGist) throw new Error('Invalid Manual Gist ID');
-
+  
       const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
       const latestDataTs = getLatestDataTimestamp();
-
+  
       adjustUIForRole();
-
+  
       // Check if remote manual backup contains newer measurements (Works for both Reader and Writer)
       const isRemoteNewer = manualGist.contentTs > (Math.max(localSyncTs, latestDataTs || 0) + 20000);
       
       const localWh = getLocalWhSum();
       const remoteWh = manualGist.payload ? getRemoteWhSum(manualGist.payload) : 0;
       const whDiff = localWh - remoteWh;
-
+  
       // Check if local device has new measurements ready for Cloud Patch (Master only)
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualGist.contentTs + 20000)) && (whDiff >= EXPORT_THRESHOLD_WH);
-
-      // Format Gist 1 & Gist 2 status blocks
+  
+      // Gist 1 (Manual Backup) status styling
       const gist1Synced = Math.abs(manualGist.contentTs - latestDataTs) < 120000 || manualGist.contentTs >= latestDataTs;
       const gist1Class = gist1Synced ? 'txt-emerald' : 'txt-amber';
-
-      // If Gist 2 synched with localSynTs?
-      const isGist2SyncedWithLocal = autoGist && (Math.abs(autoGist.contentTs - localSyncTs) < 120000 || localSyncTs >= autoGist.contentTs);
+  
+      // Gist 2 (Auto-Engine) status styling: Green if active and matching local data timestamps or cloud backups
+      const refDataTs = latestDataTs || localSyncTs || 0;
+      const isGist2Synced = autoGist && (
+        Math.abs(autoGist.contentTs - refDataTs) < 120000 || 
+        autoGist.contentTs >= refDataTs ||
+        (manualGist && Math.abs(autoGist.contentTs - manualGist.contentTs) < 7200000) // Within 2h sunset window
+      );
       
       const cloudBlock = {
         manual: {
@@ -613,16 +618,19 @@
         auto: autoGist ? {
           updated: format24h(autoGist.contentTs),
           size: `${autoGist.sizeKB} KB`,
-          // Gist 2 synched with Local Last Sync
-          cssClass: isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-slate'
+          cssClass: isGist2Synced ? 'txt-emerald' : 'txt-slate'
         } : null
       };
-
+  
+      // Local Last Sync status styling: Neutral (slate) if remote update pending, emerald if synchronized
+      const localSyncClass = (!isRemoteNewer && localSyncTs > 0) ? 'txt-emerald' : 'txt-slate';
+  
       const localBlock = {
         lastSync: format24h(localSyncTs),
+        lastSyncClass: localSyncClass,
         endpoint: format24h(latestDataTs)
       };
-
+  
       if (isRemoteNewer) {
         renderSummary(
           'badge badge-update badge-btn',
@@ -632,7 +640,7 @@
           localBlock,
           () => triggerImport(gistId)
         );
-
+  
       } else if (hasNewLocalData) {
         renderSummary(
           'badge badge-export badge-btn',
@@ -642,7 +650,7 @@
           localBlock,
           () => triggerExport(gistId)
         );
-
+  
       } else {
         renderSummary(
           'badge badge-synced',
@@ -653,92 +661,73 @@
           null
         );
       }
-
+  
     } catch (err) {
       renderSummary('badge', 'ERROR', err.message, null, null, null);
     }
   }
-
-  // Render structured visual UI groups
-  function renderSummary(badgeClass, badgeText, message, cloudBlock, localBlock, actionHandler) {
-    const badgeContainer = document.getElementById('statusBadgeContainer');
-    const content = document.getElementById('summaryContent');
-
-    badgeContainer.innerHTML = `<span class="${badgeClass}" id="headerActionBadge">${badgeText}</span>`;
-    
-    if (actionHandler) {
-      document.getElementById('headerActionBadge').addEventListener('click', actionHandler);
-    }
-
-    if (!cloudBlock || !localBlock) {
-      content.innerHTML = `<div class="summary-msg">${message}</div>`;
-      return;
-    }
-
-    // Gist Cloud Status Group
-    /*const hasAutoEngine = !!autoGistId;
-    const autoEngineTag = hasAutoEngine 
-      ? `<span style="color: var(--emerald-light); font-weight: 600;">✓ Auto-Engine</span>` 
-      : '';*/
-
-    let cloudHtml = `
-      <div class="status-group">
-        <div class="status-group-title">
-          <span>Gist Cloud Backups</span>
-          <!--<span class="tag-manual">Gist 1 (Manual)</span>-->
-        </div>
-        <table class="summary-table">
-          <tr>
-            <td>Gist 1 Manually Updated</td>
-            <td><span class="${cloudBlock.manual.cssClass}">${cloudBlock.manual.updated}</span></td>
-          </tr>
-          <tr>
-            <td>Gist 1 Size</td>
-            <td>${cloudBlock.manual.size}</td>
-          </tr>
+  
+  // Render Gist status summary UI block
+  function renderSummary(badgeClass, badgeText, statusText, cloudBlock, localBlock, actionCallback) {
+    const container = document.getElementById('gistStatusGrid');
+    if (!container) return;
+  
+    let html = `
+      <div class="status-header">
+        <span class="${badgeClass}" ${actionCallback ? 'id="btnStatusAction"' : ''}>${badgeText}</span>
+        <p class="status-desc">${statusText}</p>
+      </div>
     `;
-    if (cloudBlock.auto) {
-      cloudHtml += `
-          <tr>
-            <td>Gist 2 Auto-Engine <span style="color: var(--emerald-light); font-weight: 600;">✓</span></td>
-            <td><span class="${cloudBlock.auto.cssClass}">${cloudBlock.auto.updated}</span></td>
-          </tr>
-          <tr>
-            <td>Gist 2 Size</td>
-            <td>${cloudBlock.auto.size}</td>
-          </tr>
+  
+    if (cloudBlock && localBlock) {
+      html += `
+        <div class="status-section">
+          <h4 class="status-subhead">GIST CLOUD BACKUPS</h4>
+          <table class="status-table">
+            <tr>
+              <td>Gist 1 Manually Updated</td>
+              <td><span class="${cloudBlock.manual.cssClass}">${cloudBlock.manual.updated}</span></td>
+            </tr>
+            <tr>
+              <td>Gist 1 Size</td>
+              <td>${cloudBlock.manual.size}</td>
+            </tr>
+            ${cloudBlock.auto ? `
+            <tr>
+              <td>Gist 2 Auto-Engine <span style="color: var(--emerald-light); font-weight: 600;">✓</span></td>
+              <td><span class="${cloudBlock.auto.cssClass}">${cloudBlock.auto.updated}</span></td>
+            </tr>
+            <tr>
+              <td>Gist 2 Size</td>
+              <td>${cloudBlock.auto.size}</td>
+            </tr>
+            ` : ''}
+          </table>
+        </div>
+  
+        <div class="status-section">
+          <h4 class="status-subhead">LOCAL DEVICE STORAGE</h4>
+          <table class="status-table">
+            <tr>
+              <td>Local Last Sync</td>
+              <td><span class="${localBlock.lastSyncClass}">${localBlock.lastSync}</span></td>
+            </tr>
+            <tr>
+              <td>Local Data Endpoint</td>
+              <td><span>${localBlock.endpoint}</span></td>
+            </tr>
+          </table>
+        </div>
       `;
     }
-
-    cloudHtml += `</table></div>`;
-
-    // Local Storage Status Group
-    const localHtml = `
-      <div class="status-group">
-        <div class="status-group-title">
-          <span>Local Device Storage</span>
-          <!--<span class="tag-local">PWA Client</span>-->
-        </div>
-        <table class="summary-table">
-          <tr>
-            <td>Local Last Sync</td>
-            <td><span class="txt-emerald">${localBlock.lastSync}</span></td>
-          </tr>
-          <tr>
-            <td>Local Data Endpoint</td>
-            <td><span class="txt-slate">${localBlock.endpoint}</span></td>
-          </tr>
-        </table>
-      </div>
-    `;
-
-    content.innerHTML = `
-      <div class="summary-msg">
-        ${message}
-      </div>
-      ${cloudHtml}
-      ${localHtml}
-    `;
+  
+    container.innerHTML = html;
+  
+    // Attach event listener for action button (Export / Update)
+    if (actionCallback) {
+      const btn = document.getElementById('btnStatusAction');
+      if (btn) btn.onclick = actionCallback;
+    }
   }
 
   // Import workflow (Gist 1 to LocalStorage merge)
