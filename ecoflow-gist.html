@@ -608,8 +608,8 @@
       const gist2Class = autoGist ? (isGist2ExactMatch ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
 
       // 3. Local Last Sync Status: MUST match Gist 1 exact timestamp (< 1 sec difference)
-      const isLocalSyncExactMatch = localSyncTs && manualGist.contentTs && (Math.abs(localSyncTs - manualGist.contentTs) < 1000);
-      const localSyncClass = isLocalSyncExactMatch ? 'txt-emerald' : 'txt-amber';
+      const isLocalSynced = localSyncTs && manualGist.contentTs && (Math.abs(localSyncTs - manualGist.contentTs) < 20000);
+      const localSyncClass = isLocalSynced ? 'txt-emerald' : 'txt-amber';
 
       // 4. Local Data Endpoint Status: Unverändert nach deiner bestehenden Logik
       const endpointClass = (latestDataTs && manualGist.contentTs && Math.abs(latestDataTs - manualGist.contentTs) < 120000) ? 'txt-emerald' : 'txt-slate';
