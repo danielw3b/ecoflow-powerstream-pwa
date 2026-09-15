@@ -613,7 +613,11 @@
       adjustUIForRole();
 
       // Check if remote manual backup contains newer measurements (20 sec tolerance)
-      const isRemoteNewer = manualGist.contentTs > (Math.max(localSyncTs, latestDataTs || 0) + 20000);
+      //const isRemoteNewer = manualGist.contentTs > (Math.max(localSyncTs, latestDataTs || 0) + 20000);
+
+      // Check if remote manual backup contains newer measurements AND Gist 2 hasn't taken over today
+      const isAutoEngineActive = autoGist && (autoGist.contentTs > manualGist.contentTs + 20000);
+      const isRemoteNewer = !isAutoEngineActive && (manualGist.contentTs > (Math.max(localSyncTs, latestDataTs || 0) + 20000));
       
       const localWh = getLocalWhSum();
       const remoteWh = manualGist.payload ? getRemoteWhSum(manualGist.payload) : 0;
