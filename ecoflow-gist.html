@@ -96,8 +96,6 @@
       align-items: center;
       gap: 8px;
       color: var(--text);
-      /*cursor: pointer;
-      user-select: none;*/
     }
 
     /* Status Badges */
@@ -271,9 +269,36 @@
 
     .hidden { display: none !important; }
 
+    /* Tablet & Desktop Breakpoints (Aligned with analyzer.html) */
     @media (min-width: 600px) {
       body { padding: 20px; }
-      .container { gap: 16px; }
+      .container { max-width: 800px; gap: 16px; }
+      .card { padding: 20px; }
+      .status-group { padding: 12px 14px; }
+      .summary-table { font-size: 0.85rem; }
+    }
+
+    @media (min-width: 850px) {
+      .container { max-width: 1000px; }
+      
+      .app-title h1 { font-size: 1.5rem; }
+      .app-title p { font-size: 0.9rem; }
+      
+      .card { padding: 24px; }
+      .card-title { font-size: 1.2rem; }
+      
+      .badge { font-size: 0.8rem; padding: 6px 12px; }
+      .summary-msg { font-size: 0.95rem; }
+      
+      .status-group-title { font-size: 0.8rem; }
+      .summary-table { font-size: 0.95rem; }
+      .summary-table td { padding: 6px 0; }
+
+      input[type="text"], input[type="password"] {
+        padding: 12px;
+        font-size: 0.95rem;
+      }
+      label { font-size: 0.88rem; }
     }
   </style>
 </head>
