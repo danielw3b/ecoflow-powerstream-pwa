@@ -890,9 +890,12 @@
       const data = await response.json();
       
       // Extract exact server response timestamp from GitHub to avoid client/server drift
-      const officialGistTimestamp = data.updated_at || (data.files && data.files['ecoflow_backup.json'] ? data.files['ecoflow_backup.json'].updated_at : isoNow);
-  
-      localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
+      //const officialGistTimestamp = data.updated_at || (data.files && data.files['ecoflow_backup.json'] ? data.files['ecoflow_backup.json'].updated_at : isoNow);
+      //localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
+
+      // Sync local storage with the exact timestamp baked into the export payload
+      localStorage.setItem(LOCAL_SYNC_KEY, isoNow);
+      
       await checkGistStatus();
   
     } catch (err) {
@@ -940,7 +943,12 @@
       }
   
       // Set the authoritative GitHub server timestamp to match Gist 1
-      localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
+      //localStorage.setItem(LOCAL_SYNC_KEY, officialGistTimestamp);
+
+      // Extract exact payload timestamp (or fallback to server timestamp)
+      const importTimestamp = payload.timestamp || data.updated_at;
+      localStorage.setItem(LOCAL_SYNC_KEY, importTimestamp);
+                                          
       await checkGistStatus();
   
     } catch (err) {
