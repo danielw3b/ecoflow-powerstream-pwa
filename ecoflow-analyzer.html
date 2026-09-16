@@ -1325,7 +1325,7 @@
         csvFinancialBlock.push(["Direct Solar Used (kWh)", savedKwh.toFixed(2).replace('.', ',')]);
         csvFinancialBlock.push(["Total Household Demand (kWh)", theoryDemand.toFixed(1).replace('.', ',')]);
         csvFinancialBlock.push(["Daily Grid Import (with PV) (kWh)", dailyGridOnlyDemand.toFixed(2).replace('.', ',')]);
-        csvFinancialBlock.push(["Total Demand (without PV) (kWh)", dailyTotalDemand.toFixed(2).replace('.', ',')]);
+        csvFinancialBlock.push(["Daily elec. Need (without PV) (kWh)", dailyTotalDemand.toFixed(2).replace('.', ',')]);
         csvFinancialBlock.push(["Realized Autarky Rate (%)", autarkyRate.toFixed(1).replace('.', ',')]);
         csvFinancialBlock.push(["Total Net Savings (" + cur + ")", savingsNet.toFixed(2).replace('.', ',')]);
         csvFinancialBlock.push(["ROI Progress (%)", roiPercent.toFixed(1).replace('.', ',')]);
@@ -1348,8 +1348,8 @@
                     <tr><td>Total Generated (PV)</td><td>${totalGeneratedKwh.toFixed(2)} kWh</td><td class="text-left">Inverter production since tariff start</td></tr>
                     <tr><td>Direct Solar Usage</td><td class="good">${savedKwh.toFixed(2)} kWh</td><td class="text-left">${selfConsumptionRate}% direct self-consumption rate</td></tr>
                     <tr><td>Total Household Demand</td><td><b>${theoryDemand.toFixed(1)} kWh</b></td><td class="text-left">Real total demand (Grid import + Solar used)</td></tr>
-                    <tr><td>Avg. Daily Import <b class="good">(w/ PV)</b></td><td class="good">${dailyGridOnlyDemand.toFixed(2)} kWh</td><td class="text-left">Daily net grid import w/ solar</td></tr>
-                    <tr><td>Avg. Daily elec. Need <b class="warn">(w/out PV)</b></td><td class="warn">${dailyTotalDemand.toFixed(2)} kWh</td><td class="text-left">Daily grid need w/out solar</td></tr>
+                    <tr><td>Daily Import (w/ PV)</td><td class="good">${dailyGridOnlyDemand.toFixed(2)} kWh</td><td class="text-left">Daily net grid import w/ solar</td></tr>
+                    <tr><td>Daily elec. Need (w/out PV)</td><td class="warn">${dailyTotalDemand.toFixed(2)} kWh</td><td class="text-left">Daily grid need w/out solar</td></tr>
                     <tr><td>Realized Autarky Rate</td><td class="good">${autarkyRate.toFixed(1)}%</td><td class="text-left">Solar share of ${theoryDemand.toFixed(0)} kWh total demand</td></tr>
                     <tr><td>Total Net Savings</td><td class="good">${savingsNet.toFixed(2)} ${cur}</td><td class="text-left">Direct electricity bill reduction</td></tr>
                     <tr><td>ROI Progress</td><td class="good">${roiPercent.toFixed(1)}%</td><td class="text-left">Of ${cur}${investment} total investment</td></tr>
