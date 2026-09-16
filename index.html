@@ -866,6 +866,7 @@ function cardHtml(sn, s) {
       <div class="offline-icon">🌙</div>
       <div class="offline-text">Device offline - No solar input</div>
       <div class="offline-since">Last: ${s.lastSeen ? fmtTime(new Date(s.lastSeen)) : 'No data'} | ${todaysYieldText ? '<b>'+todaysYieldText+'</b>' : "- Wh"}</div>
+      <div class="card-today" style="color:${colorFor(sn)}" title="Today: ${todaysYieldText}">${todaysYieldText}</div>
     </div>`];
 
   if (s.status === "waiting") return [`device-card`, `
