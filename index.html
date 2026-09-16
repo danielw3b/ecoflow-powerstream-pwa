@@ -1706,7 +1706,7 @@ init();
   ];
 
   // writer mode
-  const WRITER_PREFIX = localStorage.getItem('ecoflow_github_token') ? '🛡️ ' : '';
+  const WRITER_PREFIX = localStorage.getItem('ecoflow_github_token') ? '🛡️' : '';
   
   // Helper function to update the UI sync timestamp label
   function updateSyncLabel(isoString) {
@@ -1723,7 +1723,7 @@ init();
   
       // reader or writer prefix
       syncLabel.textContent = `${WRITER_PREFIX}⇅ ${timeStr}`;
-      syncLabel.title = `Synced: ${fmtTime(date)}`;
+      syncLabel.title = `⇅ Synced: ${fmtTime(date)}`;
     }
   }
 
@@ -2003,7 +2003,7 @@ init();
   const initialAutoGistId = localStorage.getItem('ecoflow_auto_gist_id');
   if (!initialAutoGistId) return;
 
-  setTimeout(runAutoSync, 2000);
+  setTimeout(runAutoSync, 3000);
   setInterval(runAutoSync, SYNC_INTERVAL_MS);
 })();
   
