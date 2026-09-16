@@ -94,7 +94,7 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .offline-msg{display:flex;flex-direction:column;align-items:center;padding:12px 10px;gap:4px;}
 .offline-icon{font-size:1.6rem;opacity:.6;}
 .offline-text{font-family:var(--mono);font-size:.78rem;color:#8fb0cc;text-align:center;line-height:1.5;}
-.offline-since{font-size:.65rem;color:var(--muted);opacity:.8;}
+.offline-since{font-size:.65rem;color:var(--muted);opacity:.8;margin-bottom: 4px;}
 
 .power-flow{display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;margin-bottom:8px;align-items:center;}
 .flow-node{text-align:center;padding:2px 4px;}
@@ -865,8 +865,8 @@ function cardHtml(sn, s) {
     <div class="offline-msg">
       <div class="offline-icon">🌙</div>
       <div class="offline-text">Device offline - No solar input</div>
-      <div class="offline-since">Last: ${s.lastSeen ? fmtTime(new Date(s.lastSeen)) : 'No data'} | ${todaysYieldText ? '<b>'+todaysYieldText+'</b>' : "- Wh"}</div>
-      <div class="card-today" style="color:${colorFor(sn)}" title="Today: ${todaysYieldText}">${todaysYieldText}</div>
+      <div class="offline-since">Last Seen: ${s.lastSeen ? fmtTime(new Date(s.lastSeen)) : 'No data'}</div>
+      <div class="card-today" ${todaysYieldText !== '0 Wh' && todaysYieldText !== '0' && todaysYieldText ? `style="color:${colorFor(sn)}"` : ''} title="Today: ${todaysYieldText}">${todaysYieldText}</div>
     </div>`];
 
   if (s.status === "waiting") return [`device-card`, `
