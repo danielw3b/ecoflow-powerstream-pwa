@@ -651,29 +651,19 @@
         gist1Class = 'txt-amber';
         gist2Class = autoGist ? 'txt-emerald' : 'txt-slate';
         localSyncClass = isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
-    
+        
       } else {
         // CASE 3: DAYTIME AUTO-SYNC VS STANDARD SYNC
-        if (isAutoEngineActive && !isGist2SyncedWithLocal) {
-          // Daytime engine is live, but this local device hasn't caught up via PWA yet
-          renderSummary(
-            'badge badge-synced', // Green if auto-sync is active
-            'AUTO UPDATE ACTIVE',
-            'Device is pending auto-sync update.',
-            cloudBlock,
-            localBlock,
-            null
-          );
+        const isAutoEngineNewer = autoGist && (autoGist.contentTs > manualGist.contentTs + 20000);
+
+        if (isAutoEngineNewer) {
+          gist1Class = 'txt-amber';
+          gist2Class = 'txt-emerald';
+          localSyncClass = isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
         } else {
-          // Standard fully aligned state
-          renderSummary(
-            'badge badge-synced',
-            'SYNCED',
-            'Local storage is aligned with Gist Cloud.',
-            cloudBlock,
-            localBlock,
-            null
-          );
+          gist1Class = isGist1SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
+          gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
+          localSyncClass = (isGist1SyncedWithLocal || isGist2SyncedWithLocal) ? 'txt-emerald' : 'txt-amber';
         }
       }
 
@@ -721,14 +711,26 @@
         );
 
       } else {
-        renderSummary(
-          'badge badge-synced',
-          'SYNCED',
-          'Local storage is aligned with Gist Cloud.',
-          cloudBlock,
-          localBlock,
-          null
-        );
+        // CASE 3: Final Badge Rendering
+        if (isAutoEngineActive && !isGist2SyncedWithLocal) {
+          renderSummary(
+            'badge badge-synced',
+            'AUTO UPDATE ACTIVE',
+            'Device is pending auto-sync update.',
+            cloudBlock,
+            localBlock,
+            null
+          );
+        } else {
+          renderSummary(
+            'badge badge-synced',
+            'SYNCED',
+            'Local storage is aligned with Gist Cloud.',
+            cloudBlock,
+            localBlock,
+            null
+          );
+        }
       }
 
     } catch (err) {
