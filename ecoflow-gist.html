@@ -643,9 +643,9 @@
       // --- COLOR MAPPING ---
       
       if (isRemoteNewer) {
-          // CASE 1: EVENING MASTER SYNC (Gist 1 is King, Local Storage needs update)
+          // CASE 1: EVENING MASTER SYNC (Gist 1 is King -> Gist 2 and Local Sync are outdated / Amber)
           gist1Class = 'txt-emerald';
-          gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
+          gist2Class = autoGist ? 'txt-amber' : 'txt-slate';
           localSyncClass = 'txt-amber';
       
       } else if (isAutoEngineActive) {
