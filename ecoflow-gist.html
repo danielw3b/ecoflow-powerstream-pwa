@@ -615,45 +615,47 @@
       // Parse timestamps
       const manualTs = manualGist.contentTs || 0;
       const autoTs = autoGist ? autoGist.contentTs : 0;
-      const localTs = Math.max(localSyncTs, latestDataTs || 0);
-
-      // Check if Gist 1 is newer than local storage (King Kombi: Import Trigger)
+      
+      // Use purely localSyncTs for remote import decisions (latestDataTs is just the hourly window indicator)
+      const localTs = localSyncTs;
+      
+      // Check if Gist 1 has newer content than local storage
       const isRemoteNewer = manualTs > (localTs + 20000);
-
+      
       // Check if Gist 2 is currently leading daytime operations
       const isAutoEngineActive = autoGist && (autoTs > (manualTs + 20000));
-
+      
       const localWh = getLocalWhSum();
       const remoteWh = manualGist.payload ? getRemoteWhSum(manualGist.payload) : 0;
       const whDiff = localWh - remoteWh;
-
-      // Check for unpushed local data (Master only)
+      
+      // Check for unpushed local data (Master role only)
       const hasNewLocalData = hasToken && latestDataTs && (latestDataTs > (manualTs + 20000)) && (whDiff >= EXPORT_THRESHOLD_WH);
-
+      
       // Alignment checks (20 sec tolerance)
       const isGist2SyncedWithLocal = autoGist && localSyncTs && Math.abs(autoTs - localSyncTs) <= 20000;
       const isGist1SyncedWithLocal = localSyncTs && manualTs && Math.abs(manualTs - localSyncTs) <= 20000;
-
+      
       let gist1Class = 'txt-emerald';
       let gist2Class = 'txt-slate';
       let localSyncClass = 'txt-amber';
-
+      
       // --- COLOR MAPPING ---
-
+      
       if (isRemoteNewer) {
-          // CASE 1: MASTER IMPORT AVAILABLE (Gist 1 is ahead of Local)
+          // CASE 1: EVENING MASTER SYNC (Gist 1 is King, Local Storage needs update)
           gist1Class = 'txt-emerald';
           gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
           localSyncClass = 'txt-amber';
-
+      
       } else if (isAutoEngineActive) {
-          // CASE 2: DAYTIME AUTO-ENGINE ACTIVE (Gist 2 is ahead of Gist 1)
+          // CASE 2: DAYTIME AUTO-ENGINE ACTIVE (Gist 2 leads active day operations)
           gist1Class = 'txt-amber';
           gist2Class = 'txt-emerald';
           localSyncClass = isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
-
+      
       } else {
-          // CASE 3: STANDARD SYNC / EVENING ALIGNED STATE
+          // CASE 3: STANDARD SYNC / ALIGNED STATE
           gist1Class = isGist1SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
           gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
           localSyncClass = (isGist1SyncedWithLocal || isGist2SyncedWithLocal) ? 'txt-emerald' : 'txt-amber';
