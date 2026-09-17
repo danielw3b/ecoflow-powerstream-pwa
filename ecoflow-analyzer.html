@@ -1349,7 +1349,8 @@
     
       const totalWp = globalConfig.totalWp || 900;
       const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
-      const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 14.0 : 8;
+      // GTI-adjusted efficiency baselines for performance loss detection
+      const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 11.0 : 7.5;
     
       let tableRowsHtml = "";
       const INITIAL_VISIBLE_COUNT = 30;
