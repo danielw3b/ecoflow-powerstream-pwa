@@ -865,7 +865,7 @@ function cardHtml(sn, s) {
     <div class="offline-msg">
       <div class="offline-icon">🌙</div>
       <div class="offline-text">Device offline - No solar input</div>
-      <div class="offline-since">Last Seen: ${s.lastSeen ? fmtTime(new Date(s.lastSeen)) : 'No data'}</div>
+      <div class="offline-since">${s.lastSeen ? "Last Seen: " + fmtTime(new Date(s.lastSeen)) : ' '}</div>
       <div class="card-today" ${todaysYieldText !== '0 Wh' && todaysYieldText !== '0' && todaysYieldText ? `style="color:${colorFor(sn)}"` : ''} title="Today: ${todaysYieldText}">${todaysYieldText}</div>
     </div>`];
 
