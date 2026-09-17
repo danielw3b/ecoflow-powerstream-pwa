@@ -593,33 +593,33 @@
     const gistId = document.getElementById('gistId').value.trim();
     const autoGistId = document.getElementById('autoGistId').value.trim();
     const hasToken = !!document.getElementById('githubToken').value.trim();
-
+  
     if (!gistId) {
       renderSummary('badge', 'GIST ID MISSING', 'Please enter a Gist ID in settings.', null, null, null);
       return;
     }
-
+  
     try {
       const [manualGist, autoGist] = await Promise.all([
-          fetchGistMetaData(gistId),
-          fetchGistMetaData(autoGistId)
+        fetchGistMetaData(gistId),
+        fetchGistMetaData(autoGistId)
       ]);
-
+  
       if (!manualGist) throw new Error('Invalid Manual Gist ID');
-
+  
       const localSyncTs = localStorage.getItem(LOCAL_SYNC_KEY) ? new Date(localStorage.getItem(LOCAL_SYNC_KEY)).getTime() : 0;
       const latestDataTs = getLatestDataTimestamp();
-
+  
       adjustUIForRole();
-
+  
       // Parse timestamps
       const manualTs = manualGist.contentTs || 0;
       const autoTs = autoGist ? autoGist.contentTs : 0;
       
-      // Use purely localSyncTs for remote import decisions (latestDataTs is just the hourly window indicator)
+      // Pure localSyncTs for import checks (latestDataTs is purely an indicator)
       const localTs = localSyncTs;
       
-      // Check if Gist 1 has newer content than local storage
+      // Check if Gist 1 is newer than local storage
       const isRemoteNewer = manualTs > (localTs + 20000);
       
       // Check if Gist 2 is currently leading daytime operations
@@ -643,27 +643,27 @@
       // --- COLOR MAPPING ---
       
       if (isRemoteNewer) {
-          // CASE 1: EVENING MASTER SYNC (Gist 1 is King -> Gist 2 and Local Sync are outdated / Amber)
-          gist1Class = 'txt-emerald';
-          gist2Class = autoGist ? 'txt-amber' : 'txt-slate';
-          localSyncClass = 'txt-amber';
+        // CASE 1: EVENING MASTER SYNC (Gist 1 is King -> Gist 2 & Local are Amber)
+        gist1Class = 'txt-emerald';
+        gist2Class = autoGist ? 'txt-amber' : 'txt-slate';
+        localSyncClass = 'txt-amber';
       
       } else if (isAutoEngineActive) {
-          // CASE 2: DAYTIME AUTO-ENGINE ACTIVE (Gist 2 leads active day operations)
-          gist1Class = 'txt-amber';
-          gist2Class = 'txt-emerald';
-          localSyncClass = isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
+        // CASE 2: DAYTIME AUTO-ENGINE ACTIVE (Gist 2 leads active operations)
+        gist1Class = 'txt-amber';
+        gist2Class = 'txt-emerald';
+        localSyncClass = isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
       
       } else {
-          // CASE 3: STANDARD SYNC / ALIGNED STATE
-          gist1Class = isGist1SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
-          gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
-          localSyncClass = (isGist1SyncedWithLocal || isGist2SyncedWithLocal) ? 'txt-emerald' : 'txt-amber';
+        // CASE 3: STANDARD SYNC / ALIGNED STATE
+        gist1Class = isGist1SyncedWithLocal ? 'txt-emerald' : 'txt-amber';
+        gist2Class = autoGist ? (isGist2SyncedWithLocal ? 'txt-emerald' : 'txt-amber') : 'txt-slate';
+        localSyncClass = (isGist1SyncedWithLocal || isGist2SyncedWithLocal) ? 'txt-emerald' : 'txt-amber';
       }
-
+  
       // Local Data Endpoint remains neutral informational indicator
       const endpointClass = 'txt-slate';
-
+  
       const cloudBlock = {
         manual: {
           updated: format24h(manualGist.contentTs),
@@ -676,57 +676,65 @@
           cssClass: gist2Class
         } : null
       };
-
+  
       const localBlock = {
         lastSync: format24h(localSyncTs),
         lastSyncClass: localSyncClass,
         endpoint: format24h(latestDataTs),
         endpointClass: endpointClass
       };
-
+  
+      // --- BADGE & ACTION RENDERING ---
+  
       if (isRemoteNewer) {
+        // CASE 1: Master backup import available
         renderSummary(
           'badge badge-update badge-btn',
-          'UPDATE AVAILABLE',
+          'UPDATE DEVICE',
           'Remote manual backup contains newer measurements.',
           cloudBlock,
           localBlock,
           () => triggerImport(gistId)
         );
-
+  
       } else if (hasNewLocalData) {
+        // CASE 2: Unpushed local data available (Master export)
         renderSummary(
           'badge badge-export badge-btn',
-          'EXPORT READY',
+          'UPDATE CLOUD',
           `New local (+${whDiff.toFixed(0)} Wh) ready for Cloud Patch.`,
           cloudBlock,
           localBlock,
           () => triggerExport(gistId)
         );
-
+  
       } else {
-        // CASE 3: Final Badge Rendering
+        // CASE 3: Synchronized or Auto-Engine active
         if (isAutoEngineActive && !isGist2SyncedWithLocal) {
           renderSummary(
             'badge badge-synced',
-            'AUTO UPDATE ACTIVE',
-            'Device is pending auto-sync update.',
+            'AUTO SYNC ACTIVE',
+            'Auto-engine running (Pending patch from Gist 2).',
             cloudBlock,
             localBlock,
             null
           );
         } else {
+          const statusMessage = isAutoEngineActive 
+            ? 'Auto-sync active with Gist 2.' 
+            : 'Local storage is aligned with Gist Cloud.';
+  
           renderSummary(
             'badge badge-synced',
             'SYNCED',
-            'Local storage is aligned with Gist Cloud.',
+            statusMessage,
             cloudBlock,
             localBlock,
             null
           );
         }
       }
-
+  
     } catch (err) {
       renderSummary('badge', 'ERROR', err.message, null, null, null);
     }
