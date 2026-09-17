@@ -1393,8 +1393,8 @@ async function fetchWeather() {
     const lon = cachedCoords.lon;
 
     // Dynamic tilt/azimuth from config (e.g., 18° Valk3) or fallbacks
-    const tilt = globalConfig.tilt ?? 18;
-    const azimuth = globalConfig.azimuth ?? 0;
+    const tilt = 18;
+    const azimuth = 0;
     
     // API request with both direct_radiation and global_tilted_irradiance
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
