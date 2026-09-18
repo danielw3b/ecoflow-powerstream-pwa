@@ -1428,7 +1428,7 @@
       const totalWp = globalConfig.totalWp || 900;
       const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
       // GTI-adjusted efficiency baselines for performance loss detection
-      const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 12.0 : 7.5;
+      const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 12.5 : 7.5;
     
       let tableRowsHtml = "";
       const INITIAL_VISIBLE_COUNT = 30;
@@ -1824,7 +1824,7 @@
           </div>
     
           <div class="legend-group legend-footer">
-              <div><strong>📊 Panel Baselines:</strong> Bifacial (12.0%+) & Standard Mono (7.5%+).</div>
+              <div><strong>📊 Panel Baselines:</strong> Bifacial (12.5%+) & Standard Mono (7.5%+).</div>
               <div><strong>🔬 Solar Methodology:</strong> Global Tilted Radiation (GTI) mapping.</div>
           </div>
       </div></div>`;
