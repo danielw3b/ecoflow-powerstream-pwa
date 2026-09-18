@@ -39,6 +39,8 @@
         margin: 0;
         padding: 6px;
         line-height: 1.4;
+        display: flex;
+        justify-content: center;
     }
     
     h1, h2, h3 { color: var(--text); margin-top: 0; }
@@ -54,7 +56,14 @@
         color: var(--text-dim); 
     }
     
-    .container { max-width: 600px; margin: 0 auto; }
+    .container { 
+        max-width: 600px;
+        /*margin: 0 auto;*/
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
     
     /* Header Container Layout */
     .app-header {
