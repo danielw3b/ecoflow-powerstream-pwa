@@ -541,10 +541,17 @@
     
     @media (min-width: 850px) {
         .container { max-width: 1000px; }
+        .app-title h1 { font-size: 1.5rem; }
+        .app-title p { font-size: 0.9rem; }
+
+        .card { padding: 24px; }
+        /*.card-title { font-size: 1.2rem; }*/
+        
         h1 { font-size: 1.5rem; }
         h2 { font-size: 1.15rem; }
         h3 { font-size: 0.85rem; }
-    
+        
+
         .config-row { grid-template-columns: repeat(4, 1fr); }
         .config-row > .span-2,
         .config-row > .grid-2-col,
@@ -1336,7 +1343,7 @@
         const csvBtn = document.getElementById('csvBtn');
         const resultsDiv = document.getElementById('results');
     
-        loadingEl.style.display = 'inline';
+        loadingEl.style.display = 'block';
         runBtn.disabled = true;
         csvBtn.disabled = true; // Disable instead of display: none
         resultsDiv.innerHTML = '';
