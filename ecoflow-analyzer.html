@@ -182,6 +182,26 @@
     .button-row button:not(.btn-icon) {
         flex: 1;
     }
+
+    .btn-icon {
+        padding: 0;
+        height: 36px;
+        width: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 6px;
+    }
+
+    .btn-icon:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-color: var(--sky) !important;
+        cursor: pointer;
+    }
+
     
     /* Specific Main Row Buttons */
     .btn-submit-main { 
