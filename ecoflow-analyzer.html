@@ -149,16 +149,31 @@
 
     input:focus, select:focus { border-color: var(--sky); outline: none; }
     
+    /* Buttons */
     button {
-        background: var(--accent); color: white; border: none; padding: 10px 16px;
-        font-weight: 600; border-radius: 6px; cursor: pointer; transition: background 0.2s, transform 0.1s;
+        background: var(--accent); 
+        color: white; 
+        border: none; 
+        padding: 10px 16px;
+        font-weight: 600; 
+        border-radius: 6px; 
+        cursor: pointer; 
+        transition: background 0.2s, transform 0.1s;
     }
     button:hover { background: var(--accent-hover); }
     button:active { transform: scale(0.98); }
     button:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; }
+
     .btn-secondary { background: #0284c7; }
     .btn-secondary:hover { background: #0369a1; }
     .btn-full { width: 100%; margin-top: 10px; font-size: 0.95rem; }
+
+    /* Flexible Container to align buttons side-by-side */
+    .button-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
 
     .btn-icon {
         padding: 0;
@@ -181,7 +196,7 @@
 
     .btn-submit-main { background: var(--accent); }
     .btn-export-csv { display: none; background: #0284c7; }
-
+    
     /* Config Grid Layout */
     .config-row {
         display: grid;
@@ -473,6 +488,12 @@
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 6px;
         }
+        .button-row {
+            flex-direction: column;
+        }
+        .button-row button {
+            width: 100%;
+        }
     }
     
     /* Tablet & Desktop Breakpoints */
@@ -628,17 +649,19 @@
                 </div>
             </div>
 
-            <div class="mt-30">
-                <button type="submit" id="runBtn" class="btn-full btn-submit-main">💾 Save & Run Analysis</button>
+            <!-- ACTION BUTTONS (Innerhalb des Formulars zusammengefasst) -->
+            <div class="button-row">
+                <button type="submit" id="runBtn" class="btn-submit-main" style="flex: 2;">
+                    Save & Run Analysis
+                </button>
+                <button type="button" id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-export-csv" style="flex: 1;">
+                    Export CSV Report
+                </button>
             </div>
         </form>
         
-        <div class="mt-12">
-            <button id="csvBtn" onclick="downloadCSV()" class="btn-secondary btn-full btn-export-csv">📥 Export CSV Report</button>
-        </div>
         <div id="loading" class="loader">⏳ Fetching weather data and processing history...</div>
     </div>
-
     <div id="results"></div>
 </div>
 
