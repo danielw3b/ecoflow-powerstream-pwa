@@ -466,13 +466,20 @@
         stroke-linejoin: round; 
     }
 
-    /* Fallback to single column layout on narrow mobile viewports */
+    /* Mobile Viewports (Smartphones) */
     @media (max-width: 480px) {
-        .grid-3-col {
-            grid-template-columns: 1fr;
+        /* 2 columns for small input fields */
+        .grid-3-col,
+        .grid-2-col {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px;
+        }
+    
+        /* Full width for the main Inverter Dropdown */
+        #cfg_inverter {
+        grid-column: span 2;
         }
     }
-
     
     /* Tablet & Desktop Breakpoints */
     @media (min-width: 600px) {
@@ -482,15 +489,15 @@
         .summary-card { padding: 14px; }
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 8px 10px; font-size: 0.85rem; }
-
+    
         table:not(.summary-card table) td:first-child, 
         table:not(.summary-card table) th:first-child,
         table:not(.summary-card table) td:last-child, 
         table:not(.summary-card table) th:last-child { 
-            white-space: nowrap; 
+        white-space: nowrap; 
         }
     }
-
+    
     @media (min-width: 850px) {
         .container { max-width: 1000px; }
         h1 { font-size: 1.5rem; }
@@ -499,7 +506,8 @@
         
         .config-row { grid-template-columns: repeat(4, 1fr); }
         .config-row > .span-2,
-        .config-row > .grid-2-col { grid-column: span 2; }
+        .config-row > .grid-2-col,
+        .config-row > .grid-3-col { grid-column: span 2; }
     }
 </style>
 </head>
