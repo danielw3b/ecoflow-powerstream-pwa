@@ -116,14 +116,6 @@
         min-width: 0;
         gap: 6px;
     }
-
-    /* Multi-column layout extension for compact field groupings */
-    .grid-3-col {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        min-width: 0;
-    }
     
     label { 
         font-size: 0.8rem; 
@@ -207,6 +199,14 @@
         min-width: 0;
     }
 
+    /* Multi-column layout extension for compact field groupings */
+    .grid-3-col {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        min-width: 0;
+    }
+    
     /* Basic Table Structure */
     table { 
         width: 100%; 
@@ -542,8 +542,8 @@
 
             <h3>🛠️ Hardware Parameters</h3>
             <div class="config-row">
-                <!-- Group 1: Panel Tech & Self-Use Rate -->
-                <div class="grid-2-col">
+                <!-- Group 1: Panel Tech, Self-Use Rate & Module Area -->
+                <div class="grid-3-col">
                     <div class="form-group">
                         <label for="cfg_panelType">Panel Tech</label>
                         <select id="cfg_panelType">
@@ -555,22 +555,18 @@
                         <label for="cfg_selfConsumptionRate">Self-Use Rate (%)</label>
                         <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75">
                     </div>
-                </div>
-
-                <!-- Group 2: Module Area & Power Peak -->
-                <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_moduleArea">Module Area (m²)</label>
                         <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
                     </div>
+                </div>
+
+                <!-- Group 2: Power Peak, Tilt & Azimuth -->
+                <div class="grid-3-col">
                     <div class="form-group">
                         <label for="cfg_totalWp">Power Peak (Wp)</label>
                         <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
                     </div>
-                </div>
-
-                <!-- Group 3: Solar Geometry (Tilt & Azimuth) -->
-                <div class="grid-2-col span-2">
                     <div class="form-group">
                         <label for="cfg_tilt">Tilt Angle (°)</label>
                         <input type="number" id="cfg_tilt" required placeholder="e.g. 18" value="18">
