@@ -1417,7 +1417,7 @@ async function fetchWeather() {
     
     // Both radiation values available side-by-side
     const directRad  = Math.round(c.direct_radiation ?? 0);          // Old direct radiation (W/m²)
-    const instantGti = Math.round(c.global_tilted_irradiance ?? 0);   // New tilted radiation (W/m²)
+    const instantGti = Math.round(c.global_tilted_irradiance_instant ?? 0);   // New tilted radiation (W/m²)
     
     // =========================================================================
     // TEST SWITCH: Toggle between old direct radiation and new GTI
