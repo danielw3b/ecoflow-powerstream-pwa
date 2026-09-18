@@ -1330,90 +1330,89 @@
     }*/
 
     async function runAnalysis() {
-      const selectedSn = document.getElementById('cfg_inverter').value;
-      if (!selectedSn) {
-          alert("Please select an inverter / circuit first.");
-          return;
-      }
+        const selectedSn = document.getElementById('cfg_inverter').value;
+        if (!selectedSn) {
+            alert("Please select an inverter / circuit first.");
+            return;
+        }
     
-      const loadingEl = document.getElementById('loading');
-      const runBtn = document.getElementById('runBtn');
-      const csvBtn = document.getElementById('csvBtn');
-      const resultsDiv = document.getElementById('results');
+        const loadingEl = document.getElementById('loading');
+        const runBtn = document.getElementById('runBtn');
+        const exportBtn = document.getElementById('btnExport'); // Correct ID for the export button
+        const resultsDiv = document.getElementById('results');
     
-      loadingEl.style.display = 'block';
-      runBtn.disabled = true;
-      csvBtn.style.display = 'none';
-      resultsDiv.innerHTML = '';
-      globalCsvRows = [];
+        loadingEl.style.display = 'block';
+        runBtn.disabled = true;
+        exportBtn.disabled = true; // Disable instead of display: none
+        resultsDiv.innerHTML = '';
+        globalCsvRows = [];
     
-      try {
-          globalConfig = getUserConfig();
+        try {
+            globalConfig = getUserConfig();
     
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
     
-          const year = yesterday.getFullYear();
-          const month = String(yesterday.getMonth() + 1).padStart(2, '0');
-          const day = String(yesterday.getDate()).padStart(2, '0');
-          const endDate = `${year}-${month}-${day}`;
+            const year = yesterday.getFullYear();
+            const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const day = String(yesterday.getDate()).padStart(2, '0');
+            const endDate = `${year}-${month}-${day}`;
     
-          const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
-          const deviceDaily = dailyStorage[selectedSn] || {};
+            const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
+            const deviceDaily = dailyStorage[selectedSn] || {};
     
-          // Use custom tilt (e.g. 18° Valk3) and azimuth (0° South) from config with defaults
-          const tilt = globalConfig.tilt ?? 18;
-          const azimuth = globalConfig.azimuth ?? 0;
+            // Use custom tilt and azimuth from config with defaults
+            const tilt = globalConfig.tilt ?? 18;
+            const azimuth = globalConfig.azimuth ?? 0;
     
-          // Query hourly GTI to map exact solar radiation on tilted surface
-          const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&hourly=global_tilted_irradiance,temperature_2m&tilt=${tilt}&azimuth=${azimuth}&timezone=auto`;
+            // Query hourly GTI weather parameters from Open-Meteo API
+            const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&hourly=global_tilted_irradiance,temperature_2m&tilt=${tilt}&azimuth=${azimuth}&timezone=auto`;
     
-          const res = await fetch(dailyUrl);
-          const rawData = res.ok ? await res.json() : null;
+            const res = await fetch(dailyUrl);
+            const rawData = res.ok ? await res.json() : null;
     
-          if (!rawData || !rawData.hourly || !rawData.hourly.global_tilted_irradiance) {
-              throw new Error("Missing required GTI weather parameters in API response.");
-          }
+            if (!rawData || !rawData.hourly || !rawData.hourly.global_tilted_irradiance) {
+                throw new Error("Missing required GTI weather parameters in API response.");
+            }
     
-          // Aggregate hourly GTI (W/m²) to daily sums (converted to raw shortwave-like daily units)
-          const dailyGtiMap = {};
-          const dailyTempMap = {};
-          const times = rawData.hourly.time || [];
-          const gtiValues = rawData.hourly.global_tilted_irradiance || [];
-          const tempValues = rawData.hourly.temperature_2m || [];
+            // Aggregate hourly values into daily sums
+            const dailyGtiMap = {};
+            const dailyTempMap = {};
+            const times = rawData.hourly.time || [];
+            const gtiValues = rawData.hourly.global_tilted_irradiance || [];
+            const tempValues = rawData.hourly.temperature_2m || [];
     
-          for (let i = 0; i < times.length; i++) {
-              const dateStr = times[i].split('T')[0];
-              if (!dailyGtiMap[dateStr]) {
-                  dailyGtiMap[dateStr] = 0;
-                  dailyTempMap[dateStr] = [];
-              }
-              if (gtiValues[i] !== null) dailyGtiMap[dateStr] += gtiValues[i];
-              if (tempValues[i] !== null) dailyTempMap[dateStr].push(tempValues[i]);
-          }
+            for (let i = 0; i < times.length; i++) {
+                const dateStr = times[i].split('T')[0];
+                if (!dailyGtiMap[dateStr]) {
+                    dailyGtiMap[dateStr] = 0;
+                    dailyTempMap[dateStr] = [];
+                }
+                if (gtiValues[i] !== null) dailyGtiMap[dateStr] += gtiValues[i];
+                if (tempValues[i] !== null) dailyTempMap[dateStr].push(tempValues[i]);
+            }
     
-          const dates = Object.keys(dailyGtiMap).sort();
-          // Convert Wh/m² sum to MJ/m² equivalent to keep original radSumRaw scale (1 kWh/m² = 3.6 MJ/m²)
-          const radSumRaw = dates.map(d => (dailyGtiMap[d] / 1000) * 3.6);
-          const maxTempRaw = dates.map(d => dailyTempMap[d].length > 0 ? Math.max(...dailyTempMap[d]) : 25);
+            const dates = Object.keys(dailyGtiMap).sort();
+            const radSumRaw = dates.map(d => (dailyGtiMap[d] / 1000) * 3.6);
+            const maxTempRaw = dates.map(d => dailyTempMap[d].length > 0 ? Math.max(...dailyTempMap[d]) : 25);
     
-          // Clean trailing null values
-          while (dates.length > 0 && radSumRaw[radSumRaw.length - 1] === null) {
-              dates.pop();
-              radSumRaw.pop();
-              maxTempRaw.pop();
-          }
+            // Clean trailing null values
+            while (dates.length > 0 && radSumRaw[radSumRaw.length - 1] === null) {
+                dates.pop();
+                radSumRaw.pop();
+                maxTempRaw.pop();
+            }
     
-          await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
-          csvBtn.style.display = 'block';
+            await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
+            exportBtn.disabled = false; // Enable export button after successful analysis
     
-      } catch (error) {
-          console.error('Analysis Execution Failed:', error);
-          resultsDiv.innerHTML = `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
-      } finally {
-          loadingEl.style.display = 'none';
-          runBtn.disabled = false;
-      }
+        } catch (error) {
+            console.error('Analysis Execution Failed:', error);
+            resultsDiv.innerHTML = `<p class="bad">❌ Analysis failed: ${error.message}</p>`;
+        } finally {
+            loadingEl.style.display = 'none';
+            runBtn.disabled = false;
+        }
     }
     
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
