@@ -171,18 +171,6 @@
         transform: none !important;
     }
     
-    /* Secondary Button Variants */
-    .btn-secondary,
-    .btn-save,
-    .btn-load { 
-        background: #0284c7; 
-    }
-    .btn-secondary:hover,
-    .btn-save:hover,
-    .btn-load:hover { 
-        background: #0369a1; 
-    }
-    
     /* Flexible Container to align buttons side-by-side */
     .button-row {
         display: flex;
@@ -193,26 +181,6 @@
     /* Force main action buttons in a row to share equal width */
     .button-row button:not(.btn-icon) {
         flex: 1;
-    }
-    
-    /* Icon Buttons (e.g. Settings, Actions) */
-    .btn-icon {
-        padding: 0;
-        height: 36px;
-        width: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border);
-        color: var(--text);
-        border-radius: 6px;
-    }
-    
-    .btn-icon:hover {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border-color: var(--sky) !important;
-        cursor: pointer;
     }
     
     /* Specific Main Row Buttons */
@@ -226,10 +194,9 @@
         justify-content: center;
         background: #0284c7; 
     }
-
-
-
-    
+    .btn-export-csv:hover {
+        background: #0369a1;
+    }    
     
     /* Config Grid Layout */
     .config-row {
@@ -681,8 +648,8 @@
 
             <!-- ACTION BUTTONS -->
             <div class="button-row">
-                <button type="submit" id="btnRun" class="btn-submit-main">Save & Run</button>
-                <button type="button" id="btnExport" class="btn-export-csv" disabled>Export CSV</button>
+                <button type="submit" id="runBtn" class="btn-submit-main">Save & Run</button>
+                <button type="button" id="csvBtn" class="btn-export-csv" disabled>Export CSV</button>
             </div>
         </form>
         
@@ -1338,12 +1305,12 @@
     
         const loadingEl = document.getElementById('loading');
         const runBtn = document.getElementById('runBtn');
-        const exportBtn = document.getElementById('btnExport'); // Correct ID for the export button
+        const csvBtn = document.getElementById('csvBtn');
         const resultsDiv = document.getElementById('results');
     
         loadingEl.style.display = 'block';
         runBtn.disabled = true;
-        exportBtn.disabled = true; // Disable instead of display: none
+        csvBtn.disabled = true; // Disable instead of display: none
         resultsDiv.innerHTML = '';
         globalCsvRows = [];
     
@@ -1404,7 +1371,7 @@
             }
     
             await analyzeDevice(selectedSn, dates, radSumRaw, maxTempRaw, deviceDaily);
-            exportBtn.disabled = false; // Enable export button after successful analysis
+            csvBtn.disabled = false; // Enable export button after successful analysis
     
         } catch (error) {
             console.error('Analysis Execution Failed:', error);
