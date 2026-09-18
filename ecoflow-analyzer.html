@@ -453,7 +453,7 @@
     tr.hidden-row { display: none !important; }
     
     .show-more-btn {
-        display: block;
+        /*display: block;*/
         width: 100%;
         margin-top: 10px;
         padding: 8px 12px;
@@ -546,9 +546,7 @@
 <body>
 
 <div class="container">
-    <!--<h1>🌤️ Solar & Weather Analyzer</h1>
-    <p class="subtitle">Locally analyzes your EcoFlow PWA energy history per circuit and cross-references it with Open-Meteo weather data.</p>-->
-
+    
     <!-- Application Header -->
     <div class="app-header">
         <span class="app-icon" role="img" aria-label="Solar & Weather Icon">🌤️</span>
@@ -559,7 +557,7 @@
     </div>
     
     <div class="card">
-        <h2>⚙️ Configuration</h2>
+        <h2>Device Setting</h2>
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
             
             <h3>🔌 System Selection & Location</h3>
