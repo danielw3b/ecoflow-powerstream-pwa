@@ -801,6 +801,13 @@
         }
     }
 
+    function isValidDateKey(dateStr) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+        const date = new Date(dateStr);
+        return !isNaN(date.getTime());
+    }
+    
+
     /*async function runAnalysis() {
         const selectedSn = document.getElementById('cfg_inverter').value;
         if (!selectedSn) {
@@ -864,12 +871,6 @@
             runBtn.disabled = false;
         }
     }*/
-
-    function isValidDateKey(dateStr) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-      const date = new Date(dateStr);
-      return !isNaN(date.getTime());
-    }
 
     /*async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
       let totalDaysAnalyzed = 0;
@@ -1403,76 +1404,76 @@
     }
     
     async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily) {
-      let totalDaysAnalyzed = 0;
-      let criticalCount = 0;
-      let weatherCount = 0;
-      const anomalies = [];
-      let subTableRowsHtml = "";
-      const resultsDiv = document.getElementById('results');
-    
-      let optimalCount = 0;
-      let normalCount = 0;
-      let lossCount = 0;
-      let hardwareFailCount = 0;
-      let preInstallCount = 0;
-    
-      const csvHeader = [];
-      const csvSummary = [];
-      const csvFinancial = [];
-      const csvDaily = [];
-      const csvAnomalies = [];
-    
-      const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
-      const friendlyName = customNames[sn] || sn;
-    
-      const totalWp = globalConfig.totalWp || 900;
-      const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
-      // GTI-adjusted efficiency baselines for performance loss detection
-      const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 12.5 : 7.5;
-    
-      let tableRowsHtml = "";
-      const INITIAL_VISIBLE_COUNT = 30;
-    
-      csvHeader.push([`DEVICE: ${sn} / ${friendlyName}`]);
-      csvHeader.push([]);
-    
-      csvDaily.push(["DAILY EFFICIENCY TRACKER"]);
-      csvDaily.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
-    
-      const validDates = Object.keys(deviceDaily)
-          .filter((d) => deviceDaily[d] !== undefined && isValidDateKey(d))
-          .sort();
-      const firstActiveDate = validDates.length > 0 ? validDates[0] : null;
-    
-      for (let i = dates.length - 1; i >= 0; i--) {
+        let totalDaysAnalyzed = 0;
+        let criticalCount = 0;
+        let weatherCount = 0;
+        const anomalies = [];
+        let subTableRowsHtml = "";
+        const resultsDiv = document.getElementById('results');
+        
+        let optimalCount = 0;
+        let normalCount = 0;
+        let lossCount = 0;
+        let hardwareFailCount = 0;
+        let preInstallCount = 0;
+        
+        const csvHeader = [];
+        const csvSummary = [];
+        const csvFinancial = [];
+        const csvDaily = [];
+        const csvAnomalies = [];
+        
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
+        const friendlyName = customNames[sn] || sn;
+        
+        const totalWp = globalConfig.totalWp || 900;
+        const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
+        // GTI-adjusted efficiency baselines for performance loss detection
+        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' ? 12.5 : 7.5;
+        
+        let tableRowsHtml = "";
+        const INITIAL_VISIBLE_COUNT = 30;
+        
+        csvHeader.push([`DEVICE: ${sn} / ${friendlyName}`]);
+        csvHeader.push([]);
+        
+        csvDaily.push(["DAILY EFFICIENCY TRACKER"]);
+        csvDaily.push(["Date", "Radiation (kWh/m2)", "Max Temp (°C)", "Expected Soll (kWh)", "EcoFlow Real (kWh)", "Efficiency (%)", "Diagnosis"]);
+        
+        const validDates = Object.keys(deviceDaily)
+            .filter((d) => deviceDaily[d] !== undefined && isValidDateKey(d))
+            .sort();
+        const firstActiveDate = validDates.length > 0 ? validDates[0] : null;
+        
+        for (let i = dates.length - 1; i >= 0; i--) {
           const dateStr = dates[i];
           if (radSumRaw[i] === null) continue;
-    
+        
           totalDaysAnalyzed++;
           const totalRadKwhM2 = radSumRaw[i] / 3.6; // Directly reflects GTI in kWh/m²
           const radCssClass = (totalRadKwhM2 >= 2.5) ? 'good' : 'warn';
-    
+        
           // Direct expected yield calculation based on GTI without empirical splitting
           const dayTemp = maxTempRaw[i] || 25;
           const calculatedSollWh = totalRadKwhM2 * totalWp * standardSystemEfficiency;
           const maxPhysicalDailyCapWh = totalWp * 7;
           const expectedSollWh = Math.min(calculatedSollWh, maxPhysicalDailyCapWh);
-    
+        
           const realYieldWh = deviceDaily[dateStr] || 0;
           const totalSolarEnergyWh = totalRadKwhM2 * 1000 * (globalConfig.moduleArea || 1);
-    
+        
           const rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
           const efficiency = Math.round(rawEfficiency * 10) / 10;
-    
+        
           const isPreInstallation = firstActiveDate && new Date(dateStr) < new Date(firstActiveDate);
           const isInstallationDay = firstActiveDate && dateStr === firstActiveDate;
-    
+        
           let diagnosis = "🟢";
           let cssClass = "good";
           let fullTextExplanation = "Normal Operation: Yield is fully within expected parameters.";
-    
+        
           const dynamicThreshold = baseEfficiencyThreshold;
-    
+        
           if (isPreInstallation) {
               diagnosis = "⏳";
               cssClass = "text-dim";
@@ -1490,13 +1491,13 @@
               cssClass = "warn";
               fullTextExplanation = "Performance Loss: Real generation falling below expected baselines.";
           }
-    
+        
           if (diagnosis === "✅") optimalCount++;
           else if (diagnosis === "🟢") normalCount++;
           else if (diagnosis === "🟠") lossCount++;
           else if (diagnosis === "❌") hardwareFailCount++;
           else if (diagnosis === "⏳") preInstallCount++;
-    
+        
           if ((diagnosis === "❌" || diagnosis === "🟠") && !isPreInstallation) {
               anomalies.push({
                   date: dateStr,
@@ -1508,9 +1509,9 @@
                   maxTemp: dayTemp
               });
           }
-    
+        
           const isHiddenClass = (totalDaysAnalyzed - 1) >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
-    
+        
           tableRowsHtml += `<tr${isHiddenClass}>
               <td>${dateStr}</td>
               <td>${dayTemp.toFixed(1)}</td>
@@ -1519,7 +1520,7 @@
               <td class="${cssClass}">${efficiency.toFixed(1)}</td>
               <td class="${cssClass} help-cursor" title="${fullTextExplanation}">${diagnosis}</td>
           </tr>`;
-    
+        
           csvDaily.push([
               dateStr,
               totalRadKwhM2.toFixed(2),
@@ -1529,23 +1530,23 @@
               efficiency.toFixed(1),
               diagnosis
           ]);
-      }
-    
-      // Process hourly anomaly batch requests (Batch size = 4)
-      let anomalyRowIndex = 0;
-    
-      if (anomalies.length > 0) {
+        }
+        
+        // Process hourly anomaly batch requests (Batch size = 4)
+        let anomalyRowIndex = 0;
+        
+        if (anomalies.length > 0) {
           anomalies.sort((a, b) => b.date.localeCompare(a.date));
-    
+        
           csvAnomalies.push(["DAILY ANOMALY & WEATHER CONTEXT"]);
           csvAnomalies.push(["Date", "Soll / Real (kWh)", "Efficiency (%)", "Clouds (%)", "Sun (hr)", "Max Peak (W/m²)", "Context"]);
-    
+        
           const batchSize = 4;
           const resolvedAnomalies = [];
-    
+        
           for (let i = 0; i < anomalies.length; i += batchSize) {
               const chunk = anomalies.slice(i, i + batchSize);
-    
+        
               const chunkPromises = chunk.map(async (target) => {
                   const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=global_tilted_irradiance,cloud_cover,sunshine_duration,diffuse_radiation&tilt=${globalConfig.tilt ?? 18}&azimuth=${globalConfig.azimuth ?? 0}&timezone=auto`;
                   
@@ -1557,11 +1558,11 @@
                       return { target, hData: null };
                   }
               });
-    
+        
               const chunkResults = await Promise.all(chunkPromises);
               resolvedAnomalies.push(...chunkResults);
           }
-    
+        
           for (const item of resolvedAnomalies) {
               const target = item.target;
               const hData = item.hData;
@@ -1601,15 +1602,15 @@
                   maxPeak = peakValue;
                   realDiffuseShare = totalRad > 0 ? (totalDiffuse / totalRad) : 0;
               }
-    
+        
               const maxTemp = parseFloat(target.maxTemp || 0);
-    
+        
               // ORIGINAL ANOMALY & WEATHER CONTEXT LOGIC (UNTOUCHED)
               let explanation = "⛅ ☀️";
               let weatherTooltip = "Partly cloudy with mixed radiation.";
               let cssClass = "text-dim";
               let isCritical = false;
-    
+        
               if (!hasWeatherData) {
                   explanation = "⚠️ N/A";
                   weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
@@ -1674,15 +1675,15 @@
                   weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
                   weatherCount++;
               }
-    
+        
               if (isCritical) criticalCount++;
-    
+        
               const sollKwh = (target.expectedYieldWh / 1000).toFixed(2);
               const realKwh = (target.realYieldWh / 1000).toFixed(2);
-    
+        
               const isSubHiddenClass = anomalyRowIndex >= INITIAL_VISIBLE_COUNT ? ' class="hidden-row"' : '';
               anomalyRowIndex++;
-    
+        
               subTableRowsHtml += `<tr${isSubHiddenClass}>
                   <td>${target.date}</td>
                   <td class="nowrap">${sollKwh} | <b>${realKwh}</b></td>
@@ -1692,7 +1693,7 @@
                   <td>${maxPeak}</td>
                   <td class="${cssClass} context-cell" title="${weatherTooltip}">${explanation}</td>
               </tr>`;
-    
+        
               csvAnomalies.push([
                   target.date,
                   `${sollKwh.replace('.', ',')} / ${realKwh.replace('.', ',')}`,
