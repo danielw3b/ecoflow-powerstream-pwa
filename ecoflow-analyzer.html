@@ -116,6 +116,14 @@
         min-width: 0;
         gap: 6px;
     }
+
+    /* Multi-column layout extension for compact field groupings */
+    .grid-3-col {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        min-width: 0;
+    }
     
     label { 
         font-size: 0.8rem; 
@@ -458,6 +466,14 @@
         stroke-linejoin: round; 
     }
 
+    /* Fallback to single column layout on narrow mobile viewports */
+    @media (max-width: 480px) {
+        .grid-3-col {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    
     /* Tablet & Desktop Breakpoints */
     @media (min-width: 600px) {
         body { padding: 20px; }
@@ -526,6 +542,7 @@
 
             <h3>🛠️ Hardware Parameters</h3>
             <div class="config-row">
+                <!-- Group 1: Panel Tech & Self-Use Rate -->
                 <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_panelType">Panel Tech</label>
@@ -536,10 +553,11 @@
                     </div>
                     <div class="form-group">
                         <label for="cfg_selfConsumptionRate">Self-Use Rate (%)</label>
-                        <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75 w/out Battery">
+                        <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75">
                     </div>
                 </div>
 
+                <!-- Group 2: Module Area & Power Peak -->
                 <div class="grid-2-col">
                     <div class="form-group">
                         <label for="cfg_moduleArea">Module Area (m²)</label>
@@ -548,6 +566,18 @@
                     <div class="form-group">
                         <label for="cfg_totalWp">Power Peak (Wp)</label>
                         <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
+                    </div>
+                </div>
+
+                <!-- Group 3: Solar Geometry (Tilt & Azimuth) -->
+                <div class="grid-2-col span-2">
+                    <div class="form-group">
+                        <label for="cfg_tilt">Tilt Angle (°)</label>
+                        <input type="number" id="cfg_tilt" required placeholder="e.g. 18" value="18">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfg_azimuth">Azimuth (°)</label>
+                        <input type="number" id="cfg_azimuth" required placeholder="e.g. 0 (South)" value="0">
                     </div>
                 </div>
             </div>
@@ -659,6 +689,7 @@
         }
     }
     
+    // Load saved inverter configuration or set system defaults
     function loadInverterConfig() {
         const key = getStorageKey();
         const saved = localStorage.getItem(key);
@@ -685,9 +716,12 @@
             document.getElementById('cfg_tariffStart').value = "2026-06-26";
             if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "900";
             if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial";
+            if(document.getElementById('cfg_tilt')) document.getElementById('cfg_tilt').value = "18";
+            if(document.getElementById('cfg_azimuth')) document.getElementById('cfg_azimuth').value = "0";
         }
     }
 
+    // Read form values including expanded geometry fields
     function getUserConfig() {
         const config = {
             inverter: document.getElementById('cfg_inverter')?.value || '',
@@ -697,6 +731,8 @@
             selfConsumptionRate: parseFloat(document.getElementById('cfg_selfConsumptionRate')?.value) || 75,
             moduleArea: parseFloat(document.getElementById('cfg_moduleArea')?.value) || 0,
             totalWp: parseFloat(document.getElementById('cfg_totalWp')?.value) || 900,
+            tilt: parseFloat(document.getElementById('cfg_tilt')?.value) ?? 18,
+            azimuth: parseFloat(document.getElementById('cfg_azimuth')?.value) ?? 0,
             currency: document.getElementById('cfg_currency')?.value || '€',
             investment: parseFloat(document.getElementById('cfg_investment')?.value) || 0,
             energyPrice: parseFloat(document.getElementById('cfg_energyPrice')?.value) || 0,
@@ -1469,8 +1505,8 @@
               const chunk = anomalies.slice(i, i + batchSize);
     
               const chunkPromises = chunk.map(async (target) => {
-                  const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=shortwave_radiation,cloud_cover,sunshine_duration,diffuse_radiation&timezone=auto`;
-    
+                  const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=global_tilted_irradiance,cloud_cover,sunshine_duration,diffuse_radiation&tilt=${globalConfig.tilt ?? 18}&azimuth=${globalConfig.azimuth ?? 0}&timezone=auto`;
+                  
                   try {
                       const res = await fetch(hUrl);
                       const hData = res.ok ? await res.json() : null;
@@ -1487,14 +1523,14 @@
           for (const item of resolvedAnomalies) {
               const target = item.target;
               const hData = item.hData;
-    
+          
               let avgClouds = 'n/a';
               let sunHours = 'n/a';
               let maxPeak = 'n/a';
               let realDiffuseShare = 0;
               let hasWeatherData = false;
-    
-              if (hData && hData.hourly && hData.hourly.shortwave_radiation) {
+          
+              if (hData && hData.hourly && hData.hourly.global_tilted_irradiance) {
                   hasWeatherData = true;
                   let cloudSum = 0;
                   let sunSeconds = 0;
@@ -1502,22 +1538,22 @@
                   let totalRad = 0;
                   let totalDiffuse = 0;
                   let peakValue = 0;
-    
-                  for (let j = 0; j < hData.hourly.shortwave_radiation.length; j++) {
+          
+                  for (let j = 0; j < hData.hourly.global_tilted_irradiance.length; j++) {
                       if (j >= 6 && j <= 20) {
                           cloudSum += hData.hourly.cloud_cover[j];
                           daylightHours++;
-                          if (hData.hourly.shortwave_radiation[j] > 0) {
-                              totalRad += hData.hourly.shortwave_radiation[j];
+                          if (hData.hourly.global_tilted_irradiance[j] > 0) {
+                              totalRad += hData.hourly.global_tilted_irradiance[j];
                               totalDiffuse += hData.hourly.diffuse_radiation[j] || 0;
                           }
                       }
                       sunSeconds += hData.hourly.sunshine_duration[j];
-                      if (hData.hourly.shortwave_radiation[j] > peakValue) {
-                          peakValue = hData.hourly.shortwave_radiation[j];
+                      if (hData.hourly.global_tilted_irradiance[j] > peakValue) {
+                          peakValue = hData.hourly.global_tilted_irradiance[j];
                       }
                   }
-    
+          
                   avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                   sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
                   maxPeak = peakValue;
