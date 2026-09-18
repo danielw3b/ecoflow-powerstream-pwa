@@ -466,18 +466,12 @@
         stroke-linejoin: round; 
     }
 
-    /* Mobile Viewports (Smartphones) */
+    /* Mobile Viewports (Smartphones): 2 columns for small input fields */
     @media (max-width: 480px) {
-        /* 2 columns for small input fields */
         .grid-3-col,
         .grid-2-col {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 6px;
-        }
-    
-        /* Full width for the main Inverter Dropdown */
-        #cfg_inverter {
-        grid-column: span 2;
         }
     }
     
