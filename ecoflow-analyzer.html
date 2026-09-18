@@ -668,13 +668,13 @@
     let globalCsvRows = [];
     let globalConfig = {};
     
-    const btnExport = document.getElementById('btnExport');
-    btnExport.disabled = true;
-    // btnExport disabled true or false
+    const csvBtn = document.getElementById('csvBtn');
+    csvBtn.disabled = true;
+    // csvBtn disabled true or false
     if (globalCsvRows && globalCsvRows.length > 0) {
-        btnExport.disabled = false;
+        csvBtn.disabled = false;
     } else {
-        btnExport.disabled = true;
+        csvBtn.disabled = true;
     }
 
     function getStorageKey() {
