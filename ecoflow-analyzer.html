@@ -1419,12 +1419,21 @@
     }*/
 
     async function runAnalysis() {
+
+        
         const selectedSn = document.getElementById('cfg_inverter').value;
         if (!selectedSn) {
             alert("Please select an inverter / circuit first.");
             return;
         }
-    
+
+
+        // Debug runtime state to verify data binding integrity
+        console.debug("Debug - Selected SN:", selectedSn);
+        console.debug("Debug - Available keys in ecoflow_wh:", Object.keys(JSON.parse(localStorage.getItem('ecoflow_wh')) || {}));
+        console.debug("Debug - Device daily data sample:", deviceDaily);
+
+        
         const loadingEl = document.getElementById('loading');
         const runBtn = document.getElementById('runBtn');
         const csvBtn = document.getElementById('csvBtn');
@@ -1480,7 +1489,7 @@
             }
         
             const dates = Object.keys(dailyGtiMap).sort();
-            const gtiRadSumRaw = dates.map(d => (dailyGtiMap[d] / 1000) * 3.6);
+            const gtiRadSumRaw = dates.map(d => (dailyGtiMap[d] / 1000)); // * 3.6
             const maxTempRaw = dates.map(d => dailyTempMap[d].length > 0 ? Math.max(...dailyTempMap[d]) : 25);
         
             // 2. Map legacy Liu-Jordan daily summary data matching the date array
