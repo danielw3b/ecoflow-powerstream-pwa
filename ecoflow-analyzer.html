@@ -1543,7 +1543,7 @@
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
          
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
-            ? (useGtiModel ? 13.5 : 14.0) 
+            ? (useGtiModel ? 12.5 : 14.0) 
             : (useGtiModel ? 7.5 : 8.0);
         
         let tableRowsHtml = "";
@@ -1921,13 +1921,13 @@
         <div class="card table-card">
             <h3 class="table-title-warn">
                 🟠 Anomaly & Weather Context
-                <span class="title-badge">
-                    <span>${criticalCount} ⚠️</span> | <span class="subtitle">${weatherCount} ⛅</span>
-                </span>
             </h3>
+            <span class="title-badge">
+                <span>${criticalCount} ⚠️</span> | <span class="subtitle">${weatherCount} ⛅</span>
+            </span>
             <table>
                 <thead>
-                    <tr><th>Date</th><th>Soll | <b>Real</b> (kWh)</th><th>Eff. %</th><th>Clouds %</th><th>Sun hr</th><th>MaxPeak W/m²</th><th>Context</th></tr>
+                    <tr><th>Date</th><th>Soll | <b>Real</b> kWh</th><th>Eff.%</th><th>Clouds %</th><th>Sun hr</th><th>MaxPeak W/m²</th><th>Context</th></tr>
                 </thead>
                 <tbody>
                     ${subTableRowsHtml}
