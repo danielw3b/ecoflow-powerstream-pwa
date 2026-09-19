@@ -1559,12 +1559,14 @@
         
         for (let i = dates.length - 1; i >= 0; i--) {
             const dateStr = dates[i];
-            if (radSumRaw[i] === null) continue;
+            
+            // Safely skip iteration if radiation data is null, undefined, or NaN
+            if (radSumRaw[i] == null || isNaN(radSumRaw[i])) continue;
         
             totalDaysAnalyzed++;
             const totalRadKwhM2 = radSumRaw[i] / 3.6;
             const radCssClass = (totalRadKwhM2 >= 2.5) ? 'good' : 'warn';
-            const dayTemp = maxTempRaw[i] || 25;
+            const dayTemp = (maxTempRaw && maxTempRaw[i] != null) ? maxTempRaw[i] : 25;
             
             let expectedSollWh = 0;
             const maxPhysicalDailyCapWh = totalWp * 7;
@@ -1590,7 +1592,8 @@
                 expectedSollWh = Math.min(calculatedSollWh, maxPhysicalDailyCapWh);
             }
         
-            const realYieldWh = deviceDaily[dateStr] || 0;
+            // Robust fallback lookup for real yield across date format variations
+            const realYieldWh = deviceDaily[dateStr] || deviceDaily[dateStr.split('T')[0]] || 0;
             const totalSolarEnergyWh = totalRadKwhM2 * 1000 * (globalConfig.moduleArea || 1);
         
             const rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
