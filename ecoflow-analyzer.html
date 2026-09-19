@@ -1429,10 +1429,10 @@
         const runBtn = document.getElementById('runBtn');
         const csvBtn = document.getElementById('csvBtn');
         const resultsDiv = document.getElementById('results');
-    
+
         loadingEl.style.display = 'block';
         runBtn.disabled = true;
-        csvBtn.style.display = 'none';
+        csvBtn.disabled = true; // Disable instead of display: none
         resultsDiv.innerHTML = '';
         globalCsvRows = [];
     
