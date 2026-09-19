@@ -1510,7 +1510,8 @@
             }
     
             // Pass all datasets in exact order including the global switch state
-            await analyzeDevice(selectedSn, dates, gtiRadSumRaw, ljRadSumRaw, maxTempRaw, deviceDaily);    
+            await analyzeDevice(selectedSn, dates, gtiRadSumRaw, ljRadSumRaw, maxTempRaw, deviceDaily);
+            csvBtn.disabled = false; // Enable export button after successful analysis
         } catch (error) {
             console.error("Failed to fetch or process weather archive data:", error);
         } finally {
