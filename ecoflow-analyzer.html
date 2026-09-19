@@ -1449,11 +1449,6 @@
             const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
             const deviceDaily = dailyStorage[selectedSn] || {};
     
-            // Debug runtime state to verify data binding integrity
-            console.debug("Debug - Selected SN:", selectedSn);
-            console.debug("Debug - Available keys in ecoflow_wh:", Object.keys(dailyStorage));
-            console.debug("Debug - Device daily data sample:", deviceDaily);
-    
             const tilt = globalConfig.tilt ?? 18;
             const azimuth = globalConfig.azimuth ?? 0;
     
