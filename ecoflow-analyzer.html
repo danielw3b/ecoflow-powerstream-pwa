@@ -1509,10 +1509,8 @@
                 maxTempRaw.pop();
             }
     
-            // Pass all validated datasets and temperature array to analyzeDevice for yield calculation
-            await analyzeDevice(selectedSn, dates, gtiRadSumRaw, ljRadSumRaw, maxTempRaw, deviceDaily);
-            csvBtn.style.display = 'block';
-    
+            // Pass all datasets in exact order including the global switch state
+            await analyzeDevice(selectedSn, dates, gtiRadSumRaw, ljRadSumRaw, maxTempRaw, deviceDaily);    
         } catch (error) {
             console.error("Failed to fetch or process weather archive data:", error);
         } finally {
@@ -1522,7 +1520,7 @@
     }
 
     // Unified analyzeDevice function supporting both GTI and Liu-Jordan models via switch
-    async function analyzeDevice(sn, dates, radSumRaw, maxTempRaw, deviceDaily, useGtiModel = false) {
+    async function analyzeDevice(sn, dates, radSumRaw, ljRadSumRaw, maxTempRaw, deviceDaily) {
         let totalDaysAnalyzed = 0;
         let criticalCount = 0;
         let weatherCount = 0;
