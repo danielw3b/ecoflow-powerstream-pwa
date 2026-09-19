@@ -1560,11 +1560,8 @@
         for (let i = dates.length - 1; i >= 0; i--) {
             const dateStr = dates[i];
             
-            // Select active radiation dataset based on global switch
-            const rawRadValue = useGtiModel ? gtiRadSumRaw[i] : ljRadSumRaw[i];
-        
-            // Handle missing or invalid radiation data gracefully with 'n/a'
-            if (rawRadValue == null || isNaN(rawRadValue)) {
+            // Safely skip iteration or show n/a if radiation data is null, undefined, or NaN
+            if (radSumRaw[i] == null || isNaN(radSumRaw[i])) {
                 tableRowsHtml += `<tr>
                     <td>${dateStr}</td>
                     <td>n/a</td>
@@ -1577,7 +1574,7 @@
             }
         
             totalDaysAnalyzed++;
-            const totalRadKwhM2 = rawRadValue / 3.6;
+            const totalRadKwhM2 = radSumRaw[i] / 3.6;
             const radCssClass = (totalRadKwhM2 >= 2.5) ? 'good' : 'warn';
             const dayTemp = (maxTempRaw && maxTempRaw[i] != null) ? maxTempRaw[i] : 25;
             
@@ -1593,7 +1590,7 @@
         
             // Model selection branch based on global switch with integrated temperature loss factor
             if (useGtiModel) {
-                // Direct GTI expected yield calculation with temperature derating
+                // Direct GTI / radiation expected yield calculation with temperature derating
                 const calculatedSollWh = totalRadKwhM2 * totalWp * tempLossFactor * standardSystemEfficiency;
                 expectedSollWh = Math.min(calculatedSollWh, maxPhysicalDailyCapWh);
             } else {
