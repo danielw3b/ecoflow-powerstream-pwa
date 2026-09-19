@@ -1826,7 +1826,7 @@
         
                 subTableRowsHtml += `<tr${isSubHiddenClass}>
                     <td>${target.date}</td>
-                    <td class="nowrap">${sollKwh} | <b>${realKwh}</b></td>
+                    <td>${sollKwh} | <b>${realKwh}</b></td>
                     <td class="warn">${target.efficiency.toFixed(1)}</td>
                     <td>${avgClouds}</td>
                     <td>${sunHours}</td>
@@ -1927,7 +1927,7 @@
             </span>
             <table>
                 <thead>
-                    <tr><th>Date</th><th>Soll | <b>Real</b> kWh</th><th>Eff.%</th><th>Clouds %</th><th>Sun hr</th><th>MaxPeak W/m²</th><th>Context</th></tr>
+                    <tr><th>Date</th><th>Soll | Real kWh</th><th>Eff. %</th><th>Clouds %</th><th>Sun hr</th><th>MaxPeak W/m²</th><th>Context</th></tr>
                 </thead>
                 <tbody>
                     ${subTableRowsHtml}
