@@ -345,6 +345,13 @@
         <input type="checkbox" id="gzipCompress">
         <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
       </div>
+
+      <div class="location-group">
+          <label>Auto-Sync Coordinates (LAT / LON)</label>
+          <input type="number" step="any" id="autoGist_lat" required placeholder="LAT">
+          <input type="number" step="any" id="autoGist_lon" required placeholder="LON">
+          <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS">📍</button>
+      </div>      
     </div>
 
     <!-- Status Content -->
@@ -363,9 +370,10 @@
 </div>
 
 <script>
-  // Storage keys and thresholds
+// Storage keys and thresholds
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
   const GZIP_SETTING_KEY = 'ecoflow_gist_gzip_enabled';
+  const LOCATION_SETTING_KEY = 'ecoflow_gist_loc';
   const EXPORT_THRESHOLD_WH = 100;
 
   const EXPORT_KEYS = [
@@ -384,16 +392,41 @@
     checkGistStatus();
   });
 
-  // Load configuration from LocalStorage
+  // Load configuration and unified location settings from LocalStorage
   function loadSavedSettings() {
     document.getElementById('gistId').value = localStorage.getItem('ecoflow_gist_id') || '';
     document.getElementById('githubToken').value = localStorage.getItem('ecoflow_github_token') || '';
     document.getElementById('autoGistId').value = localStorage.getItem('ecoflow_auto_gist_id') || '';
     
+    // Load unified GPS coordinates for auto-sync and sunset calculation
+    const rawLoc = localStorage.getItem(LOCATION_SETTING_KEY);
+    if (rawLoc) {
+      try {
+        const parsedLoc = JSON.parse(rawLoc);
+        if (parsedLoc.lat !== undefined) document.getElementById('autoGist_lat').value = parsedLoc.lat;
+        if (parsedLoc.lon !== undefined) document.getElementById('autoGist_lon').value = parsedLoc.lon;
+      } catch (e) {
+        console.warn('[GistAdmin] Error parsing location settings', e);
+      }
+    }
+    
     const isGzipEnabled = localStorage.getItem(GZIP_SETTING_KEY);
     if (isGzipEnabled !== null) {
       document.getElementById('gzipCompress').checked = (isGzipEnabled === 'true');
     }
+  }
+
+  // Save merged GPS coordinates into the unified ecoflow_gist_loc key
+  function saveLocationSettings() {
+    const lat = document.getElementById('autoGist_lat').value.trim();
+    const lon = document.getElementById('autoGist_lon').value.trim();
+    
+    const locData = {
+      lat: lat !== '' ? parseFloat(lat) : null,
+      lon: lon !== '' ? parseFloat(lon) : null
+    };
+    
+    localStorage.setItem(LOCATION_SETTING_KEY, JSON.stringify(locData));
   }
 
   // Event listeners setup
@@ -419,6 +452,15 @@
       localStorage.setItem(GZIP_SETTING_KEY, e.target.checked);
     });
 
+    // Event listeners for change events on GPS fields
+    document.getElementById('autoGist_lat').addEventListener('change', () => {
+      saveLocationSettings();
+    });
+
+    document.getElementById('autoGist_lon').addEventListener('change', () => {
+      saveLocationSettings();
+    });
+
     // Secret 7-click unlock handler
     document.getElementById('syncActionHeader').addEventListener('click', () => {
       clickCounter++;
@@ -433,6 +475,20 @@
     });
   }
 
+  // Detect location via browser geolocation and save into merged key
+  function detectLocation() {
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            document.getElementById('autoGist_lat').value = pos.coords.latitude.toFixed(4);
+            document.getElementById('autoGist_lon').value = pos.coords.longitude.toFixed(4);
+            saveLocationSettings();
+        }, err => {
+            alert("Location access denied or unavailable: " + err.message);
+        });
+    } else {
+        alert("Geolocation is not supported by your browser.");
+    }
+  }  
   // Toggle Master Mode badge
   function adjustUIForRole() {
     const token = document.getElementById('githubToken').value.trim();
