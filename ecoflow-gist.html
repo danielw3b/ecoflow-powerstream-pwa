@@ -224,6 +224,13 @@
       margin-bottom: 12px;
     }
 
+    .location-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 6px;
+      align-items: center;
+    }  
+
     label {
       font-size: 0.8rem;
       color: var(--text-muted);
@@ -340,18 +347,20 @@
         <label for="autoGistId">Auto-Sync Gist ID (Background Engine)</label>
         <input type="text" id="autoGistId" placeholder="Enter Auto-Sync Gist ID">
       </div>
-      
+
+      <div class="form-group">
+          <label>Auto-Sync Gist2 Coordinates (LAT / LON)</label>
+          <div class="location-group">
+            <input type="number" step="any" id="autoGist_lat" required placeholder="LAT">
+            <input type="number" step="any" id="autoGist_lon" required placeholder="LON">
+            <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS">📍</button>
+          </div>
+      </div>  
+
       <div class="checkbox-group">
         <input type="checkbox" id="gzipCompress">
         <label for="gzipCompress" style="cursor: pointer;">Compress Backup with Gzip (Base64 encoded)</label>
       </div>
-
-      <div class="location-group">
-          <label>Auto-Sync Coordinates (LAT / LON)</label>
-          <input type="number" step="any" id="autoGist_lat" required placeholder="LAT">
-          <input type="number" step="any" id="autoGist_lon" required placeholder="LON">
-          <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS">📍</button>
-      </div>      
     </div>
 
     <!-- Status Content -->
