@@ -1419,21 +1419,12 @@
     }*/
 
     async function runAnalysis() {
-
-        
         const selectedSn = document.getElementById('cfg_inverter').value;
         if (!selectedSn) {
             alert("Please select an inverter / circuit first.");
             return;
         }
-
-
-        // Debug runtime state to verify data binding integrity
-        console.debug("Debug - Selected SN:", selectedSn);
-        console.debug("Debug - Available keys in ecoflow_wh:", Object.keys(JSON.parse(localStorage.getItem('ecoflow_wh')) || {}));
-        console.debug("Debug - Device daily data sample:", deviceDaily);
-
-        
+    
         const loadingEl = document.getElementById('loading');
         const runBtn = document.getElementById('runBtn');
         const csvBtn = document.getElementById('csvBtn');
@@ -1447,60 +1438,69 @@
     
         try {
             globalConfig = getUserConfig();
-        
+    
             const localNow = new Date();
             const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
             const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);
             // Restrict query to yesterday since today's data is incomplete until midnight rollover
             localTargetTime.setDate(localTargetTime.getDate() - 1);
             const endDate = localTargetTime.toISOString().split('T')[0];
-        
+    
             const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
             const deviceDaily = dailyStorage[selectedSn] || {};
-        
+    
+            // Debug runtime state to verify data binding integrity
+            console.debug("Debug - Selected SN:", selectedSn);
+            console.debug("Debug - Available keys in ecoflow_wh:", Object.keys(dailyStorage));
+            console.debug("Debug - Device daily data sample:", deviceDaily);
+    
             const tilt = globalConfig.tilt ?? 18;
             const azimuth = globalConfig.azimuth ?? 0;
-        
-            // Unified API request querying both hourly GTI/temperature and daily summary parameters
-            const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&hourly=global_tilted_irradiance,temperature_2m&daily=shortwave_radiation_sum,temperature_2m_max&tilt=${tilt}&azimuth=${azimuth}&timezone=auto`;
-        
+    
+            // Unified API request querying hourly GTI and daily summary parameters including temperature_2m_max
+            const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&hourly=global_tilted_irradiance&daily=shortwave_radiation_sum,temperature_2m_max&tilt=${tilt}&azimuth=${azimuth}&timezone=auto`;
+    
             const res = await fetch(dailyUrl);
             const dailyData = res.ok ? await res.json() : null;
-        
+    
             if (!dailyData || !dailyData.hourly || !dailyData.daily) {
                 throw new Error("Missing required weather parameters in API response.");
             }
-        
-            // 1. Process hourly GTI and temperature data into daily aggregated sums and peak temperatures
+    
+            // 1. Process hourly GTI data into daily aggregated sums (Wh/m² to kWh/m²)
             const dailyGtiMap = {};
-            const dailyTempMap = {};
             const times = dailyData.hourly.time || [];
             const gtiValues = dailyData.hourly.global_tilted_irradiance || [];
-            const tempValues = dailyData.hourly.temperature_2m || [];
-        
+    
             for (let i = 0; i < times.length; i++) {
                 const dateStr = times[i].split('T')[0];
                 if (!dailyGtiMap[dateStr]) {
                     dailyGtiMap[dateStr] = 0;
-                    dailyTempMap[dateStr] = [];
                 }
                 if (gtiValues[i] !== null) dailyGtiMap[dateStr] += gtiValues[i];
-                if (tempValues[i] !== null) dailyTempMap[dateStr].push(tempValues[i]);
             }
-        
+    
             const dates = Object.keys(dailyGtiMap).sort();
-            const gtiRadSumRaw = dates.map(d => (dailyGtiMap[d] / 1000)); // * 3.6
-            const maxTempRaw = dates.map(d => dailyTempMap[d].length > 0 ? Math.max(...dailyTempMap[d]) : 25);
-        
-            // 2. Map legacy Liu-Jordan daily summary data matching the date array
+            const gtiRadSumRaw = dates.map(d => (dailyGtiMap[d] / 1000));
+    
+            // 2. Map legacy Liu-Jordan daily summary data (convert MJ/m² to kWh/m² via division by 3.6)
             const ljDates = dailyData.daily.time || [];
             const ljValues = dailyData.daily.shortwave_radiation_sum || [];
             const ljMap = {};
             ljDates.forEach((d, idx) => {
-                ljMap[d] = ljValues[idx];
+                ljMap[d] = ljValues[idx] != null ? ljValues[idx] / 3.6 : 0;
             });
             const ljRadSumRaw = dates.map(d => ljMap[d] ?? 0);
-        
+    
+            // 3. Map daily maximum temperatures directly from Open-Meteo daily endpoint
+            const maxTempDates = dailyData.daily.time || [];
+            const maxTempValues = dailyData.daily.temperature_2m_max || [];
+            const maxTempMap = {};
+            maxTempDates.forEach((d, idx) => {
+                maxTempMap[d] = maxTempValues[idx];
+            });
+            const maxTempRaw = dates.map(d => (maxTempMap[d] !== undefined && maxTempMap[d] !== null) ? maxTempMap[d] : 25);
+    
             // Clean trailing null values across all datasets to maintain synchronized array indices
             while (dates.length > 0 && (gtiRadSumRaw[gtiRadSumRaw.length - 1] === null || ljRadSumRaw[ljRadSumRaw.length - 1] === null)) {
                 dates.pop();
@@ -1508,11 +1508,11 @@
                 ljRadSumRaw.pop();
                 maxTempRaw.pop();
             }
-        
+    
             // Pass all validated datasets and temperature array to analyzeDevice for yield calculation
             await analyzeDevice(selectedSn, dates, gtiRadSumRaw, ljRadSumRaw, maxTempRaw, deviceDaily);
             csvBtn.style.display = 'block';
-        
+    
         } catch (error) {
             console.error("Failed to fetch or process weather archive data:", error);
         } finally {
