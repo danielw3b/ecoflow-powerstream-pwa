@@ -1618,6 +1618,11 @@
         
             // Robust fallback lookup for real yield across date format variations
             const realYieldWh = deviceDaily[dateStr] || deviceDaily[dateStr.split('T')[0]] || 0;
+
+// Debug lookup values for the current loop iteration
+console.log(`Lookup Check -> Date: "${dateStr}", Found in deviceDaily:`, deviceDaily[dateStr], "Resolved Wh:", realYieldWh);
+
+            
             const totalSolarEnergyWh = totalRadKwhM2 * 1000 * (globalConfig.moduleArea || 1);
         
             const rawEfficiency = totalSolarEnergyWh > 100 ? (realYieldWh / totalSolarEnergyWh) * 100 : 0;
