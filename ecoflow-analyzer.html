@@ -1452,7 +1452,7 @@
             const azimuth = globalConfig.azimuth ?? 0;
     
             // Unified API request querying both hourly GTI and daily Liu-Jordan parameters simultaneously
-            const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&hourly=global_tilted_irradiance&daily=shortwave_radiation_sum,temperature_2m_max&tilt=${tilt}&azimuth=${azimuth}&timezone=auto`;
+            const dailyUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${globalConfig.startDate}&end_date=${endDate}&hourly=global_tilted_irradiance,temperature_2m&daily=shortwave_radiation_sum,temperature_2m_max&tilt=${tilt}&azimuth=${azimuth}&timezone=auto`;
     
             const res = await fetch(dailyUrl);
             const dailyData = res.ok ? await res.json() : null;
