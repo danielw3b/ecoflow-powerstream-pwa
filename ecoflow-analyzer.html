@@ -1583,7 +1583,7 @@
             }
         
             totalDaysAnalyzed++;
-            const totalRadKwhM2 = radSumRaw[i] / 3.6;
+            const totalRadKwhM2 = radSumRaw[i];
             const radCssClass = (totalRadKwhM2 >= 2.5) ? 'good' : 'warn';
             const dayTemp = (maxTempRaw && maxTempRaw[i] != null) ? maxTempRaw[i] : 25;
             
