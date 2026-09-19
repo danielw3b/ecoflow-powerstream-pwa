@@ -1753,7 +1753,7 @@
         
                     avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                     sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
-                    maxPeak = peakValue;
+                    maxPeak = Math.round(peakValue);
                     realDiffuseShare = totalRad > 0 ? (totalDiffuse / totalRad) : 0;
                 }
         
