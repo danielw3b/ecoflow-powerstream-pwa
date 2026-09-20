@@ -967,8 +967,11 @@
         for (let i = dates.length - 1; i >= 0; i--) {
             const dateStr = dates[i];
             
+            // Choose the correct radiation array based on the active switch.
+            const rawRadiationValue = useGtiModel ? radSumRaw[i] : ljRadSumRaw[i];
+            
             // Safely skip iteration or show n/a if radiation data is null, undefined, or NaN
-            if (radSumRaw[i] == null || isNaN(radSumRaw[i])) {
+            if (rawRadiationValue == null || isNaN(rawRadiationValue)) {
                 tableRowsHtml += `<tr>
                     <td>${dateStr}</td>
                     <td>n/a</td>
@@ -979,9 +982,9 @@
                 </tr>`;
                 continue;
             }
-        
+            
             totalDaysAnalyzed++;
-            const totalRadKwhM2 = radSumRaw[i];
+            const totalRadKwhM2 = rawRadiationValue;
             const radCssClass = (totalRadKwhM2 >= 2.5) ? 'good' : 'warn';
             const dayTemp = (maxTempRaw && maxTempRaw[i] != null) ? maxTempRaw[i] : 25;
             
