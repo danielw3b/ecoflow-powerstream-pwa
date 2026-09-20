@@ -1541,7 +1541,7 @@
         const startDateStr = (typeof globalConfig !== "undefined" && globalConfig?.startDate) ? globalConfig.startDate : "All_Time";
         
         link.href = url;
-        link.download = `Solar_Analysis_$(useGtiModel ? "GTI-Model" : "Liu-Jordan-Model")_${inverterName}_${startDateStr}.csv`;
+        link.download = `Solar_Analysis_${useGtiModel ? 'GTI-Model' : 'Liu-Jordan-Model'}_${inverterName}_${startDateStr}.csv`;
         
         document.body.appendChild(link);
         link.click();
