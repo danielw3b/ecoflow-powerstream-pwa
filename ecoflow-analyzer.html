@@ -216,23 +216,23 @@
 
     /* Only pulse if the button is active and enabled */
     .pulse-highlight:not(:disabled) {
-        animation: clean-sky-pulse 2.2s ease-in-out infinite;
+        animation: warm-amber-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
     
-    @keyframes clean-sky-pulse {
+    @keyframes warm-amber-pulse {
         0% {
-            /* Flat, sharp button outline */
-            box-shadow: 0 0 0 0px rgba(56, 189, 248, 0.7);
+            /* Tight, crisp amber ring around the green button */
+            box-shadow: 0 0 0 0px rgba(251, 191, 36, 0.8);
         }
         70% {
-            /* Expands 8px out into a soft sky-blue neon frame */
-            box-shadow: 0 0 0 8px rgba(56, 189, 248, 0);
+            /* Expands 8px out into a warm, glowing frame */
+            box-shadow: 0 0 0 8px rgba(251, 191, 36, 0);
         }
         100% {
-            /* Fades completely before restarting */
-            box-shadow: 0 0 0 0px rgba(56, 189, 248, 0);
+            box-shadow: 0 0 0 0px rgba(251, 191, 36, 0);
         }
     }
+
 
     /* Flexible Container to align buttons side-by-side */
     .button-row {
