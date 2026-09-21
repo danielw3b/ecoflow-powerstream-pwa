@@ -109,6 +109,41 @@
         /*margin-bottom: 12px;*/ 
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+
+    /* Status Badges */
+    .badge {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    .badge-btn {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
     
     .grid { 
         display: grid; 
@@ -570,9 +605,17 @@
             <p>Analyze your EcoFlow Energy History with Open-Meteo data</p>
         </div>
     </div>
-    
+    <!-- Application Card -->
     <div class="card">
-        <h2>Device Setting</h2>
+        <div class="card-header">
+            <div class="card-title">Device Settings</div>
+            <div>
+                <button type="button" id="btnModelToggle" class="badge badge-btn" title="Switch Solar Model">GTI</button>
+            </div>
+        </div>
+        
+        <!--<h2>Device Setting</h2>-->
+        
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
             
             <h3>🔌 System Selection & Location</h3>
@@ -699,7 +742,7 @@
 
 <script>
 
-    const useGtiModel = false; // true = GTI mapping, false = Liu-Jordan-Model
+    let useGtiModel = false; // true = GTI mapping, false = Liu-Jordan-Model
     let globalCsvRows = [];
     let globalConfig = {};
     
@@ -744,6 +787,26 @@
         if (serials.length > 0) {
             select.value = serials[0];
             loadInverterConfig();
+        }
+
+        // Initialize model toggle button state and event listener
+        const btnModelToggle = document.getElementById('btnModelToggle');
+        if (btnModelToggle) {
+            // Set initial button label based on global scope variable
+            btnModelToggle.textContent = useGtiModel ? 'GTI' : 'LJordan';
+            
+            // Handle click to switch models dynamically
+            btnModelToggle.addEventListener('click', () => {
+                useGtiModel = !useGtiModel;
+                
+                // Update button text instantly
+                btnModelToggle.textContent = useGtiModel ? 'GTI' : 'LJordan';
+                
+                // Re-run analysis to refresh table values, footers, and stats immediately
+                if (typeof runAnalysis === 'function') {
+                  runAnalysis();
+                }
+            });
         }
     }
     
