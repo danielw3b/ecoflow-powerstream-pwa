@@ -468,19 +468,20 @@
     .legend-footer strong {
         color: var(--text);
     }
-    /*#results { margin-top: 20px; }*/
+
     /* A subtle 0.15s fade-in hint that fires *only* when the HTML changes */
     @keyframes content-flash {
         from { opacity: 0.4; }
         to { opacity: 1; }
     }
     
-    #resultsDiv, .loader  {
+    #resultsDiv {
         /* This triggers the animation every time the element is updated/re-rendered */
         animation: content-flash 0.15s ease-out;
+        /* margin-top: 20px;*/
     }
   
-    .loader { display: none; color: var(--emerald-light); font-weight: 600; font-size: 0.75rem; text-align: center;padding-top: 4px; }
+    /*.loader { display: none; color: var(--emerald-light); font-weight: 600; font-size: 0.75rem; text-align: center;padding-top: 4px; }*/
     
     .status-primary-row {
         display: flex;
@@ -760,7 +761,7 @@
             </div>
         </form>
         
-        <div id="loading" class="loader">⏳ Fetching weather data and processing history...</div>
+        <!--<div id="loading" class="loader">⏳ Fetching weather data and processing history...</div>-->
     </div>
     <div id="results"></div>
 </div>
@@ -926,13 +927,14 @@
             return;
         }
     
-        const loadingEl = document.getElementById('loading');
+        //const loadingEl = document.getElementById('loading');
         const runBtn = document.getElementById('runBtn');
         const csvBtn = document.getElementById('csvBtn');
         const resultsDiv = document.getElementById('results');
 
-        loadingEl.style.display = 'block';
+        //loadingEl.style.display = 'block';
         runBtn.disabled = true;
+        runBtn.textContent = 'Processing...';
         csvBtn.disabled = true; // Disable instead of display: none
         runBtn.classList.remove('pulse-highlight');
         //resultsDiv.innerHTML = '';
@@ -1012,8 +1014,9 @@
         } catch (error) {
             console.error("Failed to fetch or process weather archive data:", error);
         } finally {
-            loadingEl.style.display = 'none';
+            //loadingEl.style.display = 'none';
             runBtn.disabled = false;
+            runBtn.textContent = 'Save & Run';
         }
     }
 
