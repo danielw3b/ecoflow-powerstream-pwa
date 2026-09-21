@@ -468,18 +468,8 @@
     .legend-footer strong {
         color: var(--text);
     }
-
-    /* A subtle 0.15s fade-in hint that fires *only* when the HTML changes */
-    @keyframes content-flash {
-        from { opacity: 0.4; }
-        to { opacity: 1; }
-    }
     
-    #resultsDiv {
-        /* This triggers the animation every time the element is updated/re-rendered */
-        animation: content-flash 0.15s ease-out;
-        /* margin-top: 20px;*/
-    }
+    /*#resultsDiv {margin-top: 20px;}*/
   
     /*.loader { display: none; color: var(--emerald-light); font-weight: 600; font-size: 0.75rem; text-align: center;padding-top: 4px; }*/
     
@@ -938,6 +928,8 @@
         csvBtn.disabled = true; // Disable instead of display: none
         runBtn.classList.remove('pulse-highlight');
         //resultsDiv.innerHTML = '';
+        // 1. Instantly dim it slightly right before the change
+        resultsDiv.style.opacity = '0.35';
         globalCsvRows = [];
     
         try {
@@ -1488,6 +1480,9 @@
         ];
         
         resultsDiv.innerHTML = html;
+        // 3. Smoothly fade it back up to normal (takes 0.15s)
+        resultsDiv.style.transition = 'opacity 0.15s ease-out';
+        resultsDiv.style.opacity = '1';
     }
 
     const RELATIVE_SEASONAL_PROFILE = {
