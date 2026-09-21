@@ -1180,7 +1180,7 @@
                     weatherTooltip = "Hardware Drop: System turned off or completely disconnected (0 Wh yield).";
                     cssClass = "bad";
                     isCritical = true;
-                } else if ((avgClouds >= 80 && sunHours <= 3.5 && maxPeak <= 300) || (avgClouds > 90 && sunHours < 4)) {
+                } else if ((avgClouds >= 80 && sunHours <= 3.5 && maxPeak <= 300) || (avgClouds > 75 && sunHours < 4)) {
                     explanation = "🌧️ ☁️";
                     weatherTooltip = `Heavy Cloud / Rain: Extremely low radiation (Peak ${maxPeak} W/m², ${sunHours}h sun). Expected low yield.`;
                     weatherCount++;
