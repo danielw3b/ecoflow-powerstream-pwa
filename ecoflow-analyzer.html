@@ -901,10 +901,10 @@
         const csvBtn = document.getElementById('csvBtn');
         const resultsDiv = document.getElementById('results');
 
-        loadingEl.style.display = '';
+        loadingEl.style.display = 'block';
         runBtn.disabled = true;
         csvBtn.disabled = true; // Disable instead of display: none
-        resultsDiv.innerHTML = '';
+        //resultsDiv.innerHTML = '';
         globalCsvRows = [];
     
         try {
