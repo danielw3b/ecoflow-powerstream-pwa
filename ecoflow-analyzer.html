@@ -814,6 +814,7 @@
         // Initialize model toggle button state and event listener
         const btnModelToggle = document.getElementById('btnModelToggle');
         const runBtn = document.getElementById('runBtn');
+        const resultsDIV = document.getElementById('results');
         
         if (btnModelToggle) {
             // Set initial button label based on global scope variable
@@ -830,7 +831,9 @@
                 // Highlight the run button to signal that a re-analysis is required
                 if (runBtn) {
                     runBtn.classList.add('pulse-highlight');
+                    resultsDiv.classList.add('pulse-highlight');
                 }
+                
             });
         }
     }
@@ -927,9 +930,8 @@
         runBtn.textContent = 'Processing...';
         csvBtn.disabled = true; // Disable instead of display: none
         runBtn.classList.remove('pulse-highlight');
+        resultsDiv.classList.remove('pulse-highlight');
         //resultsDiv.innerHTML = '';
-        // 1. Instantly dim it slightly right before the change
-        resultsDiv.style.opacity = '0.35';
         globalCsvRows = [];
     
         try {
