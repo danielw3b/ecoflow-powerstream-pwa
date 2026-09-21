@@ -213,7 +213,24 @@
         opacity: 0.6;
         transform: none !important;
     }
+
+    .pulse-highlight {
+        /* Subtle breathing wave between your theme greens */
+        animation: elegant-pulse 2s ease-in-out infinite alternate;
+    }
     
+    @keyframes elegant-pulse {
+        0% {
+            background: var(--accent);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); /* Perfectly flat */
+        }
+        100% {
+            background: var(--emerald-light);
+            /* Soft ambient aura using your accent color */
+            box-shadow: 0 0 16px 2px rgba(16, 185, 129, 0.4); 
+        }
+    }
+ 
     /* Flexible Container to align buttons side-by-side */
     .button-row {
         display: flex;
