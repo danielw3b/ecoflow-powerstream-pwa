@@ -608,9 +608,10 @@
     <!-- Application Card -->
     <div class="card">
         <div class="card-header">
-            <div class="card-title">Device Settings</div>
+            <h2 style="margin: 0;">Device Settings</h2>
             <div>
-                <button type="button" id="btnModelToggle" class="badge badge-btn" title="Switch Solar Model">GTI</button>
+                <!-- Toggle button for GTI and Liu-Jordan solar models -->
+                <button type="button" id="btnModelToggle" class="badge badge-btn" title="Switch Solar Model">Active: GTI Model</button>
             </div>
         </div>
         
@@ -742,7 +743,7 @@
 
 <script>
 
-    let useGtiModel = false; // true = GTI mapping, false = Liu-Jordan-Model
+    let useGtiModel = true; // true = GTI mapping, false = Liu-Jordan-Model
     let globalCsvRows = [];
     let globalConfig = {};
     
@@ -791,20 +792,23 @@
 
         // Initialize model toggle button state and event listener
         const btnModelToggle = document.getElementById('btnModelToggle');
+        const runBtn = document.getElementById('runBtn');
+        
         if (btnModelToggle) {
             // Set initial button label based on global scope variable
-            btnModelToggle.textContent = useGtiModel ? 'GTI' : 'LJordan';
+            btnModelToggle.textContent = useGtiModel ? 'Active: GTI Model' : 'Active: Liu-Jordan Model';
             
             // Handle click to switch models dynamically
             btnModelToggle.addEventListener('click', () => {
+                // Toggle global model switch state
                 useGtiModel = !useGtiModel;
+            
+                // Update button text instantly to reflect current selection
+                btnModelToggle.textContent = useGtiModel ? 'Active: GTI Model' : 'Active: Liu-Jordan Model';
                 
-                // Update button text instantly
-                btnModelToggle.textContent = useGtiModel ? 'GTI' : 'LJordan';
-                
-                // Re-run analysis to refresh table values, footers, and stats immediately
-                if (typeof runAnalysis === 'function') {
-                  runAnalysis();
+                // Highlight the run button to signal that a re-analysis is required
+                if (runBtn) {
+                    runBtn.classList.add('pulse-highlight');
                 }
             });
         }
