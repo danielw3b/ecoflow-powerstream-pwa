@@ -450,7 +450,7 @@
     }
     /*#results { margin-top: 20px; }*/
     
-    .loader { display: none; color: var(--emerald-light); font-weight: 600; font-size: 0.75rem; text-align: center; }
+    .loader { display: none; color: var(--emerald-light); font-weight: 600; font-size: 0.75rem; text-align: center;padding-top: 4px; }
     
     .status-primary-row {
         display: flex;
@@ -901,7 +901,7 @@
         const csvBtn = document.getElementById('csvBtn');
         const resultsDiv = document.getElementById('results');
 
-        loadingEl.style.display = 'block';
+        loadingEl.style.display = '';
         runBtn.disabled = true;
         csvBtn.disabled = true; // Disable instead of display: none
         resultsDiv.innerHTML = '';
