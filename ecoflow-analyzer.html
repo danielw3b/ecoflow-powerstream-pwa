@@ -829,11 +829,8 @@
                 btnModelToggle.textContent = useGtiModel ? 'Active: GTI Model' : 'Active: Liu-Jordan Model';
                 
                 // Highlight the run button to signal that a re-analysis is required
-                if (runBtn) {
-                    runBtn.classList.add('pulse-highlight');
-                    resultsDiv.classList.add('pulse-highlight');
-                }
-                
+                if (runBtn) runBtn.classList.add('pulse-highlight');
+                if (resultsDiv) resultsDiv.classList.add('pulse-highlight');
             });
         }
     }
