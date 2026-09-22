@@ -1415,12 +1415,12 @@ async function fetchWeather() {
     const speed = Math.round(c.wind_speed_10m);
     const temp  = Math.round(c.temperature_2m);
     
-    // Both radiation values available side-by-side
-    const directRad  = Math.round(c.direct_radiation ?? 0);          // Old direct radiation (W/m²)
-    const instantGti = Math.round(c.global_tilted_irradiance_instant ?? 0);   // New tilted radiation (W/m²)
+    // Both radiation values available side-by-side, e.g. 450,0 -> 450 W/m²
+    const directRad  = (Math.round((c.direct_radiation ?? 0) * 10) / 10).toString(); // old direct_radiation          
+    const instantGti = (Math.round((c.global_tilted_irradiance_instant ?? 0) * 10) / 10).toString(); // New tilted radiation (W/m²)
     
     // TEST SWITCH: Toggle between old direct radiation and new GTI
-    const USE_GTI = false; // Set to 'false' to switch back to direct_radiation instantly
+    const USE_GTI = true; // Set to 'false' to switch back to direct_radiation instantly
     
     // Dynamic assigned 'rad' variable based on your switch setting
     const rad = USE_GTI ? instantGti : directRad;
