@@ -778,44 +778,82 @@
     }
 
 
-// ls migration keys
-/**
- * Retrieves the configuration for a specific inverter from the master 'ecoflow_analyzer' object.
- * @param {string} inverterId - The inverter identifier or serial number
- * @returns {Object|null} The inverter configuration object or null if not found
- */
-function getAnalyzerConfig(inverterId) {
-    try {
-        const master = JSON.parse(localStorage.getItem('ecoflow_analyzer') || '{}');
-        return master[inverterId] || null;
-    } catch (e) {
-        console.error('Error reading analyzer config from master object:', e);
-        return null;
+    /**
+     * Automatically migrates legacy flat analyzer keys into the unified 'ecoflow_analyzer' master object.
+     */
+    function initAnalyzerMasterMigration() {
+        const MASTER_KEY = 'ecoflow_analyzer';
+        let master = {};
+        
+        try {
+            master = JSON.parse(localStorage.getItem(MASTER_KEY)) || {};
+        } catch (e) {
+            master = {};
+        }
+    
+        // List of legacy flat keys to check and migrate
+        const legacyKeys = ['ecoflow_analyzer_3738', 'ecoflow_analyzer_5929'];
+        let hasChanges = false;
+    
+        legacyKeys.forEach(oldKey => {
+            const raw = localStorage.getItem(oldKey);
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    const sn = parsed.inverter;
+                    if (sn && !master[sn]) {
+                        master[sn] = parsed;
+                        hasChanges = true;
+                    }
+                    // Clean up legacy flat key after migration
+                    localStorage.removeItem(oldKey);
+                } catch (e) {
+                    console.warn(`[Migration] Failed to parse legacy key ${oldKey}:`, e);
+                }
+            }
+        });
+    
+        if (hasChanges || !localStorage.getItem(MASTER_KEY)) {
+            localStorage.setItem(MASTER_KEY, JSON.stringify(master));
+        }
     }
-}
-
-/**
- * Saves the configuration for a specific inverter into the master 'ecoflow_analyzer' object.
- * @param {string} inverterId - The inverter identifier or serial number
- * @param {Object} configObj - The configuration object to store
- */
-function saveAnalyzerConfig(inverterId, configObj) {
-    try {
-        const master = JSON.parse(localStorage.getItem('ecoflow_analyzer') || '{}');
-        master[inverterId] = configObj;
-        localStorage.setItem('ecoflow_analyzer', JSON.stringify(master));
-    } catch (e) {
-        console.error('Error saving analyzer config to master object:', e);
+    
+    /**
+     * Retrieves the configuration for a specific inverter from the master 'ecoflow_analyzer' object.
+     * @param {string} inverterId - The inverter serial number
+     * @returns {Object|null} The inverter configuration object or null if not found
+     */
+    function getAnalyzerConfig(inverterId) {
+        try {
+            const master = JSON.parse(localStorage.getItem('ecoflow_analyzer') || '{}');
+            return master[inverterId] || null;
+        } catch (e) {
+            console.error('Error reading analyzer config from master object:', e);
+            return null;
+        }
     }
-}
-//################################################
-
+    
+    /**
+     * Saves the configuration for a specific inverter into the master 'ecoflow_analyzer' object.
+     * @param {string} inverterId - The inverter serial number
+     * @param {Object} configObj - The configuration object to store
+     */
+    function saveAnalyzerConfig(inverterId, configObj) {
+        try {
+            const master = JSON.parse(localStorage.getItem('ecoflow_analyzer') || '{}');
+            master[inverterId] = configObj;
+            localStorage.setItem('ecoflow_analyzer', JSON.stringify(master));
+        } catch (e) {
+            console.error('Error saving analyzer config to master object:', e);
+        }
+    }
+    
     // Load saved inverter configuration from the master 'ecoflow_analyzer' object or set system defaults
     function loadInverterConfig() {
         const selectedSn = document.getElementById('cfg_inverter')?.value;
         if (!selectedSn) return;
     
-        // Retrieve configuration from the master object using the helper
+        // Retrieve configuration from the master object
         const cfg = getAnalyzerConfig(selectedSn);
     
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
@@ -873,6 +911,9 @@ function saveAnalyzerConfig(inverterId, configObj) {
         
         return config;
     }
+    
+    // Run automatic migration check on script load
+    initAnalyzerMasterMigration();
 
 
     /*
@@ -1131,11 +1172,14 @@ function saveAnalyzerConfig(inverterId, configObj) {
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
         const friendlyName = customNames[sn] || sn;
         
+        // Retrieve inverter-specific configuration from the master 'ecoflow_analyzer' object
+        const globalConfig = getAnalyzerConfig(sn) || {};
+        
         const totalWp = globalConfig.totalWp || 900;
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
-         
+        
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
-            ? (useGtiModel ? 13.5 : 14.0) 
+            ? (useGtiModel ? 12.5 : 14.0) 
             : (useGtiModel ? 7.5 : 8.0);
         
         let tableRowsHtml = "";
