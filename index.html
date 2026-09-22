@@ -1654,7 +1654,7 @@ function installPwa() {
   _installPrompt.userChoice.then(() => { _installPrompt = null; });
 }
 // ── Streamlined Wake Lock (Activation Only) ────────
-let wakeLock = null;
+/*let wakeLock = null;
 async function requestWakeLock() {
   if (!("wakeLock" in navigator)) return;
   if (wakeLock !== null) return; 
@@ -1670,6 +1670,37 @@ async function requestWakeLock() {
     document.getElementById("wakeLockIcon").title = "Screen stays on";
   } catch (err) {
     console.error(`Wake Lock failed: ${err.name} - ${err.message}`);
+  }
+}*/
+
+// ── Streamlined Wake Lock (Activation Only) ────────
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  if (wakeLock !== null) return; 
+  // Prevents the error if the page is not visible at that exact moment.
+  if (document.visibilityState !== "visible") return;
+
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => {
+      wakeLock = null;
+      const icon = document.getElementById("wakeLockIcon");
+      if (icon) {
+        icon.style.opacity = ".3";
+        icon.title = "Screen lock inactive";
+      }
+    });
+    const icon = document.getElementById("wakeLockIcon");
+    if (icon) {
+      icon.style.opacity = "1";
+      icon.title = "Screen stays on";
+    }
+  } catch (err) {
+    // NotAllowedError interception
+    if (err.name !== "NotAllowedError") {
+      console.warn(`Wake Lock failed: ${err.name} - ${err.message}`);
+    }
   }
 }
 
