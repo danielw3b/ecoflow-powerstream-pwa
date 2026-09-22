@@ -1420,7 +1420,7 @@ async function fetchWeather() {
     const instantGti = (Math.round((c.global_tilted_irradiance_instant ?? 0) * 10) / 10).toString(); // New tilted radiation (W/m²)
     
     // TEST SWITCH: Toggle between old direct radiation and new GTI
-    const USE_GTI = true; // Set to 'false' to switch back to direct_radiation instantly
+    const USE_GTI = false; // Set to 'false' to switch back to direct_radiation instantly
     
     // Dynamic assigned 'rad' variable based on your switch setting
     const rad = USE_GTI ? instantGti : directRad;
