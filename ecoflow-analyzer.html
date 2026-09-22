@@ -777,13 +777,112 @@
         csvBtn.disabled = true;
     }
 
+
+// ls migration keys
+/**
+ * Retrieves the configuration for a specific inverter from the master 'ecoflow_analyzer' object.
+ * @param {string} inverterId - The inverter identifier or serial number
+ * @returns {Object|null} The inverter configuration object or null if not found
+ */
+function getAnalyzerConfig(inverterId) {
+    try {
+        const master = JSON.parse(localStorage.getItem('ecoflow_analyzer') || '{}');
+        return master[inverterId] || null;
+    } catch (e) {
+        console.error('Error reading analyzer config from master object:', e);
+        return null;
+    }
+}
+
+/**
+ * Saves the configuration for a specific inverter into the master 'ecoflow_analyzer' object.
+ * @param {string} inverterId - The inverter identifier or serial number
+ * @param {Object} configObj - The configuration object to store
+ */
+function saveAnalyzerConfig(inverterId, configObj) {
+    try {
+        const master = JSON.parse(localStorage.getItem('ecoflow_analyzer') || '{}');
+        master[inverterId] = configObj;
+        localStorage.setItem('ecoflow_analyzer', JSON.stringify(master));
+    } catch (e) {
+        console.error('Error saving analyzer config to master object:', e);
+    }
+}
+//################################################
+
+    // Load saved inverter configuration from the master 'ecoflow_analyzer' object or set system defaults
+    function loadInverterConfig() {
+        const selectedSn = document.getElementById('cfg_inverter')?.value;
+        if (!selectedSn) return;
+    
+        // Retrieve configuration from the master object using the helper
+        const cfg = getAnalyzerConfig(selectedSn);
+    
+        const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
+        const friendlyName = customNames[selectedSn] || selectedSn;
+    
+        if (cfg) {
+            try {
+                for (const [key, value] of Object.entries(cfg)) {
+                    const el = document.getElementById(`cfg_${key}`);
+                    if (el && value !== undefined) el.value = value;
+                }
+            } catch (e) {
+                console.error("Error applying saved configuration:", e);
+            }
+        } else {
+            // Set default fallback values if no config exists for this inverter yet
+            document.getElementById('cfg_currency').value = "€";
+            document.getElementById('cfg_investment').value = "0";
+            document.getElementById('cfg_energyPrice').value = "29.89";
+            document.getElementById('cfg_startDate').value = "2026-05-07";
+            document.getElementById('cfg_tariffStart').value = "2026-06-26";
+            if(document.getElementById('cfg_totalWp')) document.getElementById('cfg_totalWp').value = "900";
+            if(document.getElementById('cfg_panelType')) document.getElementById('cfg_panelType').value = "bifacial";
+            if(document.getElementById('cfg_tilt')) document.getElementById('cfg_tilt').value = "18";
+            if(document.getElementById('cfg_azimuth')) document.getElementById('cfg_azimuth').value = "0";
+        }
+    }
+    
+    // Read form values and save them into the master 'ecoflow_analyzer' object via saveAnalyzerConfig
+    function getUserConfig() {
+        const selectedSn = document.getElementById('cfg_inverter')?.value || '';
+        const config = {
+            inverter: selectedSn,
+            lat: parseFloat(document.getElementById('cfg_lat')?.value) || 0,
+            lon: parseFloat(document.getElementById('cfg_lon')?.value) || 0,
+            panelType: document.getElementById('cfg_panelType')?.value || 'bifacial', 
+            selfConsumptionRate: parseFloat(document.getElementById('cfg_selfConsumptionRate')?.value) || 75,
+            moduleArea: parseFloat(document.getElementById('cfg_moduleArea')?.value) || 0,
+            totalWp: parseFloat(document.getElementById('cfg_totalWp')?.value) || 900,
+            tilt: parseFloat(document.getElementById('cfg_tilt')?.value) ?? 18,
+            azimuth: parseFloat(document.getElementById('cfg_azimuth')?.value) ?? 0,
+            currency: document.getElementById('cfg_currency')?.value || '€',
+            investment: parseFloat(document.getElementById('cfg_investment')?.value) || 0,
+            energyPrice: parseFloat(document.getElementById('cfg_energyPrice')?.value) || 0,
+            meterTariffStart: parseFloat(document.getElementById('cfg_meterTariffStart')?.value) || 0,
+            meterCurrent: parseFloat(document.getElementById('cfg_meterCurrent')?.value) || 0,
+            tariffStart: document.getElementById('cfg_tariffStart')?.value || '',
+            startDate: document.getElementById('cfg_startDate')?.value || ''
+        };
+    
+        // Save configuration into the master object if a valid inverter is selected
+        if (selectedSn) {
+            saveAnalyzerConfig(selectedSn, config);
+        }
+        
+        return config;
+    }
+
+
+    /*
     function getStorageKey() {
         const sn = document.getElementById('cfg_inverter')?.value;
         if (!sn) return null;
         const suffix = sn.length > 4 ? sn.slice(-4) : sn;
         return `ecoflow_analyzer_${suffix}`;
     }
-            
+    */        
     function initInverters() {
         const select = document.getElementById('cfg_inverter');
         if (!select) return;
@@ -834,7 +933,7 @@
     }
     
     // Load saved inverter configuration or set system defaults
-    function loadInverterConfig() {
+    /*function loadInverterConfig() {
         const key = getStorageKey();
         const saved = localStorage.getItem(key);
     
@@ -887,7 +986,7 @@
         };
         localStorage.setItem(getStorageKey(), JSON.stringify(config));
         return config;
-    }
+    }*/
 
     function detectLocation() {
         if ("geolocation" in navigator) {
