@@ -277,6 +277,12 @@ canvas{width:100%;display:block;}
 </main>
 
 <script>
+
+// Completely remove old, no longer needed keys from LocalStorage.
+['pwa_sunset_cache', 'ecoflow_analyzer_BK01Z11ACH4G5929', 'ecoflow_analyzer_BK01Z1SACH2M3738', 'ecoflow_analyzer_5929', 'ecoflow_analyzer_3738', 'ecoflow_analyzer_config_BK01Z11ACH4G5929', 'ecoflow_analyzer_config_BK01Z1SACH2M3738'].forEach(k => localStorage.removeItem(k));
+
+
+  
 // ════════════════════════════════════════════════════════════════
 //  CONFIG — stored in localStorage, editable via setup modal
 // ════════════════════════════════════════════════════════════════
@@ -1779,7 +1785,7 @@ init();
   // Fetches today's sunset using local GPS config with fallback
   async function getOrFetchSunset() {
     const today = new Date().toISOString().split('T')[0];
-    const cached = localStorage.getItem('pwa_sunset_cache');
+    const cached = localStorage.getItem('ecoflow_gist_sunset');
     
     if (cached) {
       try {
@@ -1806,7 +1812,7 @@ init();
         const data = await res.json();
         const sunsetDate = new Date(data.daily.sunset[0]);
 
-        localStorage.setItem('pwa_sunset_cache', JSON.stringify({
+        localStorage.setItem('ecoflow_gist_sunset', JSON.stringify({
           date: today,
           sunset: sunsetDate.toISOString()
         }));
