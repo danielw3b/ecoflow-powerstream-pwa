@@ -781,7 +781,7 @@
     /**
      * Automatically migrates legacy flat analyzer keys into the unified 'ecoflow_analyzer' master object.
      */
-    function initAnalyzerMasterMigration() {
+    /*function initAnalyzerMasterMigration() {
         const MASTER_KEY = 'ecoflow_analyzer';
         let master = {};
         
@@ -817,12 +817,12 @@
             localStorage.setItem(MASTER_KEY, JSON.stringify(master));
         }
     }
+
+    // Run automatic migration check on script load
+    initAnalyzerMasterMigration();*/
+   
     
-    /**
-     * Retrieves the configuration for a specific inverter from the master 'ecoflow_analyzer' object.
-     * @param {string} inverterId - The inverter serial number
-     * @returns {Object|null} The inverter configuration object or null if not found
-     */
+    // Retrieves the configuration for a specific inverter from the master 'ecoflow_analyzer' object.
     function getAnalyzerConfig(inverterId) {
         try {
             const master = JSON.parse(localStorage.getItem('ecoflow_analyzer') || '{}');
@@ -833,11 +833,7 @@
         }
     }
     
-    /**
-     * Saves the configuration for a specific inverter into the master 'ecoflow_analyzer' object.
-     * @param {string} inverterId - The inverter serial number
-     * @param {Object} configObj - The configuration object to store
-     */
+    // Saves the configuration for a specific inverter into the master 'ecoflow_analyzer' object.
     function saveAnalyzerConfig(inverterId, configObj) {
         try {
             const master = JSON.parse(localStorage.getItem('ecoflow_analyzer') || '{}');
@@ -911,19 +907,7 @@
         
         return config;
     }
-    
-    // Run automatic migration check on script load
-    initAnalyzerMasterMigration();
 
-
-    /*
-    function getStorageKey() {
-        const sn = document.getElementById('cfg_inverter')?.value;
-        if (!sn) return null;
-        const suffix = sn.length > 4 ? sn.slice(-4) : sn;
-        return `ecoflow_analyzer_${suffix}`;
-    }
-    */        
     function initInverters() {
         const select = document.getElementById('cfg_inverter');
         if (!select) return;
