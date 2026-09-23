@@ -1422,7 +1422,7 @@ async function fetchWeather() {
     const temp  = Math.round(c.temperature_2m);
     
     // Both radiation values available side-by-side, e.g. 450,0 -> 450 W/m²
-    const directRad  = (Math.round((c.direct_radiation ?? 0) * 10) / 10).toString(); // old direct_radiation          
+    const directRad  = (Math.round((c.direct_radiation_instant ?? 0) * 10) / 10).toString(); // old direct_radiation          
     const instantGti = (Math.round((c.global_tilted_irradiance_instant ?? 0) * 10) / 10).toString(); // New tilted radiation (W/m²)
     
     // TEST SWITCH: Toggle between old direct radiation and new GTI
