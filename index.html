@@ -1795,16 +1795,11 @@ init();
     }
 
     let lat = null, lon = null;
-    const rawConfig = localStorage.getItem('ecoflow_analyzer_3738');
-    if (rawConfig) {
-      try {
-        const parsedConfig = JSON.parse(rawConfig);
-        if (parsedConfig.lat && parsedConfig.lon) {
-          lat = parsedConfig.lat;
-          lon = parsedConfig.lon;
-        }
-      } catch (e) {}
-    }
+    try {
+      const loc = JSON.parse(localStorage.getItem('ecoflow_gist_loc') || '{}');
+      lat = loc.lat ?? null;
+      lon = loc.lon ?? null;
+    } catch (e) {}
 
     if (lat && lon) {
       try {
@@ -1823,7 +1818,7 @@ init();
     }
 
     const fallback = new Date();
-    fallback.setHours(21, 0, 0, 0);
+    fallback.setHours(20, 0, 0, 0);
     return fallback;
   }
 
