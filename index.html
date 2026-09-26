@@ -277,12 +277,6 @@ canvas{width:100%;display:block;}
 </main>
 
 <script>
-
-// Completely remove old, no longer needed keys from LocalStorage.
-['pwa_sunset_cache', 'ecoflow_analyzer_BK01Z11ACH4G5929', 'ecoflow_analyzer_BK01Z1SACH2M3738', 'ecoflow_analyzer_5929', 'ecoflow_analyzer_3738', 'ecoflow_analyzer_config_BK01Z11ACH4G5929', 'ecoflow_analyzer_config_BK01Z1SACH2M3738'].forEach(k => localStorage.removeItem(k));
-
-
-  
 // ════════════════════════════════════════════════════════════════
 //  CONFIG — stored in localStorage, editable via setup modal
 // ════════════════════════════════════════════════════════════════
@@ -1897,6 +1891,13 @@ init();
 
       // Silent Export Check: Token required + trigger via threshold, sunset closeout, or new day
       if (hasToken) {
+
+        // 1. Migration check & legacy cleanup:
+        // If remote cloud log was reset at sunset ([]), synchronize local log immediately
+        const remoteLogs = remotePayload.writer_export_history || [];
+        if (Array.isArray(remoteLogs) && remoteLogs.length === 0) {
+          localStorage.setItem('ecoflow_auto_export_log', JSON.stringify([]));
+        }
         const whDifference = localTotalWh - remoteTotalWh;
         const isBrandNewGist = !remotePayload.keys || Object.keys(remotePayload.keys).length === 0;
 
@@ -1916,6 +1917,12 @@ init();
         if (shouldExport) {
           await executeSilentExport(autoGistId, token, localTotalWh, whDifference);
           console.log(`[AutoSync] Smart-Node: Export completed (+${whDifference.toFixed(2)} Wh).`);
+
+          // Reset log storage to empty array if this export was triggered by sunset closeout
+          if (isPastSunset) {
+            localStorage.setItem('ecoflow_auto_export_log', JSON.stringify([]));
+            console.log('[AutoSync] Sunset closeout reached: Local auto-export log reset to []');
+          }
         }
       }
 
