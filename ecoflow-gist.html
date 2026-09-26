@@ -465,7 +465,19 @@
     });
 
     document.getElementById('githubToken').addEventListener('change', (e) => {
-      localStorage.setItem('ecoflow_github_token', e.target.value.trim());
+      const tokenVal = e.target.value.trim();
+      localStorage.setItem('ecoflow_github_token', tokenVal);
+      
+      // Auto-fetch location if inputs are empty, otherwise perform a quick save
+      const latVal = document.getElementById('autoGist_lat').value.trim();
+      const lonVal = document.getElementById('autoGist_lon').value.trim();
+
+      if (tokenVal && (!latVal || !lonVal)) {
+        detectLocation();
+      } else {
+        saveLocationSettings();
+      }
+
       adjustUIForRole();
       checkGistStatus();
     });
@@ -502,7 +514,7 @@
       }
     });
   }
-
+  
   // Detect location via browser geolocation and save into merged key
   function detectLocation() {
     if ("geolocation" in navigator) {
