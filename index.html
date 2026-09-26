@@ -1779,7 +1779,7 @@ init();
   // Fetches today's sunset using local GPS config with fallback
   async function getOrFetchSunset() {
     const today = new Date().toISOString().split('T')[0];
-    const cached = localStorage.getItem('ecoflow_gist_sunset');
+    const cached = localStorage.getItem('ecoflow_auto_sunset');
     
     if (cached) {
       try {
@@ -1801,7 +1801,7 @@ init();
         const data = await res.json();
         const sunsetDate = new Date(data.daily.sunset[0]);
 
-        localStorage.setItem('ecoflow_gist_sunset', JSON.stringify({
+        localStorage.setItem('ecoflow_auto_sunset', JSON.stringify({
           date: today,
           sunset: sunsetDate.toISOString()
         }));
