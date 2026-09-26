@@ -1910,12 +1910,6 @@ init();
         if (shouldExport) {
           await executeSilentExport(autoGistId, token, localTotalWh, whDifference);
           console.log(`[AutoSync] Smart-Node: Export completed (+${whDifference.toFixed(2)} Wh).`);
-
-          // Reset log storage to empty array if this export was triggered by sunset closeout
-          if (isPastSunset) {
-            localStorage.setItem('ecoflow_auto_export_log', JSON.stringify([]));
-            console.log('[AutoSync] Sunset closeout reached: Local auto-export log reset to []');
-          }
         }
       }
 
