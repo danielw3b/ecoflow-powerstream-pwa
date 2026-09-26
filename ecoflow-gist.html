@@ -398,10 +398,11 @@
 </div>
 
 <script>
-// Storage keys and thresholds
+  // Storage keys and thresholds
   const LOCAL_SYNC_KEY = 'ecoflow_gist_last_sync';
   const GZIP_SETTING_KEY = 'ecoflow_gist_gzip_enabled';
-  const LOCATION_SETTING_KEY = 'ecoflow_gist_loc';
+  // location needed for auto-sync engine's sunset patch
+  const LOCATION_SETTING_KEY = 'ecoflow_auto_loc';
   const EXPORT_THRESHOLD_WH = 100;
 
   const EXPORT_KEYS = [
