@@ -1891,13 +1891,6 @@ init();
 
       // Silent Export Check: Token required + trigger via threshold, sunset closeout, or new day
       if (hasToken) {
-
-        // 1. Migration check & legacy cleanup:
-        // If remote cloud log was reset at sunset ([]), synchronize local log immediately
-        const remoteLogs = remotePayload.writer_export_history || [];
-        if (Array.isArray(remoteLogs) && remoteLogs.length === 0) {
-          localStorage.setItem('ecoflow_auto_export_log', JSON.stringify([]));
-        }
         const whDifference = localTotalWh - remoteTotalWh;
         const isBrandNewGist = !remotePayload.keys || Object.keys(remotePayload.keys).length === 0;
 
