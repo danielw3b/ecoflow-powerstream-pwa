@@ -151,8 +151,12 @@ canvas{width:100%;display:block;}
 .log-row-0 td{background:rgba(0,212,255,.04);}
 .log-row-1 td{background:rgba(255,184,48,.04);}
 
-/* 530px instead of 600px to exclude high-DPI 10" tablets (like Alcatel at 533px) from mobile view */
-@media (max-width: 360px){
+/* 
+  LEARNING: Alcatel tablet spoofs a tiny width under 360px at 100% zoom.
+  FIX: Apply mobile styles ONLY to extremely elongated smartphone screens (aspect-ratio < 1:1.7).
+  This safely excludes the wider 10" tablet (16:10 / 1:1.6) regardless of its broken pixel reports.
+*/
+@media (max-width: 600px) and (max-aspect-ratio: 55/100){
   main{padding:6px;}
   header{padding:6px 12px;}
   .power-flow{grid-template-columns:1fr 1px 1fr;}
