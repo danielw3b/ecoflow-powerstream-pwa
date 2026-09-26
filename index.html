@@ -1790,7 +1790,7 @@ init();
 
     let lat = null, lon = null;
     try {
-      const loc = JSON.parse(localStorage.getItem('ecoflow_gist_loc') || '{}');
+      const loc = JSON.parse(localStorage.getItem('ecoflow_auto_loc') || '{}');
       lat = loc.lat ?? null;
       lon = loc.lon ?? null;
     } catch (e) {}
