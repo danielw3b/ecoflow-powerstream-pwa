@@ -44,7 +44,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .status-badge.live .status-dot{background:var(--bat);box-shadow:0 0 6px var(--bat);animation:pulse 2s infinite;}
 .status-badge.conn .status-dot{background:var(--solar);}
 .status-badge.error .status-dot{background:var(--bat-low);}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes pulse{0%,100%{opacity:.8}50%{opacity:.4}}
 .btn{font-family:var(--mono);font-size:.7rem;padding:5px 8px;border-radius:10px;height:28px;
   border:1px solid var(--border);background:transparent;color:var(--grid);cursor:pointer;transition:all .2s;}
 .btn:hover{background:rgba(0,212,255,.1);border-color:var(--grid);}
@@ -149,13 +149,13 @@ canvas{width:100%;display:block;}
 .log-table th{position:sticky;top:0;background:var(--surface);z-index:1;}
 .log-row-0 td{background:rgba(0,212,255,.04);}
 .log-row-1 td{background:rgba(255,184,48,.04);}
-
+/*
 @media (max-width: 600px) {
   main{padding:6px;}
   header{padding:6px 12px;}
   .power-flow{grid-template-columns:1fr 1px 1fr;}
   .power-flow .flow-node:nth-child(5),.power-flow .flow-divider:nth-child(4){display:none;}
-}
+}*/
 </style>
 </head>
 <body>
