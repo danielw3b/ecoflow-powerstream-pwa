@@ -119,8 +119,7 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .metric-value.hi{color:#ffcc44;}
 /* Hide the extra metrics by default */
 .metric.extra {display: none;}
-/* Show them when the parent container has the 'expanded' class */
-.metrics.expanded .metric.extra {display: flex; /* Assuming your .metric uses flexbox. Change to 'block' if needed */}
+.metrics.expanded .metric.extra {display: flex;}
 
 /* 3-Column Footer Layout */
 .metrics-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin-top:4px;cursor:pointer;user-select:none;}
@@ -129,8 +128,8 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 .card-time{font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;}
 
 /* Charts */
-.chart-section{margin-bottom:24px;position:relative;}
-.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.chart-section{margin-bottom:20px;position:relative;}
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
 .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .chart-legend{display:flex;gap:14px;font-family:var(--mono);font-size:.63rem;}
 .legend-item{display:flex;align-items:center;gap:5px;color:var(--muted);}
@@ -138,7 +137,7 @@ main{padding:12px;max-width:1400px;margin:0 auto;}
 canvas{width:100%;display:block;}
 
 /* Log */
-.log-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;max-height:200px;overflow-y:auto;margin-bottom: 24px;}
+.log-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;max-height:200px;overflow-y:auto;margin-bottom: 20px;}
 .log-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.67rem;}
 .log-table th{padding:7px 12px;text-align:left;color:var(--muted);font-weight:400;
   border-bottom:1px solid var(--border);font-size:.63rem;letter-spacing:.07em;}
@@ -151,8 +150,9 @@ canvas{width:100%;display:block;}
 .log-row-1 td{background:rgba(255,184,48,.04);}
 
 @media(max-width:600px){
-  main{padding:6px;}
   header{padding:6px 12px;}
+  main{padding:6px;}
+  
   .section-title{margin-bottom:10px;}
   .devices-grid{grid-template-columns:repeat(auto-fit,minmax(254px,1fr));gap:12px;margin-bottom:20px;}
   .device-card{padding:12px 14px;}
@@ -160,8 +160,10 @@ canvas{width:100%;display:block;}
   .offline-icon{font-size:1.6rem;}
   .offline-text{line-height:1.5;}
   .offline-since{margin-bottom:4px;}
+  
   .power-flow{grid-template-columns:1fr 1px 1fr;margin-bottom:8px;}
   .power-flow .flow-node:nth-child(5),.power-flow .flow-divider:nth-child(4){display:none;}
+  
   .flow-node{padding:2px 4px;}
   .flow-icon{font-size:1.1rem;margin-bottom:1px;}
   .flow-label{font-size:.58rem;}
@@ -172,9 +174,10 @@ canvas{width:100%;display:block;}
   .flow-unit{font-size:.6rem;}
   .flow-divider{height:32px;}
   .bat-row{gap:8px;margin-bottom:8px;}
-  .chart-section{margin-bottom:20px;}
+  
+  /*.chart-section{margin-bottom:20px;}
   .chart-wrap{padding:14px;}
-  .log-wrap{margin-bottom:20px;}
+  .log-wrap{margin-bottom:20px;}*/
 }
 </style>
 </head>
