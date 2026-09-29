@@ -536,7 +536,7 @@
     /* Scroll-to-Top Button */
     #scrollToTopBtn {
         position: fixed;
-        bottom: 20px; right: 20px; z-index: 1000;
+        bottom: 30px; /*right: 20px;*/ z-index: 1000;
         display: flex; align-items: center; justify-content: center;
         width: 46px; height: 46px; border-radius: 50%;
         background-color: rgba(30, 41, 59, 0.9);
@@ -575,7 +575,6 @@
         .button-row button {
             width: 100%;
         }
-        #scrollToTopBtn { bottom: 30px; right: unset; }
     }
     
     /* Tablet & Desktop Breakpoints */
@@ -593,7 +592,6 @@
         table:not(.summary-card table) th:last-child { 
             white-space: nowrap; 
         }
-        #scrollToTopBtn { bottom: 30px; right: unset; }
     }
     
     @media (min-width: 850px) {
@@ -613,6 +611,7 @@
         .config-row > .span-2,
         .config-row > .grid-2-col,
         .config-row > .grid-3-col { grid-column: span 2; }
+         #scrollToTopBtn { bottom: 20px; right: 20px; }
     }
 </style>
 </head>
