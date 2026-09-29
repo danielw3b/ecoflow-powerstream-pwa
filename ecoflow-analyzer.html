@@ -536,7 +536,7 @@
     /* Scroll-to-Top Button */
     #scrollToTopBtn {
         position: fixed;
-        bottom: 20px; right: 20px; z-index: 1000;
+        bottom: 30px; /*right: 20px;*/ z-index: 1000;
         display: flex; align-items: center; justify-content: center;
         width: 46px; height: 46px; border-radius: 50%;
         background-color: rgba(30, 41, 59, 0.9);
@@ -575,7 +575,6 @@
         .button-row button {
             width: 100%;
         }
-        #scrollToTopBtn { bottom: 30px; right: unset; }
     }
     
     /* Tablet & Desktop Breakpoints */
@@ -593,7 +592,6 @@
         table:not(.summary-card table) th:last-child { 
             white-space: nowrap; 
         }
-        #scrollToTopBtn { bottom: 30px; right: unset; }
     }
     
     @media (min-width: 850px) {
@@ -1327,8 +1325,7 @@
                 const chunk = anomalies.slice(i, i + batchSize);
         
                 const chunkPromises = chunk.map(async (target) => {
-                    const radiationParam = useGtiModel ? 'global_tilted_irradiance' : 'shortwave_radiation';
-                    const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=${radiationParam},cloud_cover,sunshine_duration,diffuse_radiation&tilt=${globalConfig.tilt ?? 18}&azimuth=${globalConfig.azimuth ?? 0}&timezone=auto`;
+                    const hUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${globalConfig.lat}&longitude=${globalConfig.lon}&start_date=${target.date}&end_date=${target.date}&hourly=global_tilted_irradiance,cloud_cover,sunshine_duration,diffuse_radiation&tilt=${globalConfig.tilt ?? 18}&azimuth=${globalConfig.azimuth ?? 0}&timezone=auto`;
                     
                     try {
                         const res = await fetch(hUrl);
@@ -1346,18 +1343,14 @@
             for (const item of resolvedAnomalies) {
                 const target = item.target;
                 const hData = item.hData;
-            
+        
                 let avgClouds = 'n/a';
                 let sunHours = 'n/a';
                 let maxPeak = 'n/a';
                 let realDiffuseShare = 0;
                 let hasWeatherData = false;
-            
-                // Resolve active radiation field based on selected model
-                const radKey = useGtiModel ? 'global_tilted_irradiance' : 'shortwave_radiation';
-                const radArray = (hData && hData.hourly) ? hData.hourly[radKey] : null;
-            
-                if (radArray && Array.isArray(radArray)) {
+        
+                if (hData && hData.hourly && hData.hourly.global_tilted_irradiance) {
                     hasWeatherData = true;
                     let cloudSum = 0;
                     let sunSeconds = 0;
@@ -1365,24 +1358,22 @@
                     let totalRad = 0;
                     let totalDiffuse = 0;
                     let peakValue = 0;
-            
-                    for (let j = 0; j < radArray.length; j++) {
-                        const currentRad = radArray[j] || 0;
-            
+        
+                    for (let j = 0; j < hData.hourly.global_tilted_irradiance.length; j++) {
                         if (j >= 6 && j <= 20) {
-                            cloudSum += hData.hourly.cloud_cover[j] || 0;
+                            cloudSum += hData.hourly.cloud_cover[j];
                             daylightHours++;
-                            if (currentRad > 0) {
-                                totalRad += currentRad;
+                            if (hData.hourly.global_tilted_irradiance[j] > 0) {
+                                totalRad += hData.hourly.global_tilted_irradiance[j];
                                 totalDiffuse += hData.hourly.diffuse_radiation[j] || 0;
                             }
                         }
-                        sunSeconds += hData.hourly.sunshine_duration[j] || 0;
-                        if (currentRad > peakValue) {
-                            peakValue = currentRad;
+                        sunSeconds += hData.hourly.sunshine_duration[j];
+                        if (hData.hourly.global_tilted_irradiance[j] > peakValue) {
+                            peakValue = hData.hourly.global_tilted_irradiance[j];
                         }
                     }
-            
+        
                     avgClouds = daylightHours > 0 ? Math.round(cloudSum / daylightHours) : 0;
                     sunHours = Math.round((sunSeconds / 3600) * 10) / 10;
                     maxPeak = Math.round(peakValue);
