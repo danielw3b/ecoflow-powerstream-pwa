@@ -1774,7 +1774,7 @@
     
         } else {
             // Daily View (Can easily be changed from -30 to -60 days in the future)
-            const daysToKeep = 30; // Adjust this number to 60 for an extended history view
+            const daysToKeep = 60; // Adjust this number to 60 for an extended history view
             displayDates = [...dates];
             displayRad = [...radData];
             displayYields = displayDates.map(d => ((deviceDaily[d] || 0) / 1000));
@@ -1794,10 +1794,15 @@
         const maxRad = Math.max(...displayRad, 0.1);
     
         const stepX = cW / count;
-        // Ultra-slim Open-Meteo style bar width
-        const rawBarWidth = stepX - 4;
-        const barWidth = Math.min(Math.max(2, rawBarWidth), 6);
-    
+        
+        // Ultra-slim Open-Meteo style bar width 30 days
+        //const rawBarWidth = stepX - 4;
+        //const barWidth = Math.min(Math.max(2, rawBarWidth), 6);
+
+        // Ultra-slim style bar width for 60-day range
+        const rawBarWidth = stepX - 2;
+        const barWidth = Math.min(Math.max(1, rawBarWidth), 4);
+        
         // --- 2. GRIDLINES & DUAL Y-AXIS LABELS ---
         ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
         ctx.lineWidth = 1;
