@@ -519,7 +519,7 @@
         border: 1px solid var(--border);
         border-radius: 6px;
         padding: 2px;
-        align-self: flex-start;
+        align-self: flex-end;
     }
     
     .chart-btn {
@@ -557,7 +557,7 @@
     }
 
     /* Legend positioning below the canvas element */
-    .chart-legend {
+    /*.chart-legend {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -565,7 +565,7 @@
         gap: 8px 14px;
         margin-top: 8px;
         font-size: 0.75rem;
-    }
+    }*/
     
     .ratio-accent { font-weight: bold; color: var(--emerald-light); min-width: 60px; }
     .ratio-warn { font-weight: bold; color: var(--amber-light); min-width: 60px; }
@@ -1552,11 +1552,11 @@
                 <div class="chart-wrapper">
                     <canvas id="analyzerChart"></canvas>
                 </div>
-                <div class="chart-legend">
+                <!--<div class="chart-legend">
                     <span class="legend-item"><i class="legend-color rect-gti"></i>RAD Sum</span>
                     <span class="legend-item"><i class="legend-color line-sw"></i>Shortwave</span>
                     <span class="legend-item"><i class="legend-color bar-pwa"></i>PWA Real (kWh)</span>
-                </div>
+                </div>-->
             </div>`;
         
         if (typeof renderFinancialReportHtml === 'function') {
