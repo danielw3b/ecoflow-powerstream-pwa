@@ -1732,7 +1732,7 @@
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
     
-        // Padding configured to fit Y-axis labels cleanly
+        // Dynamic padding reserved for dual Y-axes (Yield left, Radiation right)
         const PL = 45, PR = 40, PT = 20, PB = 30;
         const cW = W - PL - PR;
         const cH = H - PT - PB;
@@ -1745,7 +1745,7 @@
         let displayRad = [];
         let displayAnomalies = {};
     
-        // --- 1. AGGREGATION LOGIC ---
+        // --- 1. AGGREGATION & PERIOD FILTERING ---
         if (period === 'year') {
             const yearlyMap = {};
             dates.forEach((d, idx) => {
@@ -1756,7 +1756,7 @@
             });
     
             displayDates = Object.keys(yearlyMap).sort();
-            displayYields = displayDates.map(y => yearlyMap[y].yieldWh / 1000); // kWh
+            displayYields = displayDates.map(y => yearlyMap[y].yieldWh / 1000); // Convert Wh to kWh
             displayRad = displayDates.map(y => yearlyMap[y].radSum);
     
         } else if (period === 'month') {
@@ -1769,19 +1769,20 @@
             });
     
             displayDates = Object.keys(monthlyMap).sort();
-            displayYields = displayDates.map(m => monthlyMap[m].yieldWh / 1000); // kWh
+            displayYields = displayDates.map(m => monthlyMap[m].yieldWh / 1000); // Convert Wh to kWh
             displayRad = displayDates.map(m => monthlyMap[m].radSum);
     
         } else {
-            // Daily View (Trailing 30 days)
+            // Daily View (Can easily be changed from -30 to -60 days in the future)
+            const daysToKeep = 30; // Adjust this number to 60 for an extended history view
             displayDates = [...dates];
             displayRad = [...radData];
             displayYields = displayDates.map(d => ((deviceDaily[d] || 0) / 1000));
     
-            if (displayDates.length > 30) {
-                displayDates = displayDates.slice(-30);
-                displayRad = displayRad.slice(-30);
-                displayYields = displayYields.slice(-30);
+            if (displayDates.length > daysToKeep) {
+                displayDates = displayDates.slice(-daysToKeep);
+                displayRad = displayRad.slice(-daysToKeep);
+                displayYields = displayYields.slice(-daysToKeep);
             }
             displayAnomalies = anomaliesMap;
         }
@@ -1793,11 +1794,11 @@
         const maxRad = Math.max(...displayRad, 0.1);
     
         const stepX = cW / count;
-        // Slimmer Open-Meteo style bars (max 6px width instead of 14px)
+        // Ultra-slim Open-Meteo style bar width
         const rawBarWidth = stepX - 4;
         const barWidth = Math.min(Math.max(2, rawBarWidth), 6);
     
-        // --- 2. GRIDLINES & Y-AXIS LABELS ---
+        // --- 2. GRIDLINES & DUAL Y-AXIS LABELS ---
         ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
         ctx.lineWidth = 1;
         ctx.font = "9px monospace";
@@ -1806,7 +1807,7 @@
         for (let i = 0; i <= steps; i++) {
             const y = PT + (cH * i / steps);
     
-            // Draw background gridline
+            // Draw horizontal gridline
             ctx.beginPath();
             ctx.moveTo(PL, y);
             ctx.lineTo(W - PR, y);
@@ -1825,7 +1826,7 @@
             ctx.fillText(radVal, W - PR + 6, y + 3);
         }
     
-        // --- 3. DRAW SLIM YIELD BARS ---
+        // --- 3. DRAW YIELD BARS ---
         const todayStr = new Date().toISOString().split('T')[0];
     
         for (let i = 0; i < count; i++) {
@@ -1835,6 +1836,7 @@
             const x = PL + (i * stepX) + (stepX - barWidth) / 2;
             const y = PT + cH - barHeight;
     
+            // Apply anomaly alert colors if present
             const anomaly = displayAnomalies[dateKey];
             if (anomaly && anomaly.isCritical) {
                 ctx.fillStyle = "#ef4444";
@@ -1846,8 +1848,8 @@
     
             ctx.fillRect(x, y, barWidth, barHeight);
     
-            // --- 4. DRAW X-AXIS LABELS ---
-            const labelStep = count > 15 ? 5 : (count > 7 ? 2 : 1);
+            // --- 4. DRAW DYNAMIC X-AXIS LABELS ---
+            const labelStep = count > 30 ? 5 : (count > 15 ? 3 : (count > 7 ? 2 : 1));
             if (i % labelStep === 0 || i === count - 1) {
                 const isCurrent = dateKey === todayStr;
                 ctx.fillStyle = isCurrent ? "#34d399" : "#94a3b8";
@@ -1856,12 +1858,8 @@
     
                 let dispLabel = dateKey;
                 if (period === 'day') {
-                    if (dateKey === todayStr) {
-                        dispLabel = "Today";
-                    } else if (dateKey.length >= 10) {
-                        // Display day 'DD' only for clean layout
-                        dispLabel = dateKey.slice(8, 10);
-                    }
+                    // Extracts pure day 'DD' (e.g. '01' for 2026-10-01)
+                    dispLabel = dateKey.length >= 10 ? dateKey.slice(8, 10) : dateKey;
                 } else if (period === 'month') {
                     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                     const monthIdx = parseInt(dateKey.slice(5, 7), 10) - 1;
@@ -1874,7 +1872,7 @@
             }
         }
     
-        // --- 5. DRAW RADIATION LINE & DOTS ---
+        // --- 5. DRAW RADIATION TREND LINE & DOTS ---
         ctx.beginPath();
         ctx.strokeStyle = "#38bdf8";
         ctx.lineWidth = 1.5;
@@ -1889,7 +1887,7 @@
         }
         ctx.stroke();
     
-        // Small trend line dots
+        // Render trend dots on data points
         for (let i = 0; i < count; i++) {
             const radVal = displayRad[i] || 0;
             const x = PL + (i * stepX) + stepX / 2;
