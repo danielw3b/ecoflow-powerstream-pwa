@@ -1534,12 +1534,12 @@
             </div>
     
             <div class="card chart-card">
-                    <h3>📊 SOLAR & YIELD TREND</h3>
-                    <div class="chart-toggles">
-                        <button class="chart-btn" onclick="setChartPeriod('hour')" id="btn-chart-hour">Hour</button>
-                        <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day">Day</button>
-                        <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month">Month</button>
-                    </div>
+                <h3>📊 SOLAR & YIELD TREND</h3>
+                <div class="chart-toggles">
+                    <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day">Day</button>
+                    <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month">Month</button>
+                    <button class="chart-btn" onclick="setChartPeriod('year')" id="btn-chart-year">Year</button>
+                </div>
                 <div class="chart-wrapper">
                     <canvas id="analyzerChart"></canvas>
                 </div>
@@ -1679,24 +1679,17 @@
         }
     }
 
-    // Neutralized variable naming for both GTI and Liu-Jordan models
-    let activeChartData = null; // Caches raw daily/monthly datasets
-    let currentPeriod = 'day'; // Global state tracking
+    // set and render Chart
+    let activeChartData = null;
+    let currentPeriod = 'day';
     
     function setChartPeriod(period) {
         currentPeriod = period;
     
-        // 1. Update Button visual states cleanly via CSS class
-        document.querySelectorAll('.chart-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-    
+        document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
         const activeBtn = document.getElementById(`btn-chart-${period}`);
-        if (activeBtn) {
-            activeBtn.classList.add('active');
-        }
+        if (activeBtn) activeBtn.classList.add('active');
     
-        // 2. Re-render chart using cached data
         if (activeChartData) {
             renderChart(
                 period, 
@@ -1709,23 +1702,24 @@
     }
     
     function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
-        // Cache original daily datasets
         activeChartData = { dates, radData, deviceDaily, anomaliesMap };
     
         const canvas = document.getElementById('analyzerChart');
         if (!canvas) return;
     
+        const container = canvas.parentElement;
+        const W = container ? container.clientWidth : 300;
+        const H = container ? container.clientHeight : 220;
+    
         const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
     
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
     
-        const W = rect.width;
-        const H = rect.height;
-        const PL = 35, PR = 10, PT = 15, PB = 25;
+        // Dynamic Paddings
+        const PL = 35, PR = 15, PT = 15, PB = 25;
         const cW = W - PL - PR;
         const cH = H - PT - PB;
     
@@ -1736,29 +1730,42 @@
         let displayYields = [];
         let displayRad = [];
         let displayAnomalies = {};
-
-        if (period === 'month') {
-            // Aggregate daily entries into monthly sums (YYYY-MM)
-            const monthlyMap = {};
-            
+    
+        // --- AGGREGATION LOGIC ---
+        if (period === 'year') {
+            // Aggregate by Year (YYYY)
+            const yearlyMap = {};
             dates.forEach((d, idx) => {
-                const monthKey = d.substring(0, 7); // Format: YYYY-MM
-                if (!monthlyMap[monthKey]) {
-                    monthlyMap[monthKey] = { yieldWh: 0, radSum: 0 };
-                }
+                const yearKey = d.substring(0, 4);
+                if (!yearlyMap[yearKey]) yearlyMap[yearKey] = { yieldWh: 0, radSum: 0 };
+                yearlyMap[yearKey].yieldWh += (deviceDaily[d] || 0);
+                yearlyMap[yearKey].radSum += (radData[idx] || 0);
+            });
+    
+            displayDates = Object.keys(yearlyMap).sort();
+            displayYields = displayDates.map(y => yearlyMap[y].yieldWh / 1000); // kWh
+            displayRad = displayDates.map(y => yearlyMap[y].radSum);
+    
+        } else if (period === 'month') {
+            // Aggregate by Month (YYYY-MM)
+            const monthlyMap = {};
+            dates.forEach((d, idx) => {
+                const monthKey = d.substring(0, 7);
+                if (!monthlyMap[monthKey]) monthlyMap[monthKey] = { yieldWh: 0, radSum: 0 };
                 monthlyMap[monthKey].yieldWh += (deviceDaily[d] || 0);
                 monthlyMap[monthKey].radSum += (radData[idx] || 0);
             });
-
+    
             displayDates = Object.keys(monthlyMap).sort();
             displayYields = displayDates.map(m => monthlyMap[m].yieldWh / 1000); // kWh
             displayRad = displayDates.map(m => monthlyMap[m].radSum);
+    
         } else {
-            // Daily view (limited to last 30 entries for mobile responsive display)
+            // Daily View (capped at trailing 30 days for crisp layout)
             displayDates = [...dates];
             displayRad = [...radData];
             displayYields = displayDates.map(d => ((deviceDaily[d] || 0) / 1000));
-
+    
             if (displayDates.length > 30) {
                 displayDates = displayDates.slice(-30);
                 displayRad = displayRad.slice(-30);
@@ -1773,11 +1780,13 @@
         const maxYield = Math.max(...displayYields, 0.1);
         const maxRad = Math.max(...displayRad, 0.1);
     
-        const barWidth = Math.max(2, (cW / count) - 4);
+        // OPEN-METEO STYLE: Cap barWidth so bars never become super fat
         const stepX = cW / count;
+        const rawBarWidth = stepX - (count > 20 ? 4 : 8);
+        const barWidth = Math.min(Math.max(2, rawBarWidth), 14); // Max 14px width!
     
-        // Horizontal gridlines
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+        // Horizontal Gridlines
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
         ctx.lineWidth = 1;
         for (let i = 0; i <= 3; i++) {
             const y = PT + (cH * i / 3);
@@ -1787,57 +1796,62 @@
             ctx.stroke();
         }
     
-        // 1. Draw PWA Yield Bars (kWh)
+        // 1. Draw Yield Bars (kWh)
         for (let i = 0; i < count; i++) {
             const dateKey = displayDates[i];
             const val = displayYields[i];
             const barHeight = (val / maxYield) * cH;
-            const x = PL + (i * stepX) + (stepX - barWidth) / 2;
+            const x = PL + (i * stepX) + (stepX - barWidth) / 2; // Perfectly centered in step
             const y = PT + cH - barHeight;
     
-            // Apply anomaly status colors if present, default to bright green
-            const anomaly = anomaliesMap[dateKey];
+            const anomaly = displayAnomalies[dateKey];
             if (anomaly && anomaly.isCritical) {
-                ctx.fillStyle = "#ef4444"; // Red (Critical Outage/Drop)
+                ctx.fillStyle = "#ef4444"; // Red
             } else if (anomaly && anomaly.isWarning) {
-                ctx.fillStyle = "#f59e0b"; // Orange (Reduced Yield/Clouded)
+                ctx.fillStyle = "#f59e0b"; // Orange
             } else {
-                ctx.fillStyle = "rgba(52, 211, 153, 0.75)"; // Emerald Green
+                ctx.fillStyle = "rgba(52, 211, 153, 0.8)"; // Clean Emerald Green
             }
-
+    
             ctx.fillRect(x, y, barWidth, barHeight);
-
-            // X-Axis Date Labels (e.g., DD)
+    
+            // X-Axis Labels
             const labelStep = count > 15 ? 5 : (count > 7 ? 2 : 1);
             if (i % labelStep === 0 || i === count - 1) {
                 ctx.fillStyle = "#94a3b8";
                 ctx.font = "9px monospace";
                 ctx.textAlign = "center";
-                ctx.fillText(dateKey.slice(-2), x + barWidth / 2, H - 5);
+                
+                // Format label depending on view mode
+                let lbl = dateKey.slice(-2); // DD
+                if (period === 'month') lbl = dateKey.slice(-2); // MM
+                if (period === 'year') lbl = dateKey; // YYYY
+                
+                ctx.fillText(lbl, x + barWidth / 2, H - 6);
             }
         }
-
-        // 2. Draw Radiation Trend Line (kWh/m² - GTI or Liu-Jordan)
+    
+        // 2. Draw Radiation Trend Line
         ctx.beginPath();
         ctx.strokeStyle = "#38bdf8"; // Sky Blue
         ctx.lineWidth = 2;
-
+    
         for (let i = 0; i < count; i++) {
             const radVal = displayRad[i] || 0;
             const x = PL + (i * stepX) + stepX / 2;
             const y = PT + cH - ((radVal / maxRad) * cH);
-
+    
             if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
         }
         ctx.stroke();
-
-        // 3. Draw Trend Line Data Points
+    
+        // 3. Draw Line Dots
         for (let i = 0; i < count; i++) {
             const radVal = displayRad[i] || 0;
             const x = PL + (i * stepX) + stepX / 2;
             const y = PT + cH - ((radVal / maxRad) * cH);
-
+    
             ctx.fillStyle = "#38bdf8";
             ctx.beginPath();
             ctx.arc(x, y, 2.5, 0, Math.PI * 2);
