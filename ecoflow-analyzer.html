@@ -469,7 +469,7 @@
         color: var(--text);
     }
     
-    #results {margin-bottom: 20px;}
+    #results {margin-bottom: 40px;}
   
     /*.loader { display: none; color: var(--emerald-light); font-weight: 600; font-size: 0.75rem; text-align: center;padding-top: 4px; }*/
     
@@ -498,8 +498,68 @@
         align-items: center;
         flex-wrap: wrap;
     }
+
+    /* Minimalistic Chart Section */
+    .chart-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .chart-card h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-dim);
+        letter-spacing: 0.05em;
+    }
+    
+    .chart-toggles {
+        display: inline-flex;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 2px;
+        align-self: flex-start;
+    }
+    
+    .chart-btn {
+        background: transparent;
+        color: var(--text-dim);
+        border: none;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+    }
+    
+    .chart-btn:hover {
+        color: var(--text);
+    }
+    
+    .chart-btn.active {
+        background: var(--accent);
+        color: #060c1a;
+        font-weight: 700;
+    }
+    
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+        height: 220px;
+    }
+    
+    .chart-wrapper canvas {
+        width: 100% !important;
+        height: 100% !important;
+        display: block;
+    }
+
+    
     
     .ratio-accent { font-weight: bold; color: var(--emerald-light); min-width: 60px; }
+    .ratio-warn { font-weight: bold; color: var(--amber-light); min-width: 60px; }
     .ratio-danger { font-weight: bold; color: var(--danger); min-width: 60px; }
     .context-cell { cursor: help; text-align: center; font-size: 1.05rem; }
     .table-title-warn { color: var(--text); }
@@ -1474,14 +1534,12 @@
             </div>
     
             <div class="card chart-card">
-                <div class="chart-header">
                     <h3>📊 SOLAR & YIELD TREND</h3>
                     <div class="chart-toggles">
                         <button class="chart-btn" onclick="setChartPeriod('hour')" id="btn-chart-hour">Hour</button>
                         <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day">Day</button>
                         <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month">Month</button>
                     </div>
-                </div>
                 <div class="chart-wrapper">
                     <canvas id="analyzerChart"></canvas>
                 </div>
@@ -1623,23 +1681,30 @@
 
     // Neutralized variable naming for both GTI and Liu-Jordan models
     let activeChartData = null; // Caches raw daily/monthly datasets
+    let currentPeriod = 'day'; // Global state tracking
     
     function setChartPeriod(period) {
+        currentPeriod = period;
+    
+        // 1. Update Button visual states cleanly via CSS class
         document.querySelectorAll('.chart-btn').forEach(btn => {
-            btn.style.background = 'none';
-            btn.style.color = 'var(--text-dim)';
-            btn.style.fontWeight = 'normal';
+            btn.classList.remove('active');
         });
-        
+    
         const activeBtn = document.getElementById(`btn-chart-${period}`);
         if (activeBtn) {
-            activeBtn.style.background = 'var(--accent)';
-            activeBtn.style.color = '#fff';
-            activeBtn.style.fontWeight = 'bold';
+            activeBtn.classList.add('active');
         }
     
+        // 2. Re-render chart using cached data
         if (activeChartData) {
-            renderChart(period, activeChartData.dates, activeChartData.radData, activeChartData.deviceDaily, activeChartData.anomaliesMap);
+            renderChart(
+                period, 
+                activeChartData.dates, 
+                activeChartData.radData, 
+                activeChartData.deviceDaily, 
+                activeChartData.anomaliesMap
+            );
         }
     }
     
