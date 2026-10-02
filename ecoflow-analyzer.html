@@ -583,6 +583,8 @@
     .nowrap { white-space: nowrap; }
     .fw-bold { font-weight: bold; }
     .help-cursor { cursor: help; }
+
+    .hidden { display: none !important; }
     
     tr.hidden-row { display: none !important; }
     
@@ -700,7 +702,7 @@
     <!-- Application Card -->
     <div class="card">
         <div class="card-header">
-            <h2 style="margin: 0;">Device Settings</h2>
+            <h2 id="syncActionHeader" style="margin: 0;">Device Settings</h2>
             <div>
                 <!-- Toggle button for GTI and Liu-Jordan solar models -->
                 <button type="button" id="btnModelToggle" class="badge badge-btn" title="Switch Solar Model">Active: GTI Model</button>
@@ -719,77 +721,81 @@
                         <option value="">-- Load from localStorage --</option>
                     </select>
                 </div>
-                <div class="form-group span-2">
-                    <label>Coordinates (LAT / LON)</label>
-                    <div class="location-group">
-                        <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
-                        <input type="number" step="any" id="cfg_lon" required placeholder="LON">
-                        <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS">📍</button>
+            </div>
+
+            <!-- Configuration Area (Unlocked via 7 clicks) -->
+            <div id="credentialsArea" class="hidden">
+                    <div class="form-group span-2">
+                        <label>Coordinates (LAT / LON)</label>
+                        <div class="location-group">
+                            <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
+                            <input type="number" step="any" id="cfg_lon" required placeholder="LON">
+                            <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS">📍</button>
+                        </div>
+                    </div>
+    
+                <h3>🛠️ Hardware Parameters</h3>
+                <div class="config-row">
+                    <!-- Group 1: Panel Tech, Self-Use Rate & Module Area -->
+                    <div class="grid-3-col">
+                        <div class="form-group">
+                            <label for="cfg_panelType">Panel Tech</label>
+                            <select id="cfg_panelType">
+                                <option value="mono">Mono</option>
+                                <option value="bifacial" selected>Bifacial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cfg_selfConsumptionRate">Self-Use Rate (%)</label>
+                            <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75">
+                        </div>
+                        <div class="form-group">
+                            <label for="cfg_moduleArea">Module Area (m²)</label>
+                            <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
+                        </div>
+                    </div>
+    
+                    <!-- Group 2: Power Peak, Tilt & Azimuth -->
+                    <div class="grid-3-col">
+                        <div class="form-group">
+                            <label for="cfg_totalWp">Power Peak (Wp)</label>
+                            <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
+                        </div>
+                        <div class="form-group">
+                            <label for="cfg_tilt">Tilt Angle (°)</label>
+                            <input type="number" id="cfg_tilt" required placeholder="e.g. 18" value="18">
+                        </div>
+                        <div class="form-group">
+                            <label for="cfg_azimuth">Azimuth (°)</label>
+                            <input type="number" id="cfg_azimuth" required placeholder="e.g. 0 (South)" value="0">
+                        </div>
+                    </div>
+                </div>
+    
+                <h3>💶 Tariff & Investment</h3>
+                <div class="config-row">
+                    <div class="grid-2-col">
+                        <div class="form-group">
+                            <label for="cfg_currency">Currency</label>
+                            <input type="text" id="cfg_currency" required placeholder="e.g. €">
+                        </div>
+                        <div class="form-group">
+                            <label for="cfg_investment">Investment Cost</label>
+                            <input type="number" step="0.01" id="cfg_investment" required placeholder="e.g. 295">
+                        </div>
+                    </div>
+    
+                    <div class="grid-2-col">
+                        <div class="form-group">
+                            <label for="cfg_energyPrice">Energy Price/kWh(Cent)</label>
+                            <input type="number" step="0.0001" id="cfg_energyPrice" required placeholder="e.g. 29.89">
+                        </div>
+                        <div class="form-group">
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <h3>🛠️ Hardware Parameters</h3>
-            <div class="config-row">
-                <!-- Group 1: Panel Tech, Self-Use Rate & Module Area -->
-                <div class="grid-3-col">
-                    <div class="form-group">
-                        <label for="cfg_panelType">Panel Tech</label>
-                        <select id="cfg_panelType">
-                            <option value="mono">Mono</option>
-                            <option value="bifacial" selected>Bifacial</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="cfg_selfConsumptionRate">Self-Use Rate (%)</label>
-                        <input type="number" id="cfg_selfConsumptionRate" min="0" max="100" required placeholder="e.g. 75">
-                    </div>
-                    <div class="form-group">
-                        <label for="cfg_moduleArea">Module Area (m²)</label>
-                        <input type="number" step="0.001" id="cfg_moduleArea" required placeholder="e.g. 4.002">
-                    </div>
-                </div>
-
-                <!-- Group 2: Power Peak, Tilt & Azimuth -->
-                <div class="grid-3-col">
-                    <div class="form-group">
-                        <label for="cfg_totalWp">Power Peak (Wp)</label>
-                        <input type="number" id="cfg_totalWp" required placeholder="e.g. 900">
-                    </div>
-                    <div class="form-group">
-                        <label for="cfg_tilt">Tilt Angle (°)</label>
-                        <input type="number" id="cfg_tilt" required placeholder="e.g. 18" value="18">
-                    </div>
-                    <div class="form-group">
-                        <label for="cfg_azimuth">Azimuth (°)</label>
-                        <input type="number" id="cfg_azimuth" required placeholder="e.g. 0 (South)" value="0">
-                    </div>
-                </div>
-            </div>
-
-            <h3>💶 Tariff & Investment</h3>
-            <div class="config-row">
-                <div class="grid-2-col">
-                    <div class="form-group">
-                        <label for="cfg_currency">Currency</label>
-                        <input type="text" id="cfg_currency" required placeholder="e.g. €">
-                    </div>
-                    <div class="form-group">
-                        <label for="cfg_investment">Investment Cost</label>
-                        <input type="number" step="0.01" id="cfg_investment" required placeholder="e.g. 295">
-                    </div>
-                </div>
-
-                <div class="grid-2-col">
-                    <div class="form-group">
-                        <label for="cfg_energyPrice">Energy Price/kWh(Cent)</label>
-                        <input type="number" step="0.0001" id="cfg_energyPrice" required placeholder="e.g. 29.89">
-                    </div>
-                    <div class="form-group">
-                    </div>
-                </div>
-            </div>
-
+            
             <h3>📊 Meter & Timeline</h3>
             <div class="config-row">
                 <div class="grid-2-col">
@@ -838,6 +844,9 @@
     let useGtiModel = true; // true = GTI mapping, false = Liu-Jordan-Model
     let globalCsvRows = [];
     let globalConfig = {};
+
+    let clickCounter = 0;
+    let clickTimer = null;
     
     const csvBtn = document.getElementById('csvBtn');
     csvBtn.disabled = true;
@@ -1027,7 +1036,7 @@
             });
         }
     }
-
+    
     function detectLocation() {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(pos => {
@@ -2055,8 +2064,24 @@
     
     function scrollToTop() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }    
-    window.addEventListener('DOMContentLoaded', initInverters);
+    }
+    
+    window.addEventListener('DOMContentLoaded', () => {
+        initInverters;
+        
+        // Secret 7-click unlock handler
+        document.getElementById('syncActionHeader').addEventListener('click', () => {
+          clickCounter++;
+          clearTimeout(clickTimer);
+          
+          if (clickCounter === 7) {
+            document.getElementById('credentialsArea').classList.toggle('hidden');
+            clickCounter = 0;
+          } else {
+            clickTimer = setTimeout(() => { clickCounter = 0; }, 2000);
+          }
+        });
+    });    
 </script>
 </body>
 </html>
