@@ -479,7 +479,7 @@
         display: flex;
         gap: 14px;
         flex-wrap: wrap;
-        align-items: center;
+        justify-content: space-evenly;
         font-size: 0.85rem;
         font-weight: 600;
         margin-bottom: 10px;
@@ -489,7 +489,10 @@
     
     .status-indicators-container {
         display: flex;
-        flex-direction: column;
+        justify-content: space-evenly;
+        align-items: center;
+        flex-wrap: wrap;
+        flex-direction: row;
         gap: 6px;
         font-size: 0.85rem;
     }
@@ -505,15 +508,15 @@
     .chart-card {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        /*gap: 12px;*/
     }
-    
+    /*
     .chart-card h3 {
         margin: 0;
         font-size: 0.9rem;
         color: var(--text-dim);
         letter-spacing: 0.05em;
-    }
+    }*/
     
     .chart-toggles {
         display: inline-flex;
