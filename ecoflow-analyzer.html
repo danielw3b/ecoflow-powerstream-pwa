@@ -611,7 +611,7 @@
         position: fixed;
         bottom: 30px; /*right: 20px;*/ z-index: 1000;
         display: flex; align-items: center; justify-content: center;
-        width: 46px; height: 46px; border-radius: 50%;
+        width: 42px; height: 42px; border-radius: 50%;
         background-color: rgba(30, 41, 59, 0.9);
         border: 1px solid var(--border);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -655,7 +655,7 @@
         body { padding: 20px; }
         .container { max-width: 800px; gap: 16px; }
         .card { padding: 16px; }
-        .summary-card { padding: 14px; }
+        .summary-card { padding: 0 12px 12px; /*padding: 14px;*/ }
         .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
         th, td { padding: 8px 10px; font-size: 0.85rem; }
     
@@ -854,52 +854,7 @@
         csvBtn.disabled = false;
     } else {
         csvBtn.disabled = true;
-    }
-
-
-    /**
-     * Automatically migrates legacy flat analyzer keys into the unified 'ecoflow_analyzer' master object.
-     */
-    /*function initAnalyzerMasterMigration() {
-        const MASTER_KEY = 'ecoflow_analyzer';
-        let master = {};
-        
-        try {
-            master = JSON.parse(localStorage.getItem(MASTER_KEY)) || {};
-        } catch (e) {
-            master = {};
-        }
-    
-        // List of legacy flat keys to check and migrate
-        const legacyKeys = ['ecoflow_analyzer_3738', 'ecoflow_analyzer_5929'];
-        let hasChanges = false;
-    
-        legacyKeys.forEach(oldKey => {
-            const raw = localStorage.getItem(oldKey);
-            if (raw) {
-                try {
-                    const parsed = JSON.parse(raw);
-                    const sn = parsed.inverter;
-                    if (sn && !master[sn]) {
-                        master[sn] = parsed;
-                        hasChanges = true;
-                    }
-                    // Clean up legacy flat key after migration
-                    localStorage.removeItem(oldKey);
-                } catch (e) {
-                    console.warn(`[Migration] Failed to parse legacy key ${oldKey}:`, e);
-                }
-            }
-        });
-    
-        if (hasChanges || !localStorage.getItem(MASTER_KEY)) {
-            localStorage.setItem(MASTER_KEY, JSON.stringify(master));
-        }
-    }
-
-    // Run automatic migration check on script load
-    initAnalyzerMasterMigration();*/
-   
+    }   
     
     // Retrieves the configuration for a specific inverter from the master 'ecoflow_analyzer' object.
     function getAnalyzerConfig(inverterId) {
