@@ -709,8 +709,6 @@
             </div>
         </div>
         
-        <!--<h2>Device Setting</h2>-->
-        
         <form id="configForm" onsubmit="event.preventDefault(); runAnalysis();">
             
             <h3>🔌 System & Location</h3>
@@ -721,19 +719,19 @@
                         <option value="">-- Load from localStorage --</option>
                     </select>
                 </div>
+            
+                <div class="form-group span-2">
+                    <label>Coordinates (LAT / LON)</label>
+                    <div class="location-group">
+                        <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
+                        <input type="number" step="any" id="cfg_lon" required placeholder="LON">
+                        <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS">📍</button>
+                    </div>
+                </div>
             </div>
-
+            
             <!-- Configuration Area (Unlocked via 7 clicks) -->
             <div id="credentialsArea" class="hidden">
-                    <div class="form-group span-2">
-                        <label>Coordinates (LAT / LON)</label>
-                        <div class="location-group">
-                            <input type="number" step="any" id="cfg_lat" required placeholder="LAT">
-                            <input type="number" step="any" id="cfg_lon" required placeholder="LON">
-                            <button type="button" class="btn-icon" onclick="detectLocation()" title="Auto-Detect GPS">📍</button>
-                        </div>
-                    </div>
-    
                 <h3>🛠️ Hardware Parameters</h3>
                 <div class="config-row">
                     <!-- Group 1: Panel Tech, Self-Use Rate & Module Area -->
