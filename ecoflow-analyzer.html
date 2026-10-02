@@ -583,12 +583,31 @@
         margin-right: 6px;
         position: relative;
     }
-    
+    /*
     .rect-real {
+        background: linear-gradient(
+            90deg, 
+            var(--accent) 50%, 
+            var(--warning) 50%
+        );
+    }
+    */
+    .rect-real {
+        width: 5px;
         background-color: var(--accent);
     }
-
-    /* 2. Line with dot (RADN kWh/m²) */
+    
+    .rect-real::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 7px; /* 5px width + 2px gap */
+        width: 5px;
+        height: 12px;
+        background-color: var(--warning);
+    }
+    
+    /* line with dot (RADN kWh/m²) */
     .line-rad::before {
         content: "";
         position: absolute;
