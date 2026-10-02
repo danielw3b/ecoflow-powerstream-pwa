@@ -1515,7 +1515,10 @@
         const remainingTable2 = anomalyRowIndex - INITIAL_VISIBLE_COUNT;
         
         let html = `<div class="card">
-            <h2>${friendlyName} <span class="model-badge">${useGtiModel ? '[GTI Model]' : '[Liu-Jordan Model]'}</span></h2>
+            <div class="card-header">
+                <h2 style="margin:0;">${friendlyName}</h2>
+                <div class="badge">${useGtiModel ? '[GTI Model]' : '[Liu-Jordan Model]'}</div>
+            </div>
         
             <div class="summary-card sum-${efficiencyClass}">
                 <h3 class="${efficiencyClass}">🚀 Status</h3>
