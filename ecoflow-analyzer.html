@@ -562,15 +562,51 @@
     }
 
     /* Legend positioning below the canvas element */
-    /*.chart-legend {
+    .chart-legend {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
-        gap: 8px 14px;
-        margin-top: 8px;
+        /*gap: 8px 14px;
+        margin-top: 8px;*/
         font-size: 0.75rem;
-    }*/
+        font-color: var(--dim);
+    }
+
+    .legend-color {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        vertical-align: middle;
+        margin-right: 6px;
+        position: relative;
+    }
+    
+    .rect-real {
+        background-color: var(--accent);
+    }
+
+    /* 2. Line with dot (RADN kWh/m²) */
+    .line-rad::before {
+        content: "";
+        position: absolute;
+        top: calc(50% - 1px);
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color:var(--sky);
+    }
+    
+    .line-rad::after {
+        content: "";
+        position: absolute;
+        top: calc(50% - 3px);
+        left: calc(50% - 3px);
+        width: 6px;
+        height: 6px;
+        background-color: var(--sky);
+        border-radius: 50%;
+    }
     
     .ratio-accent { font-weight: bold; color: var(--emerald-light); min-width: 60px; }
     .ratio-warn { font-weight: bold; color: var(--amber-light); min-width: 60px; }
@@ -1522,11 +1558,10 @@
                 <div class="chart-wrapper">
                     <canvas id="analyzerChart"></canvas>
                 </div>
-                <!--<div class="chart-legend">
-                    <span><i class="legend-color rect-gti"></i>Daily RAD Sum</span>
-                    <span><i class="legend-color line-sw"></i>Shortwave</span>
-                    <span><i class="legend-color bar-pwa"></i>Daily Real (kWh)</span>
-                </div>-->
+                <div class="chart-legend">
+                    <span><i class="legend-color rect-real"></i>Real kWh</span>
+                    <span><i class="legend-color line-rad"></i>RADN kWh/m²</span>
+                </div>
             </div>`;
         
         if (typeof renderFinancialReportHtml === 'function') {
