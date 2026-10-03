@@ -630,6 +630,10 @@
         background-color: var(--sky);
         border-radius: 50%;
     }
+
+    #dayPaginationControls { display: inline-flex; gap: 4px; margin-right: 4px;}
+    #chartDateRange {font-size: 0.6rem; color: var(--text-dim);}
+
     
     .ratio-accent { font-weight: bold; color: var(--emerald-light); min-width: 60px; }
     .ratio-warn { font-weight: bold; color: var(--amber-light); min-width: 60px; }
@@ -1575,10 +1579,10 @@
                 <h3>📈 Past Trend</h3>
                 <div class="chart-toggles">
                   <!-- Pagination Controls (Only visible in 'day' mode) -->
-                  <div id="dayPaginationControls" style="display: inline-flex; gap: 4px; margin-right: 4px;">
+                  <div id="dayPaginationControls">
                     <button type="button" class="chart-btn" onclick="changeDayPage(1)" title="Previous 30 days">‹</button>
-                    <span id="chartDateRange" style="font-size: 0.6rem; color: var(--text-dim);></span>
                     <button type="button" class="chart-btn" onclick="changeDayPage(-1)" title="Next 30 days">›</button>
+                    <span id="chartDateRange"></span>
                   </div>
                 
                   <!-- View Period Toggles -->
