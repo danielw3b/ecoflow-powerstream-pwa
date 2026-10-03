@@ -1572,13 +1572,13 @@
             </div>
     
             <div class="summary-card chart-card">
-                <h3>📈 LAST TREND</h3>
+                <h3>📈 Past Trend</h3>
                 <div class="chart-toggles">
                   <!-- Pagination Controls (Only visible in 'day' mode) -->
-                  <div id="dayPaginationControls" style="display: inline-flex; align-items: center; gap: 4px; margin-right: 6px;">
-                    <button type="button" class="btn-sm" onclick="changeDayPage(1)" title="Previous 30 days">‹</button>
-                    <span id="chartDateRange" style="font-size: 0.75rem; color: var(--text-muted, #94a3b8); font-family: monospace;"></span>
-                    <button type="button" class="btn-sm" onclick="changeDayPage(-1)" title="Next 30 days">›</button>
+                  <div id="dayPaginationControls" style="display: inline-flex; gap: 4px; margin-right: 4px;">
+                    <button type="button" class="chart-btn" onclick="changeDayPage(1)" title="Previous 30 days">‹</button>
+                    <span id="chartDateRange" style="font-size: 0.6rem; color: var(--text-dim);></span>
+                    <button type="button" class="chart-btn" onclick="changeDayPage(-1)" title="Next 30 days">›</button>
                   </div>
                 
                   <!-- View Period Toggles -->
