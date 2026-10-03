@@ -1740,6 +1740,12 @@
         document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
         const activeBtn = document.getElementById(`btn-chart-${period}`);
         if (activeBtn) activeBtn.classList.add('active');
+
+        // Toggle visibility of pagination controls (only visible in daily view)
+        const pageControls = document.querySelectorAll('.chart-page-btn, #chart-date-range');
+        pageControls.forEach(el => {
+            el.style.display = (period === 'day') ? '' : 'none';
+        });
     
         if (activeChartData) {
             renderChart(
@@ -1760,7 +1766,15 @@
      * @param {number} direction - Direction step (+1 for older, -1 for newer)
      */
     function changeDayPage(direction) {
-        dayPageOffset = Math.max(0, dayPageOffset + direction);
+        if (!activeChartData || !activeChartData.dates) return;
+        
+        const pageSize = 30;
+        const totalDates = activeChartData.dates.length;
+        const maxOffset = Math.max(0, Math.ceil(totalDates / pageSize) - 1);
+
+        // Clamp offset bounds (0 = newest window, maxOffset = oldest window)
+        dayPageOffset = Math.min(maxOffset, Math.max(0, dayPageOffset + direction));
+
         if (activeChartData) {
             renderChart(
                 currentPeriod,
@@ -1860,11 +1874,11 @@
             });
     
         } else {
-            // Daily View with 30-day pagination slice
+            // Daily View with bounded 30-day pagination slice
             const pageSize = 30;
             const totalDates = dates.length;
             
-            const endIndex = Math.max(0, totalDates - (dayPageOffset * pageSize));
+            const endIndex = Math.max(pageSize, totalDates - (dayPageOffset * pageSize));
             const startIndex = Math.max(0, endIndex - pageSize);
     
             displayDates = dates.slice(startIndex, endIndex);
@@ -1875,7 +1889,7 @@
                 displayAnomalies[d] = checkAnomaly(anomaliesMap[d]);
             });
     
-            // Update optional date label element
+            // Update date range label in DOM
             const rangeLabel = document.getElementById('chart-date-range');
             if (rangeLabel && displayDates.length > 0) {
                 const startStr = displayDates[0];
@@ -1931,13 +1945,14 @@
             const x = PL + (i * stepX) + (stepX - barWidth) / 2;
             const y = PT + cH - barHeight;
     
+            // Evaluate status for day/month/year keys
             const anomaly = displayAnomalies[dateKey];
             if (anomaly && anomaly.isCritical) {
-                ctx.fillStyle = "#ef4444";
+                ctx.fillStyle = "#ef4444"; // Red (Critical)
             } else if (anomaly && anomaly.isWarning) {
-                ctx.fillStyle = "#f59e0b";
+                ctx.fillStyle = "#f59e0b"; // Orange (Warning)
             } else {
-                ctx.fillStyle = "rgba(52, 211, 153, 0.85)";
+                ctx.fillStyle = "rgba(52, 211, 153, 0.85)"; // Normal Emerald
             }
     
             ctx.fillRect(x, y, barWidth, barHeight);
