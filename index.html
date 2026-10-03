@@ -1234,8 +1234,16 @@ function renderWhChart() {
     ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
   }
   
+  // ── BAR WIDTH CALCULATION ──
+  /* OLD CODE:
   const gW = cW / allLabels.length;
   const bW = Math.max(3, Math.min(28, gW / (orderedSns.length + 1)));
+  */
+
+  // NEW CODE: Limit max bar width to 16px for cleaner look across Month/Year views
+  const gW = cW / allLabels.length;
+  const maxAllowedWidth = currentPeriod === "day" ? 20 : 16;
+  const bW = Math.max(3, Math.min(maxAllowedWidth, gW / (orderedSns.length + 1)));
   const gP = (gW - bW * orderedSns.length) / 2;
 
   const standardGradients = [];
