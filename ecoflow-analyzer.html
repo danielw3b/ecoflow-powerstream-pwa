@@ -1573,6 +1573,13 @@
     
             <div class="summary-card chart-card">
                 <h3>📈 LAST TREND</h3>
+                <!-- Controls for 30-Day Pagination (visible only in 'day' mode) -->
+                <div id="dayPaginationControls" style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 6px;">
+                  <button type="button" class="btn-sm" onclick="changeDayPage(1)" title="30 Tage zurück">‹</button>
+                  <span id="chartDateRange" style="font-size: 0.75rem; color: var(--text-muted, #94a3b8); font-family: monospace;"></span>
+                  <button type="button" class="btn-sm" onclick="changeDayPage(-1)" title="30 Tage vor">›</button>
+                </div>
+                <!-- View Period Toggles -->
                 <div class="chart-toggles">
                     <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day">Day</button>
                     <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month">Month</button>
@@ -1727,7 +1734,8 @@
     
     function setChartPeriod(period) {
         currentPeriod = period;
-    
+        if (period === 'day') dayPageOffset = 0;
+        
         document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
         const activeBtn = document.getElementById(`btn-chart-${period}`);
         if (activeBtn) activeBtn.classList.add('active');
@@ -1742,8 +1750,28 @@
             );
         }
     }
+
+    // State variable for 30-day pagination (0 = latest 30 days, 1 = previous 30 days, etc.)
+    let dayPageOffset = 0;
     
-    function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
+    /**
+     * Changes the active 30-day window for the daily view
+     * @param {number} direction - Direction step (+1 for older, -1 for newer)
+     */
+    function changeDayPage(direction) {
+        dayPageOffset = Math.max(0, dayPageOffset + direction);
+        if (activeChartData) {
+            renderChart(
+                currentPeriod,
+                activeChartData.dates,
+                activeChartData.radData,
+                activeChartData.deviceDaily,
+                activeChartData.anomaliesMap
+            );
+        }
+    }
+ 
+    /*function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
         activeChartData = { dates, radData, deviceDaily, anomaliesMap };
     
         const canvas = document.getElementById('analyzerChart');
@@ -1921,6 +1949,218 @@
         ctx.stroke();
     
         // Render trend dots on data points
+        for (let i = 0; i < count; i++) {
+            const radVal = displayRad[i] || 0;
+            const x = PL + (i * stepX) + stepX / 2;
+            const y = PT + cH - ((radVal / maxRad) * cH);
+    
+            ctx.fillStyle = "#38bdf8";
+            ctx.beginPath();
+            ctx.arc(x, y, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }*/
+
+    function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
+        // Cache current data for period toggle clicks
+        activeChartData = { dates, radData, deviceDaily, anomaliesMap };
+    
+        const canvas = document.getElementById('analyzerChart');
+        if (!canvas) return;
+    
+        // Responsive container layout & High-DPI scaling
+        const container = canvas.parentElement;
+        const W = container ? container.clientWidth : 300;
+        const H = container ? container.clientHeight : 220;
+    
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+    
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+    
+        // Dynamic padding reserved for dual Y-axes (Yield left, Radiation right)
+        const PL = 45, PR = 40, PT = 20, PB = 30;
+        const cW = W - PL - PR;
+        const cH = H - PT - PB;
+    
+        ctx.clearRect(0, 0, W, H);
+        if (!dates || dates.length === 0) return;
+    
+        let displayDates = [];
+        let displayYields = [];
+        let displayRad = [];
+        let displayAnomalies = {};
+    
+        // --- 1. AGGREGATION & PERIOD FILTERING ---
+        if (period === 'year') {
+            const yearlyMap = {};
+            dates.forEach((d, idx) => {
+                const yearKey = d.substring(0, 4);
+                if (!yearlyMap[yearKey]) {
+                    yearlyMap[yearKey] = { yieldWh: 0, radSum: 0, hasCritical: false, hasWarning: false };
+                }
+                yearlyMap[yearKey].yieldWh += (deviceDaily[d] || 0);
+                yearlyMap[yearKey].radSum += (radData[idx] || 0);
+    
+                // Aggregate anomaly status for the entire year
+                const anomaly = anomaliesMap[d];
+                if (anomaly?.isCritical) yearlyMap[yearKey].hasCritical = true;
+                if (anomaly?.isWarning) yearlyMap[yearKey].hasWarning = true;
+            });
+    
+            displayDates = Object.keys(yearlyMap).sort();
+            displayYields = displayDates.map(y => yearlyMap[y].yieldWh / 1000); // Wh to kWh
+            displayRad = displayDates.map(y => yearlyMap[y].radSum);
+            
+            displayDates.forEach(y => {
+                displayAnomalies[y] = {
+                    isCritical: yearlyMap[y].hasCritical,
+                    isWarning: yearlyMap[y].hasWarning
+                };
+            });
+    
+        } else if (period === 'month') {
+            const monthlyMap = {};
+            dates.forEach((d, idx) => {
+                const monthKey = d.substring(0, 7);
+                if (!monthlyMap[monthKey]) {
+                    monthlyMap[monthKey] = { yieldWh: 0, radSum: 0, hasCritical: false, hasWarning: false };
+                }
+                monthlyMap[monthKey].yieldWh += (deviceDaily[d] || 0);
+                monthlyMap[monthKey].radSum += (radData[idx] || 0);
+    
+                // Aggregate anomaly status for the entire month
+                const anomaly = anomaliesMap[d];
+                if (anomaly?.isCritical) monthlyMap[monthKey].hasCritical = true;
+                if (anomaly?.isWarning) monthlyMap[monthKey].hasWarning = true;
+            });
+    
+            displayDates = Object.keys(monthlyMap).sort();
+            displayYields = displayDates.map(m => monthlyMap[m].yieldWh / 1000); // Wh to kWh
+            displayRad = displayDates.map(m => monthlyMap[m].radSum);
+    
+            displayDates.forEach(m => {
+                displayAnomalies[m] = {
+                    isCritical: monthlyMap[m].hasCritical,
+                    isWarning: monthlyMap[m].hasWarning
+                };
+            });
+    
+        } else {
+            // Daily View (Restricted to 30 days window for clear pagination)
+            const daysToKeep = 30;
+            displayDates = [...dates];
+            displayRad = [...radData];
+            displayYields = displayDates.map(d => ((deviceDaily[d] || 0) / 1000));
+    
+            if (displayDates.length > daysToKeep) {
+                displayDates = displayDates.slice(-daysToKeep);
+                displayRad = displayRad.slice(-daysToKeep);
+                displayYields = displayYields.slice(-daysToKeep);
+            }
+            displayAnomalies = anomaliesMap;
+        }
+    
+        const count = displayDates.length;
+        if (count === 0) return;
+    
+        const maxYield = Math.max(...displayYields, 0.1);
+        const maxRad = Math.max(...displayRad, 0.1);
+    
+        const stepX = cW / count;
+        const rawBarWidth = stepX - 2;
+        const barWidth = Math.min(Math.max(1, rawBarWidth), 12); // Slightly wider bars for monthly/yearly views
+    
+        // --- 2. GRIDLINES & DUAL Y-AXIS LABELS ---
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+        ctx.lineWidth = 1;
+        ctx.font = "9px monospace";
+    
+        const steps = 4;
+        for (let i = 0; i <= steps; i++) {
+            const y = PT + (cH * i / steps);
+    
+            // Gridline
+            ctx.beginPath();
+            ctx.moveTo(PL, y);
+            ctx.lineTo(W - PR, y);
+            ctx.stroke();
+    
+            // Left Y-Axis: Solar Yield (kWh)
+            const yieldVal = (maxYield * (1 - i / steps)).toFixed(1);
+            ctx.fillStyle = "rgba(52, 211, 153, 0.85)";
+            ctx.textAlign = "right";
+            ctx.fillText(`${yieldVal}k`, PL - 6, y + 3);
+    
+            // Right Y-Axis: Radiation (kWh/m²)
+            const radVal = (maxRad * (1 - i / steps)).toFixed(1);
+            ctx.fillStyle = "#38bdf8";
+            ctx.textAlign = "left";
+            ctx.fillText(radVal, W - PR + 6, y + 3);
+        }
+    
+        // --- 3. DRAW YIELD BARS WITH STATUS COLORING ---
+        const todayStr = new Date().toISOString().split('T')[0];
+    
+        for (let i = 0; i < count; i++) {
+            const dateKey = displayDates[i];
+            const val = displayYields[i];
+            const barHeight = (val / maxYield) * cH;
+            const x = PL + (i * stepX) + (stepX - barWidth) / 2;
+            const y = PT + cH - barHeight;
+    
+            // Apply anomaly status colors for Days, Months, and Years
+            const anomaly = displayAnomalies[dateKey];
+            if (anomaly && anomaly.isCritical) {
+                ctx.fillStyle = "#ef4444"; // Red (Outage / Critical)
+            } else if (anomaly && anomaly.isWarning) {
+                ctx.fillStyle = "#f59e0b"; // Orange (Warning / Reduced)
+            } else {
+                ctx.fillStyle = "rgba(52, 211, 153, 0.8)"; // Green (Normal)
+            }
+    
+            ctx.fillRect(x, y, barWidth, barHeight);
+    
+            // --- 4. DRAW DYNAMIC X-AXIS LABELS ---
+            const labelStep = count > 30 ? 5 : (count > 15 ? 3 : (count > 7 ? 2 : 1));
+            if (i % labelStep === 0 || i === count - 1) {
+                const isCurrent = dateKey === todayStr || dateKey === todayStr.substring(0, 7) || dateKey === todayStr.substring(0, 4);
+                ctx.fillStyle = isCurrent ? "#34d399" : "#94a3b8";
+                ctx.font = isCurrent ? "bold 9px monospace" : "9px monospace";
+                ctx.textAlign = "center";
+    
+                let dispLabel = dateKey;
+                if (period === 'day' || !period) {
+                    dispLabel = dateKey.length >= 10 ? dateKey.slice(8, 10) : dateKey;
+                } else if (period === 'month') {
+                    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                    const monthIdx = parseInt(dateKey.slice(5, 7), 10) - 1;
+                    dispLabel = months[monthIdx] ?? dateKey.slice(5);
+                } else if (period === 'year') {
+                    dispLabel = dateKey.substring(0, 4);
+                }
+    
+                ctx.fillText(dispLabel, x + barWidth / 2, H - 8);
+            }
+        }
+    
+        // --- 5. DRAW RADIATION TREND LINE & DOTS ---
+        ctx.beginPath();
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 1.5;
+    
+        for (let i = 0; i < count; i++) {
+            const radVal = displayRad[i] || 0;
+            const x = PL + (i * stepX) + stepX / 2;
+            const y = PT + cH - ((radVal / maxRad) * cH);
+    
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    
         for (let i = 0; i < count; i++) {
             const radVal = displayRad[i] || 0;
             const x = PL + (i * stepX) + stepX / 2;
