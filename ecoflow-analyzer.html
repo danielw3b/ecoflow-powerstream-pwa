@@ -1962,13 +1962,12 @@
     }*/
 
     function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
-        // Cache current data for period toggle clicks
         activeChartData = { dates, radData, deviceDaily, anomaliesMap };
     
         const canvas = document.getElementById('analyzerChart');
         if (!canvas) return;
     
-        // Responsive container layout & High-DPI scaling
+        // Layout & High-DPI Scaling
         const container = canvas.parentElement;
         const W = container ? container.clientWidth : 300;
         const H = container ? container.clientHeight : 220;
@@ -1980,7 +1979,6 @@
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
     
-        // Dynamic padding reserved for dual Y-axes (Yield left, Radiation right)
         const PL = 45, PR = 40, PT = 20, PB = 30;
         const cW = W - PL - PR;
         const cH = H - PT - PB;
@@ -1993,7 +1991,15 @@
         let displayRad = [];
         let displayAnomalies = {};
     
-        // --- 1. AGGREGATION & PERIOD FILTERING ---
+        // Helper: Evaluates if an anomaly entry represents critical or warning state
+        const checkAnomaly = (a) => {
+            if (!a) return { isCritical: false, isWarning: false };
+            const isCritical = a.isCritical || a.severity === 'critical' || a.type === 'outage';
+            const isWarning = a.isWarning || a.severity === 'warning' || a.type === 'clouded' || a.type === 'low_efficiency';
+            return { isCritical, isWarning };
+        };
+    
+        // --- 1. AGGREGATION & PAGINATION LOGIC ---
         if (period === 'year') {
             const yearlyMap = {};
             dates.forEach((d, idx) => {
@@ -2004,16 +2010,14 @@
                 yearlyMap[yearKey].yieldWh += (deviceDaily[d] || 0);
                 yearlyMap[yearKey].radSum += (radData[idx] || 0);
     
-                // Aggregate anomaly status for the entire year
-                const anomaly = anomaliesMap[d];
-                if (anomaly?.isCritical) yearlyMap[yearKey].hasCritical = true;
-                if (anomaly?.isWarning) yearlyMap[yearKey].hasWarning = true;
+                const st = checkAnomaly(anomaliesMap[d]);
+                if (st.isCritical) yearlyMap[yearKey].hasCritical = true;
+                if (st.isWarning) yearlyMap[yearKey].hasWarning = true;
             });
     
             displayDates = Object.keys(yearlyMap).sort();
-            displayYields = displayDates.map(y => yearlyMap[y].yieldWh / 1000); // Wh to kWh
+            displayYields = displayDates.map(y => yearlyMap[y].yieldWh / 1000);
             displayRad = displayDates.map(y => yearlyMap[y].radSum);
-            
             displayDates.forEach(y => {
                 displayAnomalies[y] = {
                     isCritical: yearlyMap[y].hasCritical,
@@ -2031,16 +2035,14 @@
                 monthlyMap[monthKey].yieldWh += (deviceDaily[d] || 0);
                 monthlyMap[monthKey].radSum += (radData[idx] || 0);
     
-                // Aggregate anomaly status for the entire month
-                const anomaly = anomaliesMap[d];
-                if (anomaly?.isCritical) monthlyMap[monthKey].hasCritical = true;
-                if (anomaly?.isWarning) monthlyMap[monthKey].hasWarning = true;
+                const st = checkAnomaly(anomaliesMap[d]);
+                if (st.isCritical) monthlyMap[monthKey].hasCritical = true;
+                if (st.isWarning) monthlyMap[monthKey].hasWarning = true;
             });
     
             displayDates = Object.keys(monthlyMap).sort();
-            displayYields = displayDates.map(m => monthlyMap[m].yieldWh / 1000); // Wh to kWh
+            displayYields = displayDates.map(m => monthlyMap[m].yieldWh / 1000);
             displayRad = displayDates.map(m => monthlyMap[m].radSum);
-    
             displayDates.forEach(m => {
                 displayAnomalies[m] = {
                     isCritical: monthlyMap[m].hasCritical,
@@ -2049,18 +2051,29 @@
             });
     
         } else {
-            // Daily View (Restricted to 30 days window for clear pagination)
-            const daysToKeep = 30;
-            displayDates = [...dates];
-            displayRad = [...radData];
-            displayYields = displayDates.map(d => ((deviceDaily[d] || 0) / 1000));
+            // Daily View with active 30-Day Pagination
+            const pageSize = 30;
+            const totalDates = dates.length;
+            
+            // Calculate offset window boundaries from right (latest) to left (older)
+            const endIndex = Math.max(0, totalDates - (dayPageOffset * pageSize));
+            const startIndex = Math.max(0, endIndex - pageSize);
     
-            if (displayDates.length > daysToKeep) {
-                displayDates = displayDates.slice(-daysToKeep);
-                displayRad = displayRad.slice(-daysToKeep);
-                displayYields = displayYields.slice(-daysToKeep);
+            displayDates = dates.slice(startIndex, endIndex);
+            displayRad = radData.slice(startIndex, endIndex);
+            displayYields = displayDates.map(d => ((deviceDaily[d] || 0) / 1000));
+            
+            displayDates.forEach(d => {
+                displayAnomalies[d] = checkAnomaly(anomaliesMap[d]);
+            });
+    
+            // Update optional date label element if present in DOM
+            const rangeLabel = document.getElementById('chart-date-range');
+            if (rangeLabel && displayDates.length > 0) {
+                const startStr = displayDates[0];
+                const endStr = displayDates[displayDates.length - 1];
+                rangeLabel.textContent = `${startStr} - ${endStr}`;
             }
-            displayAnomalies = anomaliesMap;
         }
     
         const count = displayDates.length;
@@ -2071,9 +2084,9 @@
     
         const stepX = cW / count;
         const rawBarWidth = stepX - 2;
-        const barWidth = Math.min(Math.max(1, rawBarWidth), 12); // Slightly wider bars for monthly/yearly views
+        const barWidth = Math.min(Math.max(1, rawBarWidth), period === 'day' ? 6 : 14);
     
-        // --- 2. GRIDLINES & DUAL Y-AXIS LABELS ---
+        // --- 2. GRIDLINES & AXES ---
         ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
         ctx.lineWidth = 1;
         ctx.font = "9px monospace";
@@ -2082,13 +2095,12 @@
         for (let i = 0; i <= steps; i++) {
             const y = PT + (cH * i / steps);
     
-            // Gridline
             ctx.beginPath();
             ctx.moveTo(PL, y);
             ctx.lineTo(W - PR, y);
             ctx.stroke();
     
-            // Left Y-Axis: Solar Yield (kWh)
+            // Left Y-Axis: Yield (kWh)
             const yieldVal = (maxYield * (1 - i / steps)).toFixed(1);
             ctx.fillStyle = "rgba(52, 211, 153, 0.85)";
             ctx.textAlign = "right";
@@ -2101,7 +2113,7 @@
             ctx.fillText(radVal, W - PR + 6, y + 3);
         }
     
-        // --- 3. DRAW YIELD BARS WITH STATUS COLORING ---
+        // --- 3. DRAW YIELD BARS WITH CORRECT COLORING ---
         const todayStr = new Date().toISOString().split('T')[0];
     
         for (let i = 0; i < count; i++) {
@@ -2111,19 +2123,19 @@
             const x = PL + (i * stepX) + (stepX - barWidth) / 2;
             const y = PT + cH - barHeight;
     
-            // Apply anomaly status colors for Days, Months, and Years
+            // Anomaly Status Colors
             const anomaly = displayAnomalies[dateKey];
             if (anomaly && anomaly.isCritical) {
-                ctx.fillStyle = "#ef4444"; // Red (Outage / Critical)
+                ctx.fillStyle = "#ef4444"; // Red (Critical Outage)
             } else if (anomaly && anomaly.isWarning) {
-                ctx.fillStyle = "#f59e0b"; // Orange (Warning / Reduced)
+                ctx.fillStyle = "#f59e0b"; // Orange (Warning / Low Yield)
             } else {
-                ctx.fillStyle = "rgba(52, 211, 153, 0.8)"; // Green (Normal)
+                ctx.fillStyle = "rgba(52, 211, 153, 0.85)"; // Emerald Green
             }
     
             ctx.fillRect(x, y, barWidth, barHeight);
     
-            // --- 4. DRAW DYNAMIC X-AXIS LABELS ---
+            // --- 4. X-AXIS LABELS ---
             const labelStep = count > 30 ? 5 : (count > 15 ? 3 : (count > 7 ? 2 : 1));
             if (i % labelStep === 0 || i === count - 1) {
                 const isCurrent = dateKey === todayStr || dateKey === todayStr.substring(0, 7) || dateKey === todayStr.substring(0, 4);
@@ -2146,7 +2158,7 @@
             }
         }
     
-        // --- 5. DRAW RADIATION TREND LINE & DOTS ---
+        // --- 5. RADIATION TREND LINE & DOTS ---
         ctx.beginPath();
         ctx.strokeStyle = "#38bdf8";
         ctx.lineWidth = 1.5;
