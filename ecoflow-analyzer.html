@@ -2005,9 +2005,10 @@
             // X-Axis Labels
             const labelStep = count > 30 ? 5 : (count > 15 ? 3 : (count > 7 ? 2 : 1));
             if (i % labelStep === 0 || i === count - 1) {
-                const isCurrent = dateKey === todayStr || dateKey === todayStr.substring(0, 7) || dateKey === todayStr.substring(0, 4);
-                ctx.fillStyle = isCurrent ? "#34d399" : "#94a3b8";
-                ctx.font = isCurrent ? "bold 9px monospace" : "9px monospace";
+                const isLatest = (i === count - 1);
+                
+                ctx.fillStyle = isLatest ? "#34d399" : "#94a3b8";
+                ctx.font = isLatest ? "bold 9px monospace" : "9px monospace";
                 ctx.textAlign = "center";
     
                 let dispLabel = dateKey;
