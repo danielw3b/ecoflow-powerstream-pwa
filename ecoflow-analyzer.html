@@ -1729,23 +1729,26 @@
         }
     }
 
-    // set and render Chart
+    // Global State for Charting
     let activeChartData = null;
     let currentPeriod = 'day';
+    let dayPageOffset = 0;
     
+    /**
+     * Switch active chart period mode (day, month, year)
+     * @param {string} period - Selected view period
+     */
     function setChartPeriod(period) {
         currentPeriod = period;
-        if (period === 'day') dayPageOffset = 0;
+        if (period === 'day') {
+            dayPageOffset = 0;
+        }
         
         document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
         const activeBtn = document.getElementById(`btn-chart-${period}`);
-        if (activeBtn) activeBtn.classList.add('active');
-
-        // Toggle visibility of pagination controls (only visible in daily view)
-        const pageControls = document.querySelectorAll('.chart-page-btn, #chart-date-range');
-        pageControls.forEach(el => {
-            el.style.display = (period === 'day') ? '' : 'none';
-        });
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
     
         if (activeChartData) {
             renderChart(
@@ -1757,13 +1760,10 @@
             );
         }
     }
-
-    // State variable for 30-day pagination (0 = latest 30 days, 1 = previous 30 days, etc.)
-    let dayPageOffset = 0;
     
     /**
-     * Changes the active 30-day window for the daily view
-     * @param {number} direction - Direction step (+1 for older, -1 for newer)
+     * Change the active 30-day window for daily view pagination
+     * @param {number} direction - Offset direction (+1 older, -1 newer)
      */
     function changeDayPage(direction) {
         if (!activeChartData || !activeChartData.dates) return;
@@ -1771,10 +1771,9 @@
         const pageSize = 30;
         const totalDates = activeChartData.dates.length;
         const maxOffset = Math.max(0, Math.ceil(totalDates / pageSize) - 1);
-
-        // Clamp offset bounds (0 = newest window, maxOffset = oldest window)
+    
         dayPageOffset = Math.min(maxOffset, Math.max(0, dayPageOffset + direction));
-
+    
         if (activeChartData) {
             renderChart(
                 currentPeriod,
@@ -1785,10 +1784,19 @@
             );
         }
     }
-
-
+    
+    /**
+     * Render HTML5 Canvas Chart with stacked status bars for Month/Year
+     */
     function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
         activeChartData = { dates, radData, deviceDaily, anomaliesMap };
+    
+        // Toggle visibility of day pagination container based on active view mode
+        const isDailyView = (period === 'day' || !period);
+        const paginationContainer = document.getElementById('dayPaginationControls');
+        if (paginationContainer) {
+            paginationContainer.style.display = isDailyView ? 'inline-flex' : 'none';
+        }
     
         const canvas = document.getElementById('analyzerChart');
         if (!canvas) return;
@@ -1828,24 +1836,23 @@
             dates.forEach((d, idx) => {
                 const yearKey = d.substring(0, 4);
                 if (!yearlyMap[yearKey]) {
-                    yearlyMap[yearKey] = { yieldWh: 0, radSum: 0, hasCritical: false, hasWarning: false };
+                    yearlyMap[yearKey] = { yieldWh: 0, radSum: 0, totalDays: 0, normalDays: 0, warningDays: 0, criticalDays: 0 };
                 }
                 yearlyMap[yearKey].yieldWh += (deviceDaily[d] || 0);
                 yearlyMap[yearKey].radSum += (radData[idx] || 0);
+                yearlyMap[yearKey].totalDays++;
     
                 const st = checkAnomaly(anomaliesMap[d]);
-                if (st.isCritical) yearlyMap[yearKey].hasCritical = true;
-                if (st.isWarning) yearlyMap[yearKey].hasWarning = true;
+                if (st.isCritical) yearlyMap[yearKey].criticalDays++;
+                else if (st.isWarning) yearlyMap[yearKey].warningDays++;
+                else yearlyMap[yearKey].normalDays++;
             });
     
             displayDates = Object.keys(yearlyMap).sort();
             displayYields = displayDates.map(y => yearlyMap[y].yieldWh / 1000);
             displayRad = displayDates.map(y => yearlyMap[y].radSum);
             displayDates.forEach(y => {
-                displayAnomalies[y] = {
-                    isCritical: yearlyMap[y].hasCritical,
-                    isWarning: yearlyMap[y].hasWarning
-                };
+                displayAnomalies[y] = yearlyMap[y];
             });
     
         } else if (period === 'month') {
@@ -1853,24 +1860,23 @@
             dates.forEach((d, idx) => {
                 const monthKey = d.substring(0, 7);
                 if (!monthlyMap[monthKey]) {
-                    monthlyMap[monthKey] = { yieldWh: 0, radSum: 0, hasCritical: false, hasWarning: false };
+                    monthlyMap[monthKey] = { yieldWh: 0, radSum: 0, totalDays: 0, normalDays: 0, warningDays: 0, criticalDays: 0 };
                 }
                 monthlyMap[monthKey].yieldWh += (deviceDaily[d] || 0);
                 monthlyMap[monthKey].radSum += (radData[idx] || 0);
+                monthlyMap[monthKey].totalDays++;
     
                 const st = checkAnomaly(anomaliesMap[d]);
-                if (st.isCritical) monthlyMap[monthKey].hasCritical = true;
-                if (st.isWarning) monthlyMap[monthKey].hasWarning = true;
+                if (st.isCritical) monthlyMap[monthKey].criticalDays++;
+                else if (st.isWarning) monthlyMap[monthKey].warningDays++;
+                else monthlyMap[monthKey].normalDays++;
             });
     
             displayDates = Object.keys(monthlyMap).sort();
             displayYields = displayDates.map(m => monthlyMap[m].yieldWh / 1000);
             displayRad = displayDates.map(m => monthlyMap[m].radSum);
             displayDates.forEach(m => {
-                displayAnomalies[m] = {
-                    isCritical: monthlyMap[m].hasCritical,
-                    isWarning: monthlyMap[m].hasWarning
-                };
+                displayAnomalies[m] = monthlyMap[m];
             });
     
         } else {
@@ -1889,12 +1895,12 @@
                 displayAnomalies[d] = checkAnomaly(anomaliesMap[d]);
             });
     
-            // Update date range label in DOM
-            const rangeLabel = document.getElementById('chart-date-range');
+            // Update range label in DOM for daily view
+            const rangeLabel = document.getElementById('chartDateRange');
             if (rangeLabel && displayDates.length > 0) {
                 const startStr = displayDates[0];
                 const endStr = displayDates[displayDates.length - 1];
-                rangeLabel.textContent = `${startStr} - ${endStr}`;
+                rangeLabel.textContent = (startStr === endStr) ? startStr : `${startStr} - ${endStr}`;
             }
         }
     
@@ -1935,7 +1941,7 @@
             ctx.fillText(radVal, W - PR + 6, y + 3);
         }
     
-        // Yield Bars
+        // Yield Bars Rendering
         const todayStr = new Date().toISOString().split('T')[0];
     
         for (let i = 0; i < count; i++) {
@@ -1945,17 +1951,52 @@
             const x = PL + (i * stepX) + (stepX - barWidth) / 2;
             const y = PT + cH - barHeight;
     
-            // Evaluate status for day/month/year keys
-            const anomaly = displayAnomalies[dateKey];
-            if (anomaly && anomaly.isCritical) {
-                ctx.fillStyle = "#ef4444"; // Red (Critical)
-            } else if (anomaly && anomaly.isWarning) {
-                ctx.fillStyle = "#f59e0b"; // Orange (Warning)
-            } else {
-                ctx.fillStyle = "rgba(52, 211, 153, 0.85)"; // Normal Emerald
-            }
+            const anomalyData = displayAnomalies[dateKey];
     
-            ctx.fillRect(x, y, barWidth, barHeight);
+            if (period === 'month' || period === 'year') {
+                // Multi-color stacked bars based on day ratios
+                const total = anomalyData?.totalDays || 1;
+                const normRatio = (anomalyData?.normalDays || 0) / total;
+                const warnRatio = (anomalyData?.warningDays || 0) / total;
+                const critRatio = (anomalyData?.criticalDays || 0) / total;
+    
+                let currentY = y + barHeight;
+    
+                // Draw critical section (Red - Top)
+                if (critRatio > 0) {
+                    const segH = barHeight * critRatio;
+                    currentY -= segH;
+                    ctx.fillStyle = "#ef4444";
+                    ctx.fillRect(x, currentY, barWidth, segH);
+                }
+    
+                // Draw warning section (Orange - Middle)
+                if (warnRatio > 0) {
+                    const segH = barHeight * warnRatio;
+                    currentY -= segH;
+                    ctx.fillStyle = "#f59e0b";
+                    ctx.fillRect(x, currentY, barWidth, segH);
+                }
+    
+                // Draw normal section (Green - Bottom)
+                if (normRatio > 0) {
+                    const segH = barHeight * normRatio;
+                    currentY -= segH;
+                    ctx.fillStyle = "rgba(52, 211, 153, 0.85)";
+                    ctx.fillRect(x, currentY, barWidth, segH);
+                }
+            } else {
+                // Single-day status bar coloring
+                if (anomalyData && anomalyData.isCritical) {
+                    ctx.fillStyle = "#ef4444";
+                } else if (anomalyData && anomalyData.isWarning) {
+                    ctx.fillStyle = "#f59e0b";
+                } else {
+                    ctx.fillStyle = "rgba(52, 211, 153, 0.85)";
+                }
+    
+                ctx.fillRect(x, y, barWidth, barHeight);
+            }
     
             // X-Axis Labels
             const labelStep = count > 30 ? 5 : (count > 15 ? 3 : (count > 7 ? 2 : 1));
@@ -1994,7 +2035,7 @@
             else ctx.lineTo(x, y);
         }
         ctx.stroke();
-
+    
         for (let i = 0; i < count; i++) {
             const radVal = displayRad[i] || 0;
             const x = PL + (i * stepX) + stepX / 2;
