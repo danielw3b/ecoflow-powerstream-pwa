@@ -1573,17 +1573,18 @@
     
             <div class="summary-card chart-card">
                 <h3>📈 LAST TREND</h3>
-                <!-- Controls for 30-Day Pagination (visible only in 'day' mode) -->
-                <div id="dayPaginationControls" style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 6px;">
-                  <button type="button" class="btn-sm" onclick="changeDayPage(1)" title="30 Tage zurück">‹</button>
-                  <span id="chartDateRange" style="font-size: 0.75rem; color: var(--text-muted, #94a3b8); font-family: monospace;"></span>
-                  <button type="button" class="btn-sm" onclick="changeDayPage(-1)" title="30 Tage vor">›</button>
-                </div>
-                <!-- View Period Toggles -->
                 <div class="chart-toggles">
-                    <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day">Day</button>
-                    <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month">Month</button>
-                    <button class="chart-btn" onclick="setChartPeriod('year')" id="btn-chart-year">Year</button>
+                  <!-- Pagination Controls (Only visible in 'day' mode) -->
+                  <div id="dayPaginationControls" style="display: inline-flex; align-items: center; gap: 4px; margin-right: 6px;">
+                    <button type="button" class="btn-sm" onclick="changeDayPage(1)" title="Previous 30 days">‹</button>
+                    <span id="chartDateRange" style="font-size: 0.75rem; color: var(--text-muted, #94a3b8); font-family: monospace;"></span>
+                    <button type="button" class="btn-sm" onclick="changeDayPage(-1)" title="Next 30 days">›</button>
+                  </div>
+                
+                  <!-- View Period Toggles -->
+                  <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day" title="Show daily breakdown">Day</button>
+                  <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month" title="Show monthly breakdown">Month</button>
+                  <button class="chart-btn" onclick="setChartPeriod('year')" id="btn-chart-year" title="Show yearly breakdown">Year</button>
                 </div>
                 <div class="chart-wrapper">
                     <canvas id="analyzerChart"></canvas>
@@ -1770,196 +1771,7 @@
             );
         }
     }
- 
-    /*function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
-        activeChartData = { dates, radData, deviceDaily, anomaliesMap };
-    
-        const canvas = document.getElementById('analyzerChart');
-        if (!canvas) return;
-    
-        const container = canvas.parentElement;
-        const W = container ? container.clientWidth : 300;
-        const H = container ? container.clientHeight : 220;
-    
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = W * dpr;
-        canvas.height = H * dpr;
-    
-        const ctx = canvas.getContext('2d');
-        ctx.scale(dpr, dpr);
-    
-        // Dynamic padding reserved for dual Y-axes (Yield left, Radiation right)
-        const PL = 45, PR = 40, PT = 20, PB = 30;
-        const cW = W - PL - PR;
-        const cH = H - PT - PB;
-    
-        ctx.clearRect(0, 0, W, H);
-        if (!dates || dates.length === 0) return;
-    
-        let displayDates = [];
-        let displayYields = [];
-        let displayRad = [];
-        let displayAnomalies = {};
-    
-        // --- 1. AGGREGATION & PERIOD FILTERING ---
-        if (period === 'year') {
-            const yearlyMap = {};
-            dates.forEach((d, idx) => {
-                const yearKey = d.substring(0, 4);
-                if (!yearlyMap[yearKey]) yearlyMap[yearKey] = { yieldWh: 0, radSum: 0 };
-                yearlyMap[yearKey].yieldWh += (deviceDaily[d] || 0);
-                yearlyMap[yearKey].radSum += (radData[idx] || 0);
-            });
-    
-            displayDates = Object.keys(yearlyMap).sort();
-            displayYields = displayDates.map(y => yearlyMap[y].yieldWh / 1000); // Convert Wh to kWh
-            displayRad = displayDates.map(y => yearlyMap[y].radSum);
-    
-        } else if (period === 'month') {
-            const monthlyMap = {};
-            dates.forEach((d, idx) => {
-                const monthKey = d.substring(0, 7);
-                if (!monthlyMap[monthKey]) monthlyMap[monthKey] = { yieldWh: 0, radSum: 0 };
-                monthlyMap[monthKey].yieldWh += (deviceDaily[d] || 0);
-                monthlyMap[monthKey].radSum += (radData[idx] || 0);
-            });
-    
-            displayDates = Object.keys(monthlyMap).sort();
-            displayYields = displayDates.map(m => monthlyMap[m].yieldWh / 1000); // Convert Wh to kWh
-            displayRad = displayDates.map(m => monthlyMap[m].radSum);
-    
-        } else {
-            // Daily View (Can easily be changed from -30 to -60 days in the future)
-            const daysToKeep = 60; // Adjust this number to 60 for an extended history view
-            displayDates = [...dates];
-            displayRad = [...radData];
-            displayYields = displayDates.map(d => ((deviceDaily[d] || 0) / 1000));
-    
-            if (displayDates.length > daysToKeep) {
-                displayDates = displayDates.slice(-daysToKeep);
-                displayRad = displayRad.slice(-daysToKeep);
-                displayYields = displayYields.slice(-daysToKeep);
-            }
-            displayAnomalies = anomaliesMap;
-        }
-    
-        const count = displayDates.length;
-        if (count === 0) return;
-    
-        const maxYield = Math.max(...displayYields, 0.1);
-        const maxRad = Math.max(...displayRad, 0.1);
-    
-        const stepX = cW / count;
-        
-        // Ultra-slim Open-Meteo style bar width 30 days
-        //const rawBarWidth = stepX - 4;
-        //const barWidth = Math.min(Math.max(2, rawBarWidth), 6);
 
-        // Ultra-slim style bar width for 60-day range
-        const rawBarWidth = stepX - 2;
-        const barWidth = Math.min(Math.max(1, rawBarWidth), 4);
-        
-        // --- 2. GRIDLINES & DUAL Y-AXIS LABELS ---
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-        ctx.lineWidth = 1;
-        ctx.font = "9px monospace";
-    
-        const steps = 4;
-        for (let i = 0; i <= steps; i++) {
-            const y = PT + (cH * i / steps);
-    
-            // Draw horizontal gridline
-            ctx.beginPath();
-            ctx.moveTo(PL, y);
-            ctx.lineTo(W - PR, y);
-            ctx.stroke();
-    
-            // Left Y-Axis: Solar Yield (kWh)
-            const yieldVal = (maxYield * (1 - i / steps)).toFixed(1);
-            ctx.fillStyle = "rgba(52, 211, 153, 0.85)";
-            ctx.textAlign = "right";
-            ctx.fillText(`${yieldVal}k`, PL - 6, y + 3);
-    
-            // Right Y-Axis: Radiation (kWh/m²)
-            const radVal = (maxRad * (1 - i / steps)).toFixed(1);
-            ctx.fillStyle = "#38bdf8";
-            ctx.textAlign = "left";
-            ctx.fillText(radVal, W - PR + 6, y + 3);
-        }
-    
-        // --- 3. DRAW YIELD BARS ---
-        const todayStr = new Date().toISOString().split('T')[0];
-    
-        for (let i = 0; i < count; i++) {
-            const dateKey = displayDates[i];
-            const val = displayYields[i];
-            const barHeight = (val / maxYield) * cH;
-            const x = PL + (i * stepX) + (stepX - barWidth) / 2;
-            const y = PT + cH - barHeight;
-    
-            // Apply anomaly alert colors if present
-            const anomaly = displayAnomalies[dateKey];
-            if (anomaly && anomaly.isCritical) {
-                ctx.fillStyle = "#ef4444";
-            } else if (anomaly && anomaly.isWarning) {
-                ctx.fillStyle = "#f59e0b";
-            } else {
-                ctx.fillStyle = "rgba(52, 211, 153, 0.8)";
-            }
-    
-            ctx.fillRect(x, y, barWidth, barHeight);
-    
-            // --- 4. DRAW DYNAMIC X-AXIS LABELS ---
-            const labelStep = count > 30 ? 5 : (count > 15 ? 3 : (count > 7 ? 2 : 1));
-            if (i % labelStep === 0 || i === count - 1) {
-                const isCurrent = dateKey === todayStr;
-                ctx.fillStyle = isCurrent ? "#34d399" : "#94a3b8";
-                ctx.font = isCurrent ? "bold 9px monospace" : "9px monospace";
-                ctx.textAlign = "center";
-    
-                let dispLabel = dateKey;
-                if (period === 'day') {
-                    // Extracts pure day 'DD' (e.g. '01' for 2026-10-01)
-                    dispLabel = dateKey.length >= 10 ? dateKey.slice(8, 10) : dateKey;
-                } else if (period === 'month') {
-                    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                    const monthIdx = parseInt(dateKey.slice(5, 7), 10) - 1;
-                    dispLabel = months[monthIdx] ?? dateKey.slice(5);
-                } else if (period === 'year') {
-                    dispLabel = dateKey.substring(0, 4);
-                }
-    
-                ctx.fillText(dispLabel, x + barWidth / 2, H - 8);
-            }
-        }
-    
-        // --- 5. DRAW RADIATION TREND LINE & DOTS ---
-        ctx.beginPath();
-        ctx.strokeStyle = "#38bdf8";
-        ctx.lineWidth = 1.5;
-    
-        for (let i = 0; i < count; i++) {
-            const radVal = displayRad[i] || 0;
-            const x = PL + (i * stepX) + stepX / 2;
-            const y = PT + cH - ((radVal / maxRad) * cH);
-    
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-    
-        // Render trend dots on data points
-        for (let i = 0; i < count; i++) {
-            const radVal = displayRad[i] || 0;
-            const x = PL + (i * stepX) + stepX / 2;
-            const y = PT + cH - ((radVal / maxRad) * cH);
-    
-            ctx.fillStyle = "#38bdf8";
-            ctx.beginPath();
-            ctx.arc(x, y, 2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }*/
 
     function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
         activeChartData = { dates, radData, deviceDaily, anomaliesMap };
@@ -1967,7 +1779,6 @@
         const canvas = document.getElementById('analyzerChart');
         if (!canvas) return;
     
-        // Layout & High-DPI Scaling
         const container = canvas.parentElement;
         const W = container ? container.clientWidth : 300;
         const H = container ? container.clientHeight : 220;
@@ -1991,7 +1802,6 @@
         let displayRad = [];
         let displayAnomalies = {};
     
-        // Helper: Evaluates if an anomaly entry represents critical or warning state
         const checkAnomaly = (a) => {
             if (!a) return { isCritical: false, isWarning: false };
             const isCritical = a.isCritical || a.severity === 'critical' || a.type === 'outage';
@@ -1999,7 +1809,6 @@
             return { isCritical, isWarning };
         };
     
-        // --- 1. AGGREGATION & PAGINATION LOGIC ---
         if (period === 'year') {
             const yearlyMap = {};
             dates.forEach((d, idx) => {
@@ -2051,11 +1860,10 @@
             });
     
         } else {
-            // Daily View with active 30-Day Pagination
+            // Daily View with 30-day pagination slice
             const pageSize = 30;
             const totalDates = dates.length;
             
-            // Calculate offset window boundaries from right (latest) to left (older)
             const endIndex = Math.max(0, totalDates - (dayPageOffset * pageSize));
             const startIndex = Math.max(0, endIndex - pageSize);
     
@@ -2067,7 +1875,7 @@
                 displayAnomalies[d] = checkAnomaly(anomaliesMap[d]);
             });
     
-            // Update optional date label element if present in DOM
+            // Update optional date label element
             const rangeLabel = document.getElementById('chart-date-range');
             if (rangeLabel && displayDates.length > 0) {
                 const startStr = displayDates[0];
@@ -2086,7 +1894,7 @@
         const rawBarWidth = stepX - 2;
         const barWidth = Math.min(Math.max(1, rawBarWidth), period === 'day' ? 6 : 14);
     
-        // --- 2. GRIDLINES & AXES ---
+        // Gridlines & Axes
         ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
         ctx.lineWidth = 1;
         ctx.font = "9px monospace";
@@ -2113,7 +1921,7 @@
             ctx.fillText(radVal, W - PR + 6, y + 3);
         }
     
-        // --- 3. DRAW YIELD BARS WITH CORRECT COLORING ---
+        // Yield Bars
         const todayStr = new Date().toISOString().split('T')[0];
     
         for (let i = 0; i < count; i++) {
@@ -2123,19 +1931,18 @@
             const x = PL + (i * stepX) + (stepX - barWidth) / 2;
             const y = PT + cH - barHeight;
     
-            // Anomaly Status Colors
             const anomaly = displayAnomalies[dateKey];
             if (anomaly && anomaly.isCritical) {
-                ctx.fillStyle = "#ef4444"; // Red (Critical Outage)
+                ctx.fillStyle = "#ef4444";
             } else if (anomaly && anomaly.isWarning) {
-                ctx.fillStyle = "#f59e0b"; // Orange (Warning / Low Yield)
+                ctx.fillStyle = "#f59e0b";
             } else {
-                ctx.fillStyle = "rgba(52, 211, 153, 0.85)"; // Emerald Green
+                ctx.fillStyle = "rgba(52, 211, 153, 0.85)";
             }
     
             ctx.fillRect(x, y, barWidth, barHeight);
     
-            // --- 4. X-AXIS LABELS ---
+            // X-Axis Labels
             const labelStep = count > 30 ? 5 : (count > 15 ? 3 : (count > 7 ? 2 : 1));
             if (i % labelStep === 0 || i === count - 1) {
                 const isCurrent = dateKey === todayStr || dateKey === todayStr.substring(0, 7) || dateKey === todayStr.substring(0, 4);
@@ -2158,7 +1965,7 @@
             }
         }
     
-        // --- 5. RADIATION TREND LINE & DOTS ---
+        // Radiation Trend Line
         ctx.beginPath();
         ctx.strokeStyle = "#38bdf8";
         ctx.lineWidth = 1.5;
@@ -2172,7 +1979,7 @@
             else ctx.lineTo(x, y);
         }
         ctx.stroke();
-    
+
         for (let i = 0; i < count; i++) {
             const radVal = displayRad[i] || 0;
             const x = PL + (i * stepX) + stepX / 2;
