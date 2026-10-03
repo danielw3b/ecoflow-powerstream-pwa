@@ -1134,12 +1134,30 @@ function renderWhChart() {
   const thisYear   = now.getFullYear();
   
   // ── CUTOFF FILTER: Keep only the last 30 days when on the "day" tab ──
+  /* OLD CODE:
   if (currentPeriod === "day") {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     thirtyDaysAgo.setHours(0, 0, 0, 0);
     const cutoffStr = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
     allLabels = allLabels.filter(label => label >= cutoffStr);
+  }
+  */
+
+  // NEW CODE: Apply 30-day cutoff filter and calculate responsive X-axis label steps for mobile <= 600px
+  let labelStep = 1;
+  if (currentPeriod === "day") {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    const cutoffStr = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
+    allLabels = allLabels.filter(label => label >= cutoffStr);
+
+    // Filter X-axis labels every 5 days on small screens (<= 600px) if data set > 15 days
+    const isMobileScreen = window.innerWidth <= 600;
+    if (isMobileScreen && allLabels.length > 15) {
+      labelStep = 5;
+    }
   }
 
   // If no labels remain after filtering (e.g., for Day/Month without data)
@@ -1274,7 +1292,14 @@ function renderWhChart() {
     } else {
       disp = label;
     }
+    /* OLD CODE:
     ctx.fillText(disp, gx + gW / 2, H - PB + 14);
+    */
+
+    // NEW CODE: Render X-axis label conditionally based on labelStep, last day, or today
+    if (di % labelStep === 0 || di === allLabels.length - 1 || label === today) {
+      ctx.fillText(disp, gx + gW / 2, H - PB + 14);
+    }
   });
 
   ctx.fillStyle = "rgba(107,138,170,.9)"; ctx.font = "9px monospace"; ctx.textAlign = "right";
