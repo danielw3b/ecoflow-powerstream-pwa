@@ -499,7 +499,7 @@
     }
     
     .status-indicator-group {
-        display: inline-grid;
+        display: flex;
         gap: 6px;
         border: 1px solid var(--border);
         border-radius: 25%;
@@ -630,9 +630,9 @@
         border-radius: 50%;
     }
 
-    .ratio-accent { font-weight: bold; color: var(--emerald-light); /*min-width: 60px;*/ }
-    .ratio-warn { font-weight: bold; color: var(--amber-light); /*min-width: 60px;*/ }
-    .ratio-danger { font-weight: bold; color: var(--danger); /*min-width: 60px;*/ }
+    .ratio-accent { font-weight: bold; color: var(--emerald-light); min-width: 30px; }
+    .ratio-warn { font-weight: bold; color: var(--amber-light); min-width: 30px; }
+    .ratio-danger { font-weight: bold; color: var(--danger); min-width: 30px; }
     .context-cell { cursor: help; text-align: center; font-size: 1.05rem; }
     .table-title-warn { color: var(--text); }
     .title-badge { font-size: 0.75rem; color: var(--text-dim); font-weight: normal; justify-content: flex-end;display: flex;}
@@ -1522,8 +1522,8 @@
         const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
         //const sumOptNorm = totalDaysAnalyzed > 0 ? (((optimalCount + normalCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
         //const sumLossFail = totalDaysAnalyzed > 0 ? (((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
-        const sumOptNorm = totalDaysAnalyzed > 0 ? Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100) : 0;
-        const sumLossFail = totalDaysAnalyzed > 0 ? Math.round(((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100) : 0;
+        const sumOptNorm = totalDaysAnalyzed > 0 ? Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100) : "00";
+        const sumLossFail = totalDaysAnalyzed > 0 ? Math.round(((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100) : "00";
 
         
         const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
