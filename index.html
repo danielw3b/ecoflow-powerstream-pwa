@@ -1244,6 +1244,7 @@ function renderWhChart() {
   const gW = cW / allLabels.length;
   const maxAllowedWidth = currentPeriod === "day" ? 20 : 16;
   const bW = Math.max(3, Math.min(maxAllowedWidth, gW / (orderedSns.length + 1)));
+  
   const gP = (gW - bW * orderedSns.length) / 2;
 
   const standardGradients = [];
@@ -1286,17 +1287,12 @@ function renderWhChart() {
         }
         */
 
-        // NEW CODE: Allow text numbers at lower resolutions (bW > 4)
-        if (bH > 12 && bW > 4) {
+        // NEW CODE: Zeigt Zahlen erst ab Balkenbreite > 7px (Portrait <=600px blendet aus, Landscape & Desktop zeigen an)
+        if (bH > 12 && bW > 7) {
           ctx.fillStyle = isCurrent ? "#fff" : "rgba(200,220,240,.85)";
-          // Scale font down slightly to 7px on screens <= 600px to ensure numbers fit
-          const fontSize = window.innerWidth <= 600 ? "7px" : "8px";
-          ctx.font = `${isCurrent ? "bold " : ""}${fontSize} monospace`; 
+          ctx.font = `${isCurrent ? "bold " : ""}8px monospace`;
           ctx.textAlign = "center";
-          
-          // Display short format (e.g. 1.2k or rounded Wh)
-          const txt = wh >= 1000 ? (wh / 1000).toFixed(1) + "k" : wh.toFixed(0);
-          ctx.fillText(txt, x + bW / 2 - .5, y - 3);
+          ctx.fillText(wh >= 1000 ? (wh / 1000).toFixed(1) + "k" : wh.toFixed(0), x + bW / 2 - .5, y - 3);
         }
       }
     });
