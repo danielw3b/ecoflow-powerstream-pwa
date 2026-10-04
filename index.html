@@ -1288,7 +1288,7 @@ function renderWhChart() {
         */
 
         // NEW CODE: Zeigt Zahlen erst ab Balkenbreite > 7px (Portrait <=600px blendet aus, Landscape & Desktop zeigen an)
-        if (bH > 12 && bW > 7) {
+        if (bH > 12 && bW > 6) {
           ctx.fillStyle = isCurrent ? "#fff" : "rgba(200,220,240,.85)";
           ctx.font = `${isCurrent ? "bold " : ""}8px monospace`;
           ctx.textAlign = "center";
