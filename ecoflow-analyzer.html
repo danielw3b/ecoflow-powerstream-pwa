@@ -1522,9 +1522,8 @@
         const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
         //const sumOptNorm = totalDaysAnalyzed > 0 ? (((optimalCount + normalCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
         //const sumLossFail = totalDaysAnalyzed > 0 ? (((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
-        const sumOptNorm = totalDaysAnalyzed > 0 ? Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100) : "00";
-        const sumLossFail = totalDaysAnalyzed > 0 ? Math.round(((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100) : "00";
-
+        const sumOptNorm = totalDaysAnalyzed > 0 ? Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100) : "0";
+        const sumLossFail = totalDaysAnalyzed > 0 ? Math.round(((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100) : "0"; 
         
         const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
@@ -1555,7 +1554,7 @@
                     <div>Days: <b>${totalDaysAnalyzed}</b></div>
                     <div>Issues: <b>${criticalCount}</b></div>
                     <div>Weather: <b>${weatherCount}</b></div>
-                    <div>Hardw. Efficiency: <span class="${efficiencyClass}">${hwEfficiency}%</span></div>
+                    <div>PV Efficiency: <span class="${efficiencyClass}">${hwEfficiency}%</span></div>
                 </div>
         
                 <div class="status-indicators-container">
@@ -1568,7 +1567,7 @@
                     <div class="status-indicator-group">
                         <span class="ratio-warn">${sumLossFail}%</span>
                         <div>🟠 (${lossCount})</div>
-                        <div>❌ (${hardwareFailCount})</div>
+                        <div>❌ (${String(hardwareFailCount).padStart(2, "0")})</div>
                     </div>
                 </div>
             <!--</div>
