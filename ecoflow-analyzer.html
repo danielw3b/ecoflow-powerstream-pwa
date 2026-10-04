@@ -562,7 +562,7 @@
     }
 
     /* Prevents default browser swipe-navigation & enables smooth touch handling */
-    #analyzerChart {touch-action: pan-y;}
+    #analyzerChart {pointer-events: auto !important; touch-action: pan-y !important;}
 
     /* Legend positioning below the canvas element */
     .chart-legend {
