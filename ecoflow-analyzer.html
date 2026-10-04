@@ -2229,11 +2229,13 @@
             }, { passive: true });
         
             chartCanvas.addEventListener('touchend', e => {
+                console.log('Touch End registriert'); // Test-Log
                 if (typeof currentPeriod !== 'undefined' && currentPeriod !== 'day') return;
                 if (!e.changedTouches || e.changedTouches.length === 0) return;
         
                 const deltaX = e.changedTouches[0].clientX - startX;
                 const deltaY = e.changedTouches[0].clientY - startY;
+                console.log('DeltaX:', deltaX, 'DeltaY:', deltaY); // Test-Log
         
                 // Trigger pagination on horizontal swipe exceeding distance threshold (30px)
                 if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
