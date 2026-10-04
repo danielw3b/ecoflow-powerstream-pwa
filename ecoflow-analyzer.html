@@ -1572,7 +1572,7 @@
     
             <div class="summary-card chart-card">
                 <h3>📈 Past Trend</h3>-->
-                <div style="display: flex; justify-content:flex-end; margin:12px 0;">
+                <div style="display: flex; justify-content:flex-end; margin:24px 0;">
                   <div class="chart-toggles">
                     <!-- Only visible in 'day' mode -->
                     <span id="dayPaginationControls">
@@ -1690,7 +1690,7 @@
         const activeRadArray = useGtiModel ? radSumRaw : ljRadSumRaw;
         
         // Render chart with selected radiation model data
-        renderChart('day', dates, activeRadArray, deviceDaily, anomaliesMap);
+        renderChart(currentPeriod, dates, activeRadArray, deviceDaily, anomaliesMap);
     
     }
 
@@ -2211,7 +2211,31 @@
             clickTimer = setTimeout(() => { clickCounter = 0; }, 2000);
           }
         });
-    });    
+        
+        // Add swipe gesture listener to chart canvas
+        const chartCanvas = document.getElementById('analyzerChart');
+        if (chartCanvas) {
+            let startX = 0, startY = 0;
+        
+            chartCanvas.addEventListener('touchstart', e => {
+                startX = e.changedTouches[0].screenX;
+                startY = e.changedTouches[0].screenY;
+            }, { passive: true });
+        
+            chartCanvas.addEventListener('touchend', e => {
+                if (typeof currentPeriod !== 'undefined' && currentPeriod !== 'day') return;
+        
+                const deltaX = e.changedTouches[0].screenX - startX;
+                const deltaY = e.changedTouches[0].screenY - startY;
+        
+                // Trigger pagination on horizontal swipe exceeding distance threshold
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+                    // Swipe right -> view older data (+1); Swipe left -> view newer data (-1)
+                    changeDayPage(deltaX > 0 ? 1 : -1);
+                }
+            }, { passive: true });
+        }    
+    }); 
 </script>
 </body>
 </html>
