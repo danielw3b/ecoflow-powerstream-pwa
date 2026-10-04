@@ -2238,7 +2238,26 @@
                 }
             }, { passive: true });
         }    
-    }); 
+    });
+
+    // Re-render chart dynamically on browser resize or orientation change
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        // Debounce to avoid performance hits during active dragging
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (activeChartData) {
+                renderChart(
+                    currentPeriod,
+                    activeChartData.dates,
+                    activeChartData.radData,
+                    activeChartData.deviceDaily,
+                    activeChartData.anomaliesMap
+                );
+            }
+        }, 150);
+    });
+    
 </script>
 </body>
 </html>
