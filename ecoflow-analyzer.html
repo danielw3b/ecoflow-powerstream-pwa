@@ -511,19 +511,12 @@
         flex-direction: column;
         /*gap: 12px;*/
     }
-    /*
-    .chart-card h3 {
-        margin: 0;
-        font-size: 0.9rem;
-        color: var(--text-dim);
-        letter-spacing: 0.05em;
-    }*/
 
-    #dayPaginationControls { display: inline-flex; gap: 10px; align-item: center;margin-right: 10px;}
-    #chartDateRange {font-size: 0.6rem; color: var(--text-dim);}
+    #dayPaginationControls { gap: 10px; align-item: center; margin-right: 10px;}
+    #chartDateRange {font-size: 0.7rem; color: var(--text-dim);}
     
     .chart-toggles {
-        display: inline-flex;
+        /*display: inline-flex;*/
         background: var(--bg);
         border: 1px solid var(--border);
         border-radius: 6px;
@@ -1579,14 +1572,14 @@
     
             <div class="summary-card chart-card">
                 <h3>📈 Past Trend</h3>-->
-                <div>
+                <div style="display: flex; justify-content:flex-end; margin:12px 0;">
                   <div class="chart-toggles">
                     <!-- Only visible in 'day' mode -->
-                    <div id="dayPaginationControls">
+                    <span id="dayPaginationControls">
                         <button type="button" class="chart-btn" onclick="changeDayPage(1)" title="Previous 30 days">‹</button>
                         <span id="chartDateRange"></span>
                         <button type="button" class="chart-btn" onclick="changeDayPage(-1)" title="Next 30 days">›</button>
-                    </div>
+                    </span>
                     <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day" title="Show daily breakdown">Day</button>
                     <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month" title="Show monthly breakdown">Month</button>
                     <button class="chart-btn" onclick="setChartPeriod('year')" id="btn-chart-year" title="Show yearly breakdown">Year</button>
