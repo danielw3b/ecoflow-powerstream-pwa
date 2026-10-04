@@ -2220,23 +2220,27 @@
             let startX = 0, startY = 0;
         
             chartCanvas.addEventListener('touchstart', e => {
-                startX = e.changedTouches[0].screenX;
-                startY = e.changedTouches[0].screenY;
+                // Use clientX for robust touch coordinates across scale/DPI
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
             }, { passive: true });
         
             chartCanvas.addEventListener('touchend', e => {
                 if (typeof currentPeriod !== 'undefined' && currentPeriod !== 'day') return;
+                if (!e.changedTouches || e.changedTouches.length === 0) return;
         
-                const deltaX = e.changedTouches[0].screenX - startX;
-                const deltaY = e.changedTouches[0].screenY - startY;
+                const deltaX = e.changedTouches[0].clientX - startX;
+                const deltaY = e.changedTouches[0].clientY - startY;
         
-                // Trigger pagination on horizontal swipe exceeding distance threshold
-                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+                // Trigger pagination on horizontal swipe exceeding distance threshold (30px)
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
                     // Swipe right -> view older data (+1); Swipe left -> view newer data (-1)
-                    changeDayPage(deltaX > 0 ? 1 : -1);
+                    if (typeof changeDayPage === 'function') {
+                        changeDayPage(deltaX > 0 ? 1 : -1);
+                    }
                 }
             }, { passive: true });
-        }    
+        }   
     });
 
     // Re-render chart dynamically on browser resize or orientation change
