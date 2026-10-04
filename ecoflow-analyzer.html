@@ -1694,6 +1694,8 @@
         // Choose correct array depending on global model switch
         const activeRadArray = useGtiModel ? radSumRaw : ljRadSumRaw;
         
+        // Attach gesture listeners now that #analyzerChart exists in DOM
+        initChartSwipeListeners();
         // Render chart with selected radiation model data
         renderChart(currentPeriod, dates, activeRadArray, deviceDaily, anomaliesMap);
     
@@ -2215,51 +2217,49 @@
           } else {
             clickTimer = setTimeout(() => { clickCounter = 0; }, 2000);
           }
-        });
-        
-        // Add gesture listener via Pointer Events (covers Touch + DevTools Mouse Drag)
-        const chartCanvas = document.getElementById('analyzerChart');
-        
-        if (chartCanvas) {
-            let startX = 0;
-            let startY = 0;
-            let isDragging = false;
-        
-            chartCanvas.addEventListener('pointerdown', e => {
-                startX = e.clientX;
-                startY = e.clientY;
-                isDragging = true;
-                console.log('[Chart Swipe] Pointer Down at X:', startX);
-            });
-        
-            chartCanvas.addEventListener('pointerup', e => {
-                if (!isDragging) return;
-                isDragging = false;
-        
-                if (typeof currentPeriod !== 'undefined' && currentPeriod !== 'day') return;
-        
-                const deltaX = e.clientX - startX;
-                const deltaY = e.clientY - startY;
-        
-                console.log(`[Chart Swipe] Pointer Up -> deltaX: ${deltaX}, deltaY: ${deltaY}`);
-        
-                // Trigger pagination on horizontal drag/swipe exceeding threshold (30px)
-                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
-                    if (typeof changeDayPage === 'function') {
-                        // Swipe right -> view older data (+1); Swipe left -> view newer data (-1)
-                        changeDayPage(deltaX > 0 ? 1 : -1);
-                    }
-                }
-            });
-        
-            chartCanvas.addEventListener('pointercancel', () => {
-                isDragging = false;
-            });
-        } else {
-            console.warn('[Chart Swipe] Canvas #analyzerChart not found in DOM when registering listeners!');
-        }  
+        });  
     });
 
+    // Attach pointer gesture listeners for canvas chart swiping (Touch, Mouse & DevTools)
+    function initChartSwipeListeners() {
+        const chartCanvas = document.getElementById('analyzerChart');
+        if (!chartCanvas) return;
+    
+        let startX = 0;
+        let startY = 0;
+        let isDragging = false;
+    
+        chartCanvas.addEventListener('pointerdown', e => {
+            startX = e.clientX;
+            startY = e.clientY;
+            isDragging = true;
+        });
+    
+        chartCanvas.addEventListener('pointerup', e => {
+            if (!isDragging) return;
+            isDragging = false;
+    
+            if (typeof currentPeriod !== 'undefined' && currentPeriod !== 'day') return;
+    
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+    
+            // Trigger pagination on horizontal swipe exceeding distance threshold (30px)
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+                if (typeof changeDayPage === 'function') {
+                    // Swipe right -> view older data (+1); Swipe left -> view newer data (-1)
+                    changeDayPage(deltaX > 0 ? 1 : -1);
+                }
+            }
+        });
+    
+        chartCanvas.addEventListener('pointercancel', () => {
+            isDragging = false;
+        });
+    }
+
+
+    
     // Re-render chart dynamically on browser resize or orientation change
     let resizeTimer;
     window.addEventListener('resize', () => {
