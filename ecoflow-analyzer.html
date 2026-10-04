@@ -631,7 +631,7 @@
         border-radius: 50%;
     }
 
-    #dayPaginationControls { display: inline-flex; align-items: center; gap: 4px; margin-right: 4px;}
+    #dayPaginationControls { display: inline-flex; align-items: center; gap: 10px; margin-right: 10px;}
     #chartDateRange {font-size: 0.6rem; color: var(--text-dim);}
 
     
@@ -1525,8 +1525,11 @@
         }
         
         const anomalyPercentage = totalDaysAnalyzed > 0 ? ((anomalies.length / totalDaysAnalyzed) * 100).toFixed(0) : 0;
-        const sumOptNorm = totalDaysAnalyzed > 0 ? (((optimalCount + normalCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
-        const sumLossFail = totalDaysAnalyzed > 0 ? (((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
+        //const sumOptNorm = totalDaysAnalyzed > 0 ? (((optimalCount + normalCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
+        //const sumLossFail = totalDaysAnalyzed > 0 ? (((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100).toFixed(2) : "0.00";
+        const sumOptNorm = totalDaysAnalyzed > 0 ? Math.round(((optimalCount + normalCount) / totalDaysAnalyzed) * 100) : 0;
+        const sumLossFail = totalDaysAnalyzed > 0 ? Math.round(((lossCount + hardwareFailCount) / totalDaysAnalyzed) * 100) : 0;
+
         
         const hwEfficiency = totalDaysAnalyzed > 0 ? Math.max(0, 100 - Math.round((criticalCount / totalDaysAnalyzed) * 100)) : 100;
         const efficiencyClass = hwEfficiency >= 95 ? 'good' : (hwEfficiency >= 85 ? 'warn' : 'bad');
@@ -1573,10 +1576,10 @@
                         <div>❌ (${hardwareFailCount})</div>
                     </div>
                 </div>
-            </div>
+            <!--</div>
     
             <div class="summary-card chart-card">
-                <h3>📈 Past Trend</h3>
+                <h3>📈 Past Trend</h3>-->
                 <div class="chart-toggles">
                   <!-- Pagination Controls (Only visible in 'day' mode) -->
                   <div id="dayPaginationControls">
