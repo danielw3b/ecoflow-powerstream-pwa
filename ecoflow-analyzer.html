@@ -1580,9 +1580,9 @@
                         <span id="chartDateRange"></span>
                         <button type="button" class="chart-btn" onclick="changeDayPage(-1)" title="Next 30 days">›</button>
                     </span>
-                    <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day" title="Show daily breakdown">Day</button>
-                    <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month" title="Show monthly breakdown">Month</button>
-                    <button class="chart-btn" onclick="setChartPeriod('year')" id="btn-chart-year" title="Show yearly breakdown">Year</button>
+                    <button class="chart-btn ${currentPeriod === 'day' ? 'active' : ''}" onclick="setChartPeriod('day')" id="btn-chart-day" title="Show daily breakdown">Day</button>
+                    <button class="chart-btn ${currentPeriod === 'month' ? 'active' : ''}" onclick="setChartPeriod('month')" id="btn-chart-month" title="Show monthly breakdown">Month</button>
+                    <button class="chart-btn ${currentPeriod === 'year' ? 'active' : ''}" onclick="setChartPeriod('year')" id="btn-chart-year" title="Show yearly breakdown">Year</button>
                   </div>
                 </div>
                 <div class="chart-wrapper">
