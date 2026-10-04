@@ -519,7 +519,7 @@
         letter-spacing: 0.05em;
     }*/
 
-    #dayPaginationControls { display: inline-flex; gap: 10px;}
+    #dayPaginationControls { display: inline-flex; gap: 10px; align-item: center;margin-right: 10px;}
     #chartDateRange {font-size: 0.6rem; color: var(--text-dim);}
     
     .chart-toggles {
@@ -1579,16 +1579,18 @@
     
             <div class="summary-card chart-card">
                 <h3>📈 Past Trend</h3>-->
-                <!-- Only visible in 'day' mode -->
-                <div id="dayPaginationControls">
-                    <button type="button" class="chart-btn" onclick="changeDayPage(1)" title="Previous 30 days">‹</button>
-                    <span id="chartDateRange"></span>
-                    <button type="button" class="chart-btn" onclick="changeDayPage(-1)" title="Next 30 days">›</button>
-                </div>
-                <div class="chart-toggles">
-                  <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day" title="Show daily breakdown">Day</button>
-                  <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month" title="Show monthly breakdown">Month</button>
-                  <button class="chart-btn" onclick="setChartPeriod('year')" id="btn-chart-year" title="Show yearly breakdown">Year</button>
+                <div>
+                  <div class="chart-toggles">
+                    <!-- Only visible in 'day' mode -->
+                    <div id="dayPaginationControls">
+                        <button type="button" class="chart-btn" onclick="changeDayPage(1)" title="Previous 30 days">‹</button>
+                        <span id="chartDateRange"></span>
+                        <button type="button" class="chart-btn" onclick="changeDayPage(-1)" title="Next 30 days">›</button>
+                    </div>
+                    <button class="chart-btn active" onclick="setChartPeriod('day')" id="btn-chart-day" title="Show daily breakdown">Day</button>
+                    <button class="chart-btn" onclick="setChartPeriod('month')" id="btn-chart-month" title="Show monthly breakdown">Month</button>
+                    <button class="chart-btn" onclick="setChartPeriod('year')" id="btn-chart-year" title="Show yearly breakdown">Year</button>
+                  </div>
                 </div>
                 <div class="chart-wrapper">
                     <canvas id="analyzerChart"></canvas>
