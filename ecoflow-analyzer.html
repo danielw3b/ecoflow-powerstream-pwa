@@ -29,7 +29,7 @@
         --danger: #ef4444;
         --warning: #f59e0b;
         --amber-light: #fbbf24;
-    }
+    }       
     
     /* Base Styles */
     body {
@@ -502,11 +502,21 @@
         display: flex;
         gap: 6px;
         border: 1px solid var(--border);
-        border-radius: 25%;
         padding: 12px 24px;
-        justify-items: center;
+        align-items: center;
         background: var(--panel);
+        
+        /* Creative modern touch: elegant asymmetrical flow */
+        border-radius: 40px 10px 40px 10px; 
+        transition: all 0.3s ease-in-out;
     }
+    
+    .status-indicator-group:hover {
+        /* Smoothly shifts the roundness to the opposite corners */
+        border-radius: 10px 40px 10px 40px;
+        border-color: var(--accent-hover); /* Subtly highlights the border on hover */
+    }
+
 
     /* Minimalistic Chart Section */
     .chart-card {
@@ -597,8 +607,10 @@
     */
     .rect-real {
         width: 5px;
-        background-color: var(--accent);
+        height: 12px; /* Set an explicit height to match your ::after block */
+        background-color: var(--emerald-light); /* Updated from var(--accent) */
         margin-right: 12px;
+        position: relative; /* Anchors the absolute positioned orange bar */
     }
     
     .rect-real::after {
@@ -610,7 +622,7 @@
         height: 12px;
         background-color: var(--warning);
     }
-    
+  
     /* line with dot (RADN kWh/m²) */
     .line-rad::before {
         content: "";
