@@ -504,26 +504,10 @@
         border: 1px solid var(--border);
         padding: 12px 24px;
         align-items: center;
-        background: var(--panel);
-        
-        /* Sleek geometric slant */
-        transform: skewX(-6deg);
-        border-radius: 4px;
-        transition: transform 0.3s ease;
+        background: var(--panel);  
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
     }
-    
-    /* Keeps the text and inner icons upright so they don't tilt with the card */
-    .status-indicator-group > * {
-        transform: skewX(6deg);
-    }
-    
-    .status-indicator-group:hover {
-        transform: skewX(0deg);
-    }
-    .status-indicator-group:hover > * {
-        transform: skewX(0deg);
-    }
-
+   
     /* Minimalistic Chart Section */
     .chart-card {
         display: flex;
@@ -635,7 +619,7 @@
         left: 0;
         width: 100%;
         height: 2px;
-        background-color:var(--sky);
+        background-color: #0284c7;
     }
     
     .line-rad::after {
@@ -645,7 +629,7 @@
         left: calc(50% - 3px);
         width: 6px;
         height: 6px;
-        background-color: var(--sky);
+        background-color: #0284c7;
         border-radius: 50%;
     }
 
