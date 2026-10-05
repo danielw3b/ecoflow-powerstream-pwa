@@ -1436,8 +1436,8 @@ async function fetchWeather() {
     const lat = cachedCoords.lat;
     const lon = cachedCoords.lon;
 
-    // Dynamic tilt/azimuth from config (e.g., 18° Valk3) or fallbacks
-    const tilt = 18;
+    // Static tilt/azimuth (e.g., 17° Valk3)
+    const tilt = 16;
     const azimuth = 0;
     
     // API request with both direct_radiation and global_tilted_irradiance_instant
