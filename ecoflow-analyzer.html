@@ -506,16 +506,21 @@
         align-items: center;
         background: var(--panel);
         
-        /* Creative modern touch: elegant asymmetrical flow */
-        border-radius: 40px 10px 40px 10px; 
-        transition: all 0.3s ease-in-out;
+        /* Creative alternative: Inward scoop corners */
+        clip-path: polygon(
+            0 10px, 10px 0, 
+            calc(100% - 10px) 0, 100% 10px, 
+            100% calc(100% - 10px), calc(100% - 10px) 100%, 
+            10px 100%, 0 calc(100% - 10px)
+        );
+        transition: clip-path 0.3s ease-in-out;
     }
     
     .status-indicator-group:hover {
-        /* Smoothly shifts the roundness to the opposite corners */
-        border-radius: 10px 40px 10px 40px;
-        border-color: var(--accent-hover); /* Subtly highlights the border on hover */
+        /* Smoothly expands into a clean, sharp rectangle */
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
     }
+
 
 
     /* Minimalistic Chart Section */
@@ -607,10 +612,8 @@
     */
     .rect-real {
         width: 5px;
-        height: 12px; /* Set an explicit height to match your ::after block */
-        background-color: var(--emerald-light); /* Updated from var(--accent) */
+        background-color: var(--emerald-light);
         margin-right: 12px;
-        position: relative; /* Anchors the absolute positioned orange bar */
     }
     
     .rect-real::after {
@@ -1575,13 +1578,13 @@
                 <div class="status-indicators-container">
                     <div class="status-indicator-group">
                         <span class="ratio-accent">${sumOptNorm}%</span>
-                        <div>✅ (${optimalCount})</div>
-                        <div>🟢 (${normalCount})</div>
+                        <div>✅ (${String(optimalCount).padStart(2, "0")})</div>
+                        <div>🟢 (${String(normalCount).padStart(2, "0")})</div>
                     </div>
         
                     <div class="status-indicator-group">
                         <span class="ratio-warn">${sumLossFail}%</span>
-                        <div>🟠 (${lossCount})</div>
+                        <div>🟠 (${String(lossCount).padStart(2, "0")})</div>
                         <div>❌ (${String(hardwareFailCount).padStart(2, "0")})</div>
                     </div>
                 </div>
