@@ -506,19 +506,14 @@
         align-items: center;
         background: var(--panel);
         
-        /* Creative alternative: Inward scoop corners */
-        clip-path: polygon(
-            0 10px, 10px 0, 
-            calc(100% - 10px) 0, 100% 10px, 
-            100% calc(100% - 10px), calc(100% - 10px) 100%, 
-            10px 100%, 0 calc(100% - 10px)
-        );
-        transition: clip-path 0.3s ease-in-out;
+        /* Fluid asymmetric shield look */
+        border-radius: 60% 40% 40% 60% / 80% 30% 70% 20%;
+        transition: border-radius 0.4s ease-in-out;
     }
     
     .status-indicator-group:hover {
-        /* Smoothly expands into a clean, sharp rectangle */
-        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        /* Perfectly mirrors the organic shape on hover */
+        border-radius: 40% 60% 60% 40% / 30% 80% 20% 70%;
     }
 
 
