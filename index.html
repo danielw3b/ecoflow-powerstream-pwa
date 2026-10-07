@@ -2010,6 +2010,8 @@ init();
       keys: exportData
     };
 
+/* 
+   // OLD: Direct fetch without error handling / retry
     const res = await fetch(`https://api.github.com/gists/${gistId}`, {
       method: 'PATCH',
       headers: {
@@ -2023,7 +2025,44 @@ init();
         }
       })
     });
+*/
 
+    // NEW: Retry loop for transient GitHub server errors (up to 3 attempts on HTTP 5xx)
+    const requestBody = JSON.stringify({
+      files: {
+        'ecoflow_auto_backup.json': { content: JSON.stringify(payload, null, 2) }
+      }
+    });
+
+    let res = null;
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        res = await fetch(`https://api.github.com/gists/${gistId}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: requestBody
+        });
+
+        // Break early if request succeeded or failed with client error (4xx)
+        if (res.ok || res.status < 500) break;
+      } catch (err) {
+        console.warn(`[AutoSync] Network error on attempt ${attempt}:`, err);
+      }
+
+      // Short delay before retrying transient server failure
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    }
+
+/* 
+   // OLD: Unchecked status evaluation
     if (res.ok) {
       const resData = await res.json();
       localStorage.setItem('ecoflow_gist_last_sync', resData.updated_at);
@@ -2038,6 +2077,26 @@ init();
 
       // Dynamic UI Update: Refresh timestamp label after successful export
       updateSyncLabel(nowIso);
+    }
+*/
+
+    // NEW: Atomic state commit - update localStorage and log history only after confirmed HTTP 2xx
+    if (res && res.ok) {
+      const resData = await res.json();
+      localStorage.setItem('ecoflow_gist_last_sync', resData.updated_at);
+      localStorage.setItem('ecoflow_gist_last_export_ts', nowIso);
+
+      appendSyncLog('ecoflow_auto_export_log', { 
+        status: 'SUCCESS', 
+        ts: nowIso, 
+        totalWh: currentWh, 
+        diffWh: whDiff 
+      });
+
+      // Dynamic UI Update: Refresh timestamp label after successful export
+      updateSyncLabel(nowIso);
+    } else {
+      console.error(`[AutoSync] Export failed after retries. Status: ${res ? res.status : 'No response'}`);
     }
   }
 
