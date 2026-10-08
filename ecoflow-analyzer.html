@@ -1297,7 +1297,7 @@
                 diagnosis = "⏳";
                 cssClass = "text-dim";
                 fullTextExplanation = "Pre-Installation Period: Hardware was not yet deployed or registered in database.";
-            } else if ((realYieldWh === 0 && !(avgClouds > 95 && sunHours < 2)) || (realYieldWh <= (expectedSollWh * 0.10) && expectedSollWh >= 500 && !(avgClouds > 90 && sunHours < 4))) {
+            } else if (realYieldWh === 0 || (realYieldWh <= (expectedSollWh * 0.05) && expectedSollWh >= 500)) { 
                 diagnosis = "❌";
                 cssClass = "bad";
                 fullTextExplanation = "System / Data Outage: Missing data or significant generation gap.";
