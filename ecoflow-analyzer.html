@@ -1107,7 +1107,7 @@
             const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
             const deviceDaily = dailyStorage[selectedSn] || {};
     
-            const tilt = globalConfig.tilt ?? 18;
+            const tilt = globalConfig.tilt ?? 17;
             const azimuth = globalConfig.azimuth ?? 0;
     
             // Unified API request querying hourly GTI and daily summary parameters including temperature_2m_max
@@ -1204,9 +1204,15 @@
         const totalWp = globalConfig.totalWp || 900;
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
         
+        /* old
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
             ? (useGtiModel ? 13.5 : 14.0) 
+            : (useGtiModel ? 7.5 : 8.0);*/
+
+        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
+            ? (useGtiModel ? 12 : 14.0) 
             : (useGtiModel ? 7.5 : 8.0);
+
         
         let tableRowsHtml = "";
         const INITIAL_VISIBLE_COUNT = 30;
@@ -1666,7 +1672,7 @@
             </div>
         
             <div class="legend-group legend-footer">
-                <div><strong>📊 Panel Baselines:</strong> Bifacial (${useGtiModel ? '13.5' : '14.0'}%+) & Standard Mono (${useGtiModel ? '7.5' : '8.0'}%+).</div>
+                <div><strong>📊 Panel Baselines:</strong> Bifacial (${useGtiModel ? '12' : '14.0'}%) & Standard Mono (${useGtiModel ? '7.5' : '8.0'}%).</div>
                 <div><strong>🔬 Solar Methodology:</strong> ${useGtiModel ? 'Global Tilted Radiation (GTI) mapping.' : 'Liu & Jordan (1960) empirical regression principles.'}</div>
             </div>
         </div>`;
