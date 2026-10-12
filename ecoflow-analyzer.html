@@ -1465,11 +1465,24 @@
                     weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and yield failure despite viable solar radiation.`;
                     cssClass = "bad";
                     isCritical = true;
-                } else if (avgClouds <= 35 && maxPeak > 600) {
+                } /*else if (target.efficiency < 10 && avgClouds <= 35 && maxPeak > 600) {
                     explanation = "📶 ⚠️";
                     weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired.`;
                     cssClass = "bad";
                     isCritical = true;
+                }*/
+                else if (avgClouds <= 35 && maxPeak > 600) {
+                    if (target.efficiency < 10) {
+                        explanation = "📶 ⚠️";
+                        weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield severely impaired (Eff: ${target.efficiency}%).`;
+                        cssClass = "bad";
+                        isCritical = true;
+                    } else {
+                        explanation = "🌥️ 🏠";
+                        weatherTooltip = `Partial Shading / Seasonal Drop: Good weather (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but efficiency (${target.efficiency}%) affected by local morning shadows.`;
+                        cssClass = "warn";
+                        weatherCount++;
+                    }
                 } else if (maxTemp >= 33 && avgClouds <= 35) {
                     explanation = "🌡️ 🥵";
                     weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
