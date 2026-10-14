@@ -1204,14 +1204,14 @@
         const totalWp = globalConfig.totalWp || 900;
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
         
-        /* old
+        // old
         const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
             ? (useGtiModel ? 13.5 : 14.0) 
-            : (useGtiModel ? 7.5 : 8.0);*/
+            : (useGtiModel ? 7.5 : 8.0);
 
-        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
+        /*const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
             ? (useGtiModel ? 12 : 14) 
-            : (useGtiModel ? 8 : 9);
+            : (useGtiModel ? 8 : 9);*/
 
         
         let tableRowsHtml = "";
