@@ -160,7 +160,7 @@ canvas{width:100%;display:block;}
 </head>
 <body>
 
-<!-- ── Setup Modal ──────────────────────────────────────────────────────────── -->
+<!-- Setup Modal -->
 <div class="modal-overlay" id="setupModal">
   <div class="modal">
     <h2>⚡ ECOFLOW MONITOR SETUP</h2>
@@ -277,9 +277,8 @@ canvas{width:100%;display:block;}
 </main>
 
 <script>
-// ════════════════════════════════════════════════════════════════
-//  CONFIG — stored in localStorage, editable via setup modal
-// ════════════════════════════════════════════════════════════════
+
+// ── CONFIG — stored in localStorage, editable via setup modal  ───────── 
 const STORAGE_KEY   = "ecoflow_config";
 const NAMES_KEY     = "ecoflow_names";   
 let   customNames   = {};                
@@ -315,9 +314,7 @@ function showSetup() {
   document.getElementById("setupModal").classList.add("show");
 }
 
-// ════════════════════════════════════════════════════════════════
-//  SIGNATURE (EcoFlow open API)
-// ════════════════════════════════════════════════════════════════
+// ── SIGNATURE (EcoFlow open API) ────────────────────────────── 
 async function hmacSha256(secret, message) {
   const enc  = new TextEncoder();
   const key  = await crypto.subtle.importKey("raw", enc.encode(secret),
@@ -369,9 +366,7 @@ async function apiGet(path, params=null) {
   return json.data;
 }
 
-// ════════════════════════════════════════════════════════════════
-//  MQTT over WebSocket
-// ════════════════════════════════════════════════════════════════
+// ── MQTT over WebSocket ───────────────────────────────────────────
 function encLen(n){const o=[];do{let b=n%128;n=Math.floor(n/128);if(n)b|=0x80;o.push(b);}while(n);return new Uint8Array(o);}
 function mStr(s){const b=new TextEncoder().encode(s),h=new Uint8Array(2);new DataView(h.buffer).setUint16(0,b.length);return concat(h,b);}
 function concat(...arrs){const t=arrs.reduce((s,a)=>s+a.length,0),r=new Uint8Array(t);let o=0;for(const a of arrs){r.set(a,o);o+=a.length;}return r;}
@@ -526,9 +521,7 @@ function connectMqtt(creds, devices) {
   mqttWs.onerror = () => mqttWs.close();
 }
 
-// ════════════════════════════════════════════════════════════════
-//  STATE & MESSAGE HANDLING
-// ════════════════════════════════════════════════════════════════
+// ── STATE & MESSAGE HANDLING ──────────────────────────────────────────────────
 const state    = {};   // sn → {name, status, data, lastSeen}
 const hist     = {};   // sn → [{ts, watts}]
 const dailyWh  = {};   // sn → {"YYYY-MM-DD" → Wh}
@@ -751,7 +744,7 @@ function accumulateWh(sn, watts) {
   lastSnap[sn] = { ts: now, watts };
 }
 
-// ── INTERACTION-BASED PERFORMANCE TIMERS ──────────────────────────────────────────────────────────────────
+// ── INTERACTION-BASED PERFORMANCE TIMERS ────────────────────
 let uiRenderIntervalId = null;
 let pwaSaveIntervalId = null;
 let idleTimeoutId = null;
@@ -780,6 +773,7 @@ function runUiRender() {
     if (typeof renderWhChart === "function") renderWhChart();
   }
 }
+
 // Safely update intervals without dropping states
 function setUiRenderSpeed(ms) {
   if (currentRenderSpeed === ms && uiRenderIntervalId) return;
@@ -787,6 +781,7 @@ function setUiRenderSpeed(ms) {
   if (uiRenderIntervalId) clearInterval(uiRenderIntervalId);
   uiRenderIntervalId = setInterval(runUiRender, ms);
 }
+
 // Triggered on active physical screen interactions
 function resetIdleTimer() {
   // Switch back to high performance 1s intervals instantly when active
@@ -831,9 +826,7 @@ function initPwaPerformanceTimers() {
   window.addEventListener("keydown", resetIdleTimer, { passive: true });
 }
 
-// ════════════════════════════════════════════════════════════════
-//  RENDERING
-// ════════════════════════════════════════════════════════════════
+// ── RENDERING ───────────────────────────────────────────────
 function setStatus(cls, text) {
   const badge = document.getElementById("statusBadge");
   badge.className = "status-badge " + cls;
@@ -910,7 +903,7 @@ function cardHtml(sn, s) {
       <div class="metric extra"><span class="metric-label">Grid Hz</span><span class="metric-value">${freq!==null?freq.toFixed(2) :"—"}</span></div>
     </div>
     <div class="metrics-footer" title="Tap to toggle details" onclick="toggleMetrics('${sn}', this)">
-      <div class="toggle-indicator">${expandedMetrics.has(sn) ? '⬆&#xFE0E; Hide' : '⬇&#xFE0E; Details'}</div>
+      <div class="toggle-indicator">${expandedMetrics.has(sn) ? '－&#65293; Hide' : '＋&#65291; Details'}</div>
       <div class="card-today" style="color:${colorFor(sn)}" title="Today's yield: ${todaysYieldText}">${todaysYieldText}</div>
       <div class="card-time">${s.lastSeen?fmtTime(new Date(s.lastSeen)):""}</div>
     </div>`];
@@ -927,11 +920,11 @@ function toggleMetrics(sn, element) {
   if (expandedMetrics.has(sn)) {
     expandedMetrics.delete(sn);
     container.classList.remove('expanded');
-    if (indicator) indicator.textContent = '⬇ Details';
+    if (indicator) indicator.textContent = '＋ Details';
   } else {
     expandedMetrics.add(sn);
     container.classList.add('expanded');
-    if (indicator) indicator.textContent = '⬆ Hide';
+    if (indicator) indicator.textContent = '－ Hide';
   }
 }
 
@@ -1132,17 +1125,6 @@ function renderWhChart() {
 
   const monthShort = now.toLocaleString('en', { month: 'short' });
   const thisYear   = now.getFullYear();
-  
-  // ── CUTOFF FILTER: Keep only the last 30 days when on the "day" tab ──
-  /* OLD CODE:
-  if (currentPeriod === "day") {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    thirtyDaysAgo.setHours(0, 0, 0, 0);
-    const cutoffStr = `${thirtyDaysAgo.getFullYear()}-${pad(thirtyDaysAgo.getMonth()+1)}-${pad(thirtyDaysAgo.getDate())}`;
-    allLabels = allLabels.filter(label => label >= cutoffStr);
-  }
-  */
 
   // NEW CODE: Apply 30-day cutoff filter and calculate responsive X-axis label steps for mobile <= 600px
   let labelStep = 1;
@@ -1287,11 +1269,10 @@ function renderWhChart() {
         }
         */
 
-        // NEW CODE: Zeigt Zahlen erst ab Balkenbreite > 7px (Portrait <=600px blendet aus, Landscape & Desktop zeigen an)
+        // NEW CODE: Only displays numbers when the bar width exceeds 7px (hidden in portrait mode ≤600px)
         if (bH > 12 && bW > 6) {
           ctx.fillStyle = isCurrent ? "#fff" : "rgba(200,220,240,.85)";
-          ctx.font = `${isCurrent ? "bold " : ""}8px monospace`;
-          ctx.textAlign = "center";
+          ctx.font = `${isCurrent ? "bold " : ""}8px monospace`; ctx.textAlign = "center";
           ctx.fillText(wh >= 1000 ? (wh / 1000).toFixed(1) + "k" : wh.toFixed(0), x + bW / 2 - .5, y - 3);
         }
       }
@@ -1395,9 +1376,7 @@ function renderLog() {
   body.dataset.key = logChangeKey;
 }
 
-// ════════════════════════════════════════════════════════════════
-//  WEATHER
-// ════════════════════════════════════════════════════════════════
+// ── WEATHER ────────────────────
 const WMO = {
   0: ["🌙", "☀️"], 1: ["☁️", "🌤️"], 2: ["☁️", "⛅"], 3: ["☁️", "☁️"],
   45: ["🌫️", "🌫️"], 48: ["🌫️", "🌫️"], 51: ["🌧️", "🌧️"], 53: ["🌧️", "🌧️"],
@@ -1423,7 +1402,7 @@ async function fetchWeather() {
     if (!cachedCoords) {
       const pos = await new Promise((res) =>
         navigator.geolocation
-          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout: 10000})
+          ? navigator.geolocation.getCurrentPosition(res, () => res(null), {timeout: 6000})
           : res(null)
       );
       if (pos?.coords) {
@@ -1437,7 +1416,7 @@ async function fetchWeather() {
     const lon = cachedCoords.lon;
 
     // Static tilt/azimuth (e.g., 17° Valk3)
-    const tilt = 16;
+    const tilt = 17;
     const azimuth = 0;
     
     // API request with both direct_radiation and global_tilted_irradiance_instant
@@ -1497,9 +1476,7 @@ async function fetchWeather() {
   }
 }
 
-// ═══════════════════════════════════════════════════
-//  PERIOD TOGGLE & ENERGY HISTORY RENDER
-// ═══════════════════════════════════════════════════
+// ── PERIOD TOGGLE & ENERGY HISTORY RENDER ────────────────────
 let currentPeriod = "day";
 
 function setPeriod(p) {
@@ -1628,9 +1605,7 @@ function fmtTime(date) {
 
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
-// ═══════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════
+// ── INIT ───────────────────────────────────────────
 async function init() {
   if (!CFG.accessKey || !CFG.secretKey) { showSetup(); return; }
   setStatus("conn", "Fetching devices…");
@@ -1697,25 +1672,6 @@ function installPwa() {
   _installPrompt.prompt();
   _installPrompt.userChoice.then(() => { _installPrompt = null; });
 }
-// ── Streamlined Wake Lock (Activation Only) ────────
-/*let wakeLock = null;
-async function requestWakeLock() {
-  if (!("wakeLock" in navigator)) return;
-  if (wakeLock !== null) return; 
-
-  try {
-    wakeLock = await navigator.wakeLock.request("screen");
-    wakeLock.addEventListener("release", () => {
-      wakeLock = null;
-      document.getElementById("wakeLockIcon").style.opacity = ".3";
-      document.getElementById("wakeLockIcon").title = "Screen lock inactive";
-    });
-    document.getElementById("wakeLockIcon").style.opacity = "1";
-    document.getElementById("wakeLockIcon").title = "Screen stays on";
-  } catch (err) {
-    console.error(`Wake Lock failed: ${err.name} - ${err.message}`);
-  }
-}*/
 
 // ── Streamlined Wake Lock (Activation Only) ────────
 let wakeLock = null;
@@ -2010,23 +1966,6 @@ init();
       keys: exportData
     };
 
-/* 
-   // OLD: Direct fetch without error handling / retry
-    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        files: {
-          'ecoflow_auto_backup.json': { content: JSON.stringify(payload, null, 2) }
-        }
-      })
-    });
-*/
-
     // NEW: Retry loop for transient GitHub server errors (up to 3 attempts on HTTP 5xx)
     const requestBody = JSON.stringify({
       files: {
@@ -2060,25 +1999,6 @@ init();
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
     }
-
-/* 
-   // OLD: Unchecked status evaluation
-    if (res.ok) {
-      const resData = await res.json();
-      localStorage.setItem('ecoflow_gist_last_sync', resData.updated_at);
-      localStorage.setItem('ecoflow_gist_last_export_ts', nowIso);
-
-      appendSyncLog('ecoflow_auto_export_log', { 
-        status: 'SUCCESS', 
-        ts: nowIso, 
-        totalWh: currentWh, 
-        diffWh: whDiff 
-      });
-
-      // Dynamic UI Update: Refresh timestamp label after successful export
-      updateSyncLabel(nowIso);
-    }
-*/
 
     // NEW: Atomic state commit - update localStorage and log history only after confirmed HTTP 2xx
     if (res && res.ok) {
@@ -2150,7 +2070,7 @@ init();
   const initialAutoGistId = localStorage.getItem('ecoflow_auto_gist_id');
   if (!initialAutoGistId) return;
 
-  setTimeout(runAutoSync, 3000);
+  setTimeout(runAutoSync, 2000);
   setInterval(runAutoSync, SYNC_INTERVAL_MS);
 })();
   
