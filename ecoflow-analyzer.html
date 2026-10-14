@@ -1205,13 +1205,13 @@
         const standardSystemEfficiency = globalConfig.panelType === 'bifacial' ? 0.80 : 0.60;
         
         // old
-        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
-            ? (useGtiModel ? 13.5 : 14.0) 
-            : (useGtiModel ? 7.5 : 8.0);
-
         /*const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
+            ? (useGtiModel ? 13.5 : 14.0) 
+            : (useGtiModel ? 7.5 : 8.0);*/
+
+        const baseEfficiencyThreshold = globalConfig.panelType === 'bifacial' 
             ? (useGtiModel ? 12 : 14) 
-            : (useGtiModel ? 8 : 9);*/
+            : (useGtiModel ? 8 : 9);
 
         
         let tableRowsHtml = "";
@@ -1477,7 +1477,7 @@
                         cssClass = "bad";
                         isCritical = true;
                     } else {
-                        explanation = "🌥️ 🏠";
+                        explanation = "⛱️ 🏠";
                         weatherTooltip = `Partial Shading / Seasonal Drop: Good weather (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but efficiency (${target.efficiency}%) affected by local morning shadows.`;
                         cssClass = "warn";
                         weatherCount++;
