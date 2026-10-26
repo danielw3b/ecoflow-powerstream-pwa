@@ -1097,12 +1097,23 @@
         try {
             globalConfig = getUserConfig();
     
-            const localNow = new Date();
+            /*const localNow = new Date();
             const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
             const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);
             // Restrict query to yesterday since today's data is incomplete until midnight rollover
             localTargetTime.setDate(localTargetTime.getDate() - 1);
-            const endDate = localTargetTime.toISOString().split('T')[0];
+            const endDate = localTargetTime.toISOString().split('T')[0];*/
+
+            const localNow = new Date();
+            // 2. Restrict query to yesterday since today's data is incomplete until midnight rollover
+            localNow.setDate(localNow.getDate() - 1);
+            const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const endDate = localNow.toLocaleDateString('fr-CA', {
+                timeZone: userTimeZone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
     
             const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
             const deviceDaily = dailyStorage[selectedSn] || {};
