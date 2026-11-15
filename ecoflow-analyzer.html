@@ -781,7 +781,7 @@
                 <div class="form-group span-2">
                     <label for="cfg_inverter">Select Inverter / Circuit</label>
                     <select id="cfg_inverter" onchange="loadInverterConfig()" required>
-                        <option value="">-- Load from localStorage --</option>
+                        <!--<option value="">-- Load from localStorage --</option>-->
                     </select>
                 </div>
             
@@ -1010,7 +1010,7 @@
         const select = document.getElementById('cfg_inverter');
         if (!select) return;
     
-        select.innerHTML = '<option value="">-- Load from localStorage --</option>';
+        //select.innerHTML = '<option value="">-- Load from localStorage --</option>';
     
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
