@@ -278,9 +278,19 @@ canvas{width:100%;display:block;}
 
 <script>
 
-// ── CONFIG — stored in localStorage, editable via setup modal  ───────── 
+// ── ERROR HANDLING stored in ls ───────────────────────────── 
+const mask = (s) => String(s).replace(/(gh[pousr]_[A-Za-z0-9_]{10,}|github_pat_[A-Za-z0-9_]{10,}|Bearer\s+\S+|[A-Za-z0-9]{24,})/g, '***');
+const logErr = (msg, src = '') => {
+  const log = JSON.parse(localStorage.getItem('ecoflow_errors') || '[]');
+  log.unshift({ t: new Date().toISOString(), msg: mask(msg), src: mask(src) });
+  localStorage.setItem('ecoflow_errors', JSON.stringify(log.slice(0, 20)));
+};
+window.onerror = (msg, src, line) => logErr(msg, `${src}:${line}`);
+window.onunhandledrejection = (e) => logErr(e.reason?.message || e.reason, 'Promise');
+
+// ── CONFIG — stored in localStorage, editable via setup modal  ─────────
 const STORAGE_KEY   = "ecoflow_config";
-const NAMES_KEY     = "ecoflow_names";   
+const NAMES_KEY     = "ecoflow_names";
 let   customNames   = {};                
 
 function loadNames() {
@@ -419,7 +429,9 @@ function connectMqtt(creds, devices) {
       if (mqttWs.readyState < 2) { // 0=CONNECTING, 1=OPEN
         mqttWs.close();
       }
-    } catch (e) {}
+    } catch (e) {
+      logErr(e?.message || e, 'mqttWs');
+    }
     mqttWs = null;
   }
   mqttWs = new WebSocket(wsUrl, ["mqtt"]);
@@ -1915,6 +1927,7 @@ init();
 
     } catch (err) {
       console.warn('[AutoSync] Network error:', err);
+      logErr(err?.message || err, 'runAutoSync');
     }
   }
 
