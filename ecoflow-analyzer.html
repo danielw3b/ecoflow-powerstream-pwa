@@ -1339,6 +1339,7 @@
                     date: dateStr,
                     realYieldWh,
                     expectedYieldWh: expectedSollWh,
+                    solarEnergyWh: totalSolarEnergyWh,
                     efficiency,
                     isInstallationDay,
                     reason: fullTextExplanation,
@@ -1517,8 +1518,11 @@
                     weatherCount++;
                 }*/
 
-                // Evaluate relative yield against expected Soll so partial panel shutoffs and zero-yield days are handled cleanly.
-                const expectedWh = target.expectedSollWh || target.expectedYieldWh || 0;
+                // Compute efficiency safely so conditions referencing efficiency never fail on undefined properties.
+                const effectiveEfficiency = typeof target.efficiency === 'number'
+                    ? target.efficiency
+                    : (target.solarEnergyWh > 100 ? Math.round((target.realYieldWh / target.solarEnergyWh) * 1000) / 10 : 0);
+                const expectedWh = target.expectedYieldWh || target.expectedSollWh || 0;
                 const yieldRatio = expectedWh > 0 ? target.realYieldWh / expectedWh : 1;
                 const isHeavyCloudDay = (avgClouds >= 80 && sunHours <= 3.5 && maxPeak <= 300) || (avgClouds > 75 && sunHours < 4);
                 const isWinterLowSun = maxPeak < 480 && sunHours < 8;
@@ -1533,19 +1537,19 @@
                     weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
                     cssClass = "warn";
                 } else if (target.realYieldWh === 0 && maxPeak >= 200) {
-                    // Treat exact 0 Wh with usable peak irradiance unconditionally as a hardware/panel drop.
+                    // Flag zero yield as a hardware drop whenever meaningful peak radiation occurred.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: 0 Wh yield despite Peak ${maxPeak} W/m² (${sunHours}h sun, ${avgClouds}% clouds).`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (target.realYieldWh > 0 && target.realYieldWh <= 300 && maxPeak >= 700 && sunHours >= 8 && yieldRatio < 0.25) {
-                    // Catch switched-off or throttled side panels that still produce minor residual Wh under strong sun.
+                    // Flag switched-off or throttled panels with minimal residual yield under strong sun.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Panel / Hardware Drop: Only ${target.realYieldWh} Wh (${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m² and ${sunHours}h sun.`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (isHeavyCloudDay) {
-                    // Keep overcast/rain days with measurable yield (> 0 Wh) on the weather track.
+                    // Keep dense cloud or rain days with residual yield (> 0 Wh) on the weather track.
                     explanation = "🌧️ ☁️";
                     weatherTooltip = `Heavy Cloud / Rain: Extremely low radiation (Peak ${maxPeak} W/m², ${sunHours}h sun). Expected low yield.`;
                     weatherCount++;
@@ -1554,14 +1558,14 @@
                     weatherTooltip = `Hardware Drop: Critical yield failure (${target.realYieldWh} Wh, ${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
                     cssClass = "bad";
                     isCritical = true;
-                } else if (target.efficiency < 3 && yieldRatio < 0.12 && maxPeak >= 450 && avgClouds < 75 && !isWinterLowSun) {
+                } else if (effectiveEfficiency < 3 && yieldRatio < 0.12 && maxPeak >= 450 && avgClouds < 75 && !isWinterLowSun) {
                     explanation = "❌ 🔌";
-                    weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and yield drop (${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
+                    weatherTooltip = `Hardware Drop: Critical efficiency (${effectiveEfficiency}%) and yield drop (${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
                     cssClass = "bad";
                     isCritical = true;
-                } else if (avgClouds <= 35 && maxPeak > 600 && target.efficiency < 10 && (yieldRatio < 0.55 || target.efficiency < 6)) {
+                } else if (avgClouds <= 35 && maxPeak > 600 && effectiveEfficiency < 10 && (yieldRatio < 0.55 || effectiveEfficiency < 6)) {
                     explanation = "📶 ⚠️";
-                    weatherTooltip = `Connection Drop: Clear skies (${avgClouds}% clouds, Peak ${maxPeak} W/m²), yield impaired (Eff: ${target.efficiency}%, ${(yieldRatio * 100).toFixed(0)}%).`;
+                    weatherTooltip = `Connection Drop: Clear skies (${avgClouds}% clouds, Peak ${maxPeak} W/m²), yield impaired (Eff: ${effectiveEfficiency}%, ${(yieldRatio * 100).toFixed(0)}%).`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (maxTemp >= 33 && avgClouds <= 35) {
