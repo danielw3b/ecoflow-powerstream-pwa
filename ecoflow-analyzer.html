@@ -1517,7 +1517,7 @@
                     weatherCount++;
                 }*/
 
-                // Evaluate seasonal and relative yield context so zero-yield and sharp high-peak drops stay consistent.
+                // Evaluate relative yield against expected Soll so partial panel shutoffs and zero-yield days are handled cleanly.
                 const expectedWh = target.expectedSollWh || target.expectedYieldWh || 0;
                 const yieldRatio = expectedWh > 0 ? target.realYieldWh / expectedWh : 1;
                 const isHeavyCloudDay = (avgClouds >= 80 && sunHours <= 3.5 && maxPeak <= 300) || (avgClouds > 75 && sunHours < 4);
@@ -1532,20 +1532,20 @@
                     explanation = "⚠️ N/A";
                     weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
                     cssClass = "warn";
-                } else if (target.realYieldWh === 0 && maxPeak >= 220) {
-                    // Treat zero yield with meaningful peak irradiance strictly as a hardware/panel drop, even when cloudy.
+                } else if (target.realYieldWh === 0 && maxPeak >= 200) {
+                    // Treat exact 0 Wh with usable peak irradiance unconditionally as a hardware/panel drop.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: 0 Wh yield despite Peak ${maxPeak} W/m² (${sunHours}h sun, ${avgClouds}% clouds).`;
                     cssClass = "bad";
                     isCritical = true;
-                } else if (target.realYieldWh <= 250 && maxPeak >= 600 && avgClouds <= 50 && yieldRatio < 0.25) {
-                    // Flag sharp low-yield days under strong peaks and low cloud cover as hardware/panel drops.
+                } else if (target.realYieldWh > 0 && target.realYieldWh <= 300 && maxPeak >= 700 && sunHours >= 8 && yieldRatio < 0.25) {
+                    // Catch switched-off or throttled side panels that still produce minor residual Wh under strong sun.
                     explanation = "❌ 🔌";
-                    weatherTooltip = `Hardware Drop: Severe yield drop (${target.realYieldWh} Wh, ${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
+                    weatherTooltip = `Panel / Hardware Drop: Only ${target.realYieldWh} Wh (${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m² and ${sunHours}h sun.`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (isHeavyCloudDay) {
-                    // Keep dense cloud/rain days with actual yield (> 0 Wh) on the weather track.
+                    // Keep overcast/rain days with measurable yield (> 0 Wh) on the weather track.
                     explanation = "🌧️ ☁️";
                     weatherTooltip = `Heavy Cloud / Rain: Extremely low radiation (Peak ${maxPeak} W/m², ${sunHours}h sun). Expected low yield.`;
                     weatherCount++;
