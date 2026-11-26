@@ -1518,7 +1518,7 @@
                     weatherCount++;
                 }*/
 
-                // Compute efficiency safely so conditions referencing efficiency never fail on undefined properties.
+                // Evaluate relative yield against expected Soll so zero-yield days and partial shutoffs stay distinct.
                 const effectiveEfficiency = typeof target.efficiency === 'number'
                     ? target.efficiency
                     : (target.solarEnergyWh > 100 ? Math.round((target.realYieldWh / target.solarEnergyWh) * 1000) / 10 : 0);
@@ -1536,12 +1536,17 @@
                     explanation = "⚠️ N/A";
                     weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
                     cssClass = "warn";
-                } else if (target.realYieldWh === 0 && maxPeak >= 200) {
-                    // Flag zero yield as a hardware drop whenever meaningful peak radiation occurred.
+                } else if (Number(target.realYieldWh) === 0 && maxPeak >= 200) {
+                    // Always flag 0 Wh with meaningful peak irradiance as a hardware drop before any cloud rule runs.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: 0 Wh yield despite Peak ${maxPeak} W/m² (${sunHours}h sun, ${avgClouds}% clouds).`;
                     cssClass = "bad";
                     isCritical = true;
+                } else if (Number(target.realYieldWh) === 0 && maxPeak < 200) {
+                    // Treat 0 Wh on very low-peak days separately from strong-peak hardware drops.
+                    explanation = "🌧️ ☁️";
+                    weatherTooltip = `Zero Yield / Very Low Radiation: 0 Wh yield with low peak (${maxPeak} W/m², ${sunHours}h sun).`;
+                    weatherCount++;
                 } else if (target.realYieldWh > 0 && target.realYieldWh <= 300 && maxPeak >= 700 && sunHours >= 8 && yieldRatio < 0.25) {
                     // Flag switched-off or throttled panels with minimal residual yield under strong sun.
                     explanation = "❌ 🔌";
@@ -1549,7 +1554,7 @@
                     cssClass = "bad";
                     isCritical = true;
                 } else if (isHeavyCloudDay) {
-                    // Keep dense cloud or rain days with residual yield (> 0 Wh) on the weather track.
+                    // Keep dense cloud or rain days with measurable yield (> 0 Wh) on the weather track.
                     explanation = "🌧️ ☁️";
                     weatherTooltip = `Heavy Cloud / Rain: Extremely low radiation (Peak ${maxPeak} W/m², ${sunHours}h sun). Expected low yield.`;
                     weatherCount++;
