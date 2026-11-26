@@ -1449,7 +1449,7 @@
             
                 const maxTemp = parseFloat(target.maxTemp || 0);
             
-                /*let explanation = "⛅ ☀️";
+                let explanation = "⛅ ☀️";
                 let weatherTooltip = "Partly cloudy with mixed radiation.";
                 let cssClass = "text-dim";
                 let isCritical = false;
@@ -1488,13 +1488,8 @@
                         weatherTooltip = `Connection Drop: Perfect solar conditions (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield severely impaired (Eff: ${target.efficiency}%).`;
                         cssClass = "bad";
                         isCritical = true;
-                    } /*else {
-                        explanation = "⛱️ 🏠";
-                        weatherTooltip = `Partial Shading / Seasonal Drop: Good weather (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but efficiency (${target.efficiency}%) affected by local morning shadows.`;
-                        cssClass = "warn";
-                        weatherCount++;
-                    }*/
-                /*} else if (maxTemp >= 33 && avgClouds <= 35) {
+                    }
+                } else if (maxTemp >= 33 && avgClouds <= 35) {
                     explanation = "🌡️ 🥵";
                     weatherTooltip = `Heat Derating: High ambient temperature (${maxTemp}°C) causing thermal efficiency loss under clear skies.`;
                     cssClass = "warn";
@@ -1516,10 +1511,10 @@
                     explanation = "⛅ ☀️";
                     weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
                     weatherCount++;
-                }*/
+                }
 
                 // Evaluate relative yield against expected Soll so zero-yield days and partial shutoffs stay distinct.
-                const effectiveEfficiency = typeof target.efficiency === 'number'
+                /*const effectiveEfficiency = typeof target.efficiency === 'number'
                     ? target.efficiency
                     : (target.solarEnergyWh > 100 ? Math.round((target.realYieldWh / target.solarEnergyWh) * 1000) / 10 : 0);
                 const expectedWh = target.expectedYieldWh || target.expectedSollWh || 0;
@@ -1595,7 +1590,7 @@
                     explanation = "⛅ ☀️";
                     weatherTooltip = "Partly Cloudy / Mixed: Standard weather with good solar intervals.";
                     weatherCount++;
-                }
+                }*/
             
                 if (isCritical) criticalCount++;
             
