@@ -1518,13 +1518,11 @@
                 }*/
 
 
-                // Compute seasonal and relative thresholds so low winter sun and house shading stay distinguishable from hardware drops.
-                const isLowSunSeason = sunHours < 8;
-                const minPeakForZeroYield = isLowSunSeason ? 220 : 300;
-                const minPeakForDrop = isLowSunSeason ? 260 : 400;
+                // Keep zero-yield detection sharp while separating weak winter or shaded days from hard drops.
                 const isHeavyCloudDay = (avgClouds >= 80 && sunHours <= 3.5 && maxPeak <= 300) || (avgClouds > 75 && sunHours < 4);
                 const expectedWh = target.expectedSollWh || target.expectedYieldWh || 0;
                 const yieldRatio = expectedWh > 0 ? target.realYieldWh / expectedWh : 1;
+                const isWeakWinterOrShadeDay = maxPeak < 500 && target.realYieldWh > 0 && target.realYieldWh <= 150;
                 
                 let explanation = "⛅ ☀️";
                 let weatherTooltip = "Partly cloudy with mixed radiation.";
@@ -1535,31 +1533,37 @@
                     explanation = "⚠️ N/A";
                     weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
                     cssClass = "warn";
-                } else if (target.realYieldWh === 0 && (maxPeak >= 300 || (maxPeak >= minPeakForZeroYield && sunHours >= 2))) {
-                    // Flag zero yield on strong peaks (>= 300 W/m²) regardless of cloudiness or sun-hour cutoffs.
+                } else if (target.realYieldWh === 0 && maxPeak >= 250) {
+                    // Flag zero yield as a hardware drop whenever meaningful peak radiation occurred.
                     explanation = "❌ 🔌";
-                    weatherTooltip = `Hardware Drop: System turned off or disconnected (0 Wh yield at Peak ${maxPeak} W/m², ${sunHours}h sun).`;
+                    weatherTooltip = `Hardware Drop: 0 Wh yield despite Peak ${maxPeak} W/m² (${sunHours}h sun).`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (isHeavyCloudDay) {
-                    // Prioritize heavy cloud and rain days ahead of low-yield hardware checks.
+                    // Keep heavy cloud and rain days on the weather track before low-yield checks.
                     explanation = "🌧️ ☁️";
-                    weatherTooltip = `Heavy Cloud / Rain: Extremely low radiation (Peak ${maxPeak} W/m², ${sunHours}h sun). Expected low yield.`;
+                    weatherTooltip = `Heavy Cloud / Rain: Low radiation (Peak ${maxPeak} W/m², ${sunHours}h sun). Expected low yield.`;
                     weatherCount++;
-                } else if (target.realYieldWh <= 50 && maxPeak >= minPeakForDrop && avgClouds < 85 && yieldRatio < 0.1) {
-                    // Require near-zero yield plus a sharp shortfall against expected yield (< 10%).
+                } else if (target.realYieldWh <= 50 && maxPeak >= 350 && avgClouds < 85 && yieldRatio < 0.08) {
+                    // Catch near-zero yield only when peak radiation is solid and clouds are not dense.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: Critical yield failure (${target.realYieldWh} Wh, ${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
                     cssClass = "bad";
                     isCritical = true;
-                } else if (target.efficiency < 2.5 && yieldRatio < 0.12 && maxPeak >= (minPeakForDrop + 100) && avgClouds < 75 && sunHours < 10) {
-                    // Require low efficiency, low yield ratio, and a clear peak so winter shading does not trigger false critical alerts.
+                } else if (isWeakWinterOrShadeDay && avgClouds >= 60) {
+                    // Treat low-peak, low-yield days under cloudy/shaded winter conditions as weather/shade rather than critical outages.
+                    explanation = "☁️ ☁️";
+                    weatherTooltip = `Low Sun / Shading & Clouds: Low yield (${target.realYieldWh} Wh) with Peak ${maxPeak} W/m² and ${avgClouds}% clouds.`;
+                    cssClass = "text-dim";
+                    weatherCount++;
+                } else if (target.efficiency < 2.5 && yieldRatio < 0.1 && maxPeak >= 450 && avgClouds < 70 && sunHours < 10) {
+                    // Require strong peak and low cloud cover so winter shading does not trigger false hardware drops.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and yield drop (${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (avgClouds <= 35 && maxPeak > 600) {
-                    // Keep clear-sky high-peak drops flagged while shading stays commented out for now.
+                    // Flag severe yield drops under clear, high-peak conditions as connection/inverter issues.
                     if (target.efficiency < 10 && yieldRatio < 0.35) {
                         explanation = "📶 ⚠️";
                         weatherTooltip = `Connection Drop: Clear skies (${avgClouds}% clouds, Peak ${maxPeak} W/m²), but yield impaired (Eff: ${target.efficiency}%, ${(yieldRatio * 100).toFixed(0)}%).`;
