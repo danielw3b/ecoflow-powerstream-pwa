@@ -1535,8 +1535,8 @@
                     explanation = "⚠️ N/A";
                     weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
                     cssClass = "warn";
-                } else if (target.realYieldWh === 0 && maxPeak >= minPeakForZeroYield && sunHours >= 2) {
-                    // Flag zero yield as a hardware drop only when viable radiation and sun hours were present.
+                } else if (target.realYieldWh === 0 && (maxPeak >= 300 || (maxPeak >= minPeakForZeroYield && sunHours >= 2))) {
+                    // Flag zero yield on strong peaks (>= 300 W/m²) regardless of cloudiness or sun-hour cutoffs.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: System turned off or disconnected (0 Wh yield at Peak ${maxPeak} W/m², ${sunHours}h sun).`;
                     cssClass = "bad";
