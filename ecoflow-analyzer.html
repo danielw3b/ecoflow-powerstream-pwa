@@ -781,7 +781,7 @@
                 <div class="form-group span-2">
                     <label for="cfg_inverter">Select Inverter / Circuit</label>
                     <select id="cfg_inverter" onchange="loadInverterConfig()" required>
-                        <!--<option value="">-- Load from localStorage --</option>-->
+                        <option value="">-- Load from localStorage --</option>
                     </select>
                 </div>
             
@@ -907,7 +907,6 @@
     let useGtiModel = true; // true = GTI mapping, false = Liu-Jordan-Model
     let globalCsvRows = [];
     let globalConfig = {};
-
     let clickCounter = 0;
     let clickTimer = null;
     
@@ -1010,7 +1009,7 @@
         const select = document.getElementById('cfg_inverter');
         if (!select) return;
     
-        //select.innerHTML = '<option value="">-- Load from localStorage --</option>';
+        select.innerHTML = '';
     
         const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
         const customNames = JSON.parse(localStorage.getItem('ecoflow_names')) || {};
@@ -1081,28 +1080,18 @@
             return;
         }
     
-        //const loadingEl = document.getElementById('loading');
         const runBtn = document.getElementById('runBtn');
         const csvBtn = document.getElementById('csvBtn');
         const resultsDiv = document.getElementById('results');
 
-        //loadingEl.style.display = 'block';
         runBtn.disabled = true;
         runBtn.textContent = 'Processing...';
         csvBtn.disabled = true; // Disable instead of display: none
         runBtn.classList.remove('pulse-highlight');
-        //resultsDiv.innerHTML = '';
         globalCsvRows = [];
     
         try {
             globalConfig = getUserConfig();
-    
-            /*const localNow = new Date();
-            const timezoneOffsetMs = localNow.getTimezoneOffset() * 60 * 1000;
-            const localTargetTime = new Date(localNow.getTime() - timezoneOffsetMs);
-            // Restrict query to yesterday since today's data is incomplete until midnight rollover
-            localTargetTime.setDate(localTargetTime.getDate() - 1);
-            const endDate = localTargetTime.toISOString().split('T')[0];*/
 
             const localNow = new Date();
             // 2. Restrict query to yesterday since today's data is incomplete until midnight rollover
@@ -1118,7 +1107,7 @@
             const dailyStorage = JSON.parse(localStorage.getItem('ecoflow_wh')) || {};
             const deviceDaily = dailyStorage[selectedSn] || {};
     
-            const tilt = globalConfig.tilt ?? 17;
+            const tilt = globalConfig.tilt ?? 18;
             const azimuth = globalConfig.azimuth ?? 0;
     
             // Unified API request querying hourly GTI and daily summary parameters including temperature_2m_max
@@ -1821,10 +1810,7 @@
     let currentPeriod = 'day';
     let dayPageOffset = 0;
     
-    /**
-     * Switch active chart period mode (day, month, year)
-     * @param {string} period - Selected view period
-     */
+    // Switch active chart period mode (day, month, year)
     function setChartPeriod(period) {
         currentPeriod = period;
         if (period === 'day') {
@@ -1848,10 +1834,7 @@
         }
     }
     
-    /**
-     * Change the active 30-day window for daily view pagination
-     * @param {number} direction - Offset direction (+1 older, -1 newer)
-     */
+    // Change the active 30-day window for daily view pagination
     function changeDayPage(direction) {
         if (!activeChartData || !activeChartData.dates) return;
         
@@ -1872,9 +1855,7 @@
         }
     }
     
-    /**
-     * Render HTML5 Canvas Chart with stacked status bars for Month/Year
-     */
+    // Render Canvas Chart with stacked status bars for Month/Year
     function renderChart(period, dates, radData, deviceDaily, anomaliesMap = {}) {
         activeChartData = { dates, radData, deviceDaily, anomaliesMap };
     
@@ -2338,8 +2319,6 @@
             isDragging = false;
         });
     }
-
-
     
     // Re-render chart dynamically on browser resize or orientation change
     let resizeTimer;
