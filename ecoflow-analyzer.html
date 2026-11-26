@@ -1517,7 +1517,7 @@
                     weatherCount++;
                 }*/
 
-                // Separate true zero-yield hardware drops from weak winter or shaded days with residual yield.
+                // Evaluate seasonal and relative yield context so zero-yield and sharp high-peak drops stay consistent.
                 const expectedWh = target.expectedSollWh || target.expectedYieldWh || 0;
                 const yieldRatio = expectedWh > 0 ? target.realYieldWh / expectedWh : 1;
                 const isHeavyCloudDay = (avgClouds >= 80 && sunHours <= 3.5 && maxPeak <= 300) || (avgClouds > 75 && sunHours < 4);
@@ -1533,30 +1533,33 @@
                     weatherTooltip = "Weather data unavailable due to network timeout or missing response.";
                     cssClass = "warn";
                 } else if (target.realYieldWh === 0 && maxPeak >= 220) {
-                    // Always flag 0 Wh as a hardware drop when usable radiation occurred, regardless of cloud cover.
+                    // Treat zero yield with meaningful peak irradiance strictly as a hardware/panel drop, even when cloudy.
                     explanation = "❌ 🔌";
-                    weatherTooltip = `Hardware Drop: 0 Wh yield despite Peak ${maxPeak} W/m² (${sunHours}h sun).`;
+                    weatherTooltip = `Hardware Drop: 0 Wh yield despite Peak ${maxPeak} W/m² (${sunHours}h sun, ${avgClouds}% clouds).`;
+                    cssClass = "bad";
+                    isCritical = true;
+                } else if (target.realYieldWh <= 250 && maxPeak >= 600 && avgClouds <= 50 && yieldRatio < 0.25) {
+                    // Flag sharp low-yield days under strong peaks and low cloud cover as hardware/panel drops.
+                    explanation = "❌ 🔌";
+                    weatherTooltip = `Hardware Drop: Severe yield drop (${target.realYieldWh} Wh, ${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (isHeavyCloudDay) {
-                    // Classify dark rain/overcast days with residual yield (> 0 Wh) as weather context.
+                    // Keep dense cloud/rain days with actual yield (> 0 Wh) on the weather track.
                     explanation = "🌧️ ☁️";
                     weatherTooltip = `Heavy Cloud / Rain: Extremely low radiation (Peak ${maxPeak} W/m², ${sunHours}h sun). Expected low yield.`;
                     weatherCount++;
                 } else if (target.realYieldWh <= 50 && maxPeak >= 350 && avgClouds < 85 && !isWinterLowSun) {
-                    // Flag near-zero yield (1-50 Wh) outside low-sun winter shading when peak radiation is solid.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: Critical yield failure (${target.realYieldWh} Wh, ${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (target.efficiency < 3 && yieldRatio < 0.12 && maxPeak >= 450 && avgClouds < 75 && !isWinterLowSun) {
-                    // Flag severe efficiency collapse under strong radiation without triggering on low winter sun angles.
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and yield drop (${(yieldRatio * 100).toFixed(0)}% of expected) at Peak ${maxPeak} W/m².`;
                     cssClass = "bad";
                     isCritical = true;
                 } else if (avgClouds <= 35 && maxPeak > 600 && target.efficiency < 10 && (yieldRatio < 0.55 || target.efficiency < 6)) {
-                    // Flag clear-sky high-peak drops as connection alerts when efficiency or yield ratio falls short.
                     explanation = "📶 ⚠️";
                     weatherTooltip = `Connection Drop: Clear skies (${avgClouds}% clouds, Peak ${maxPeak} W/m²), yield impaired (Eff: ${target.efficiency}%, ${(yieldRatio * 100).toFixed(0)}%).`;
                     cssClass = "bad";
