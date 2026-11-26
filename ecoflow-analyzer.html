@@ -1472,7 +1472,7 @@
                     weatherTooltip = `Hardware Drop: Critical yield failure (${target.realYieldWh} Wh) despite viable peak radiation (${maxPeak} W/m²).`;
                     cssClass = "bad";
                     isCritical = true;
-                } else if (target.efficiency < 4 && maxPeak > 400 && avgClouds < 85 && sunHours < 10) {
+                } else if (target.efficiency < 3 && maxPeak > 400 && avgClouds < 85 && sunHours < 10) {
                     explanation = "❌ 🔌";
                     weatherTooltip = `Hardware Drop: Critical efficiency (${target.efficiency}%) and yield failure despite viable solar radiation.`;
                     cssClass = "bad";
